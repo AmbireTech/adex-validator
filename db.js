@@ -5,6 +5,7 @@ const dbName = process.env.DB_MONGO_NAME || 'adexValidator'
 
 let mongoClient = null
 
+// @TODO: we need a better wrapper, abstraction on all of this
 function connect() {
 	return new Promise(function(resolve, reject) {
 		MongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
@@ -19,7 +20,8 @@ function connect() {
 }
 
 function getMongo() {
-	return mongoClient.db(dbName)
+	if (mongoClient) return mongoClient.db(dbName)
+	else return null
 }
 
 module.exports = { connect, getMongo }

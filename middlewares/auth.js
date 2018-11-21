@@ -1,4 +1,5 @@
 const adapter = require('../adapter')
+const db = require('../db')
 
 const BEARER_PREFIX = 'Bearer '
 
@@ -6,19 +7,22 @@ const BEARER_PREFIX = 'Bearer '
 function authRequired(req, res, next) {
 	const authorization = req.headers.authorization
 	if (!authorization.startsWith(BEARER_PREFIX)) {
-		res.send(401)
+		res.sendStatus(401)
 		return
 	}
 
 	const token = authorization.slice(BEARER_PREFIX.length)
 
+	const sessions = db.getMongo().collection('sessions')
+	//const findOneSession = sessions.findOne
+	//console.log(sessions)
 	// First, check if we already have the session
 	// @TODO: do mdb
 	// Then, check if this is a valid session
 	adapter.sessionFromToken(token)
 	.then(function(session) {
 		if (!session) {
-			res.send(401)
+			res.sendStatus(401)
 			return
 		}
 		// @TODO: save to mdb
@@ -27,7 +31,7 @@ function authRequired(req, res, next) {
 	})
 	.catch(function(e) {
 		console.error(e)
-		res.send(500)
+		res.sendStatus(500)
 	})
 }
 
