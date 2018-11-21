@@ -1,8 +1,7 @@
 function sessionFromToken(token) {
 	console.log('TODO', token)
-	return Promise.resolve({
-		// @TODO
-	})
+	// @TODO
+	return Promise.resolve(null)
 }
 
 module.exports = { sessionFromToken }

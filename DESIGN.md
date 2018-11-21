@@ -28,7 +28,7 @@ Channels
 ## TODO
 
 - [x] bootstrap all routes
-- [ ] auth middleware
+- [x] auth middleware; adapter/
 - [ ] basic sentry
 - [ ] dummy channels, test/db mongo load thingy
 - [ ] bench system, pipelined wrk

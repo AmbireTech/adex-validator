@@ -13,7 +13,7 @@ function authRequired(req, res, next) {
 	const token = authorization.slice(BEARER_PREFIX.length)
 
 	// First, check if we already have the session
-
+	// @TODO: do mdb
 	// Then, check if this is a valid session
 	adapter.sessionFromToken(token)
 	.then(function(session) {
@@ -21,6 +21,7 @@ function authRequired(req, res, next) {
 			res.send(401)
 			return
 		}
+		// @TODO: save to mdb
 		req.session = session
 		next()
 	})
