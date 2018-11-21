@@ -6,7 +6,7 @@ const BEARER_PREFIX = 'Bearer '
 // @TODO should this be refactored into a separate async function?
 function authRequired(req, res, next) {
 	const authorization = req.headers.authorization
-	if (!authorization.startsWith(BEARER_PREFIX)) {
+	if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
 		res.sendStatus(401)
 		return
 	}
