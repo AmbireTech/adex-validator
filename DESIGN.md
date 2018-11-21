@@ -31,7 +31,7 @@ channelStates
 
 - [x] bootstrap all routes
 - [x] auth middleware; adapter/
-- [ ] channel middleware: loadChannel, checkIfChannelExists
+- [x] channel middleware: channelLoad, channelExists 
 - [ ] basic sentry
 - [ ] dummy channels, test/db mongo load thingy
 - [ ] bench system, pipelined wrk

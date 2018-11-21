@@ -3,7 +3,6 @@ const db = require('../db')
 
 const BEARER_PREFIX = 'Bearer '
 
-// @TODO should this be refactored into a separate async function?
 function authRequired(req, res, next) {
 	const authorization = req.headers.authorization
 	if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
