@@ -1,6 +1,7 @@
 const { MongoClient } = require('mongodb')
 
 const url = process.env.DB_MONGO_URL || 'mongodb://localhost:27017'
+const dbName = process.env.DB_MONGO_NAME || 'adexValidator'
 
 let mongoClient = null
 
@@ -18,7 +19,7 @@ function connect() {
 }
 
 function getMongo() {
-	return mongoClient
+	return mongoClient.db(dbName)
 }
 
 module.exports = { connect, getMongo }
