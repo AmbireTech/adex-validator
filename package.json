@@ -1,0 +1,34 @@
+{
+  "name": "adex-validator-stack",
+  "version": "1.0.0",
+  "description": "AdEx Validator stack (sentry, validator worker, watcher)",
+  "main": "bin/sentry.js",
+  "scripts": {
+    "start": "node bin/sentry.js",
+    "test": "tape test/*"
+  },
+  "bin": {
+    "adex-sentry": "./bin/sentry.js",
+    "adex-validator-worker": "./bin/validator-worker.js",
+    "adex-watcher": "./bin/watcher.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdExNetwork/adex-validator-stack-js.git"
+  },
+  "keywords": [
+    "adex",
+    "sentry"
+  ],
+  "author": "Smart Code OOD",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AdExNetwork/adex-validator-stack-js/issues"
+  },
+  "homepage": "https://github.com/AdExNetwork/adex-validator-stack-js#readme",
+  "dependencies": {
+    "adex-protocol-eth": "git+ssh://git@github.com/adexnetwork/adex-protocol-eth.git",
+    "express": "^4.16.4",
+    "throttle": "^1.0.3"
+  }
+}
