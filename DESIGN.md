@@ -27,7 +27,7 @@ Channels
 
 ## TODO
 
-- [ ] bootstrap all routes
+- [x] bootstrap all routes
 - [ ] auth middleware
 - [ ] basic sentry
 - [ ] dummy channels, test/db mongo load thingy
