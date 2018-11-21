@@ -9,7 +9,7 @@ router.get('/:id/tree', (req, res) => res.send({}))
 router.get('/list', (req, res) => res.send([]))
 
 // Channel information: requires auth, cachable
-router.get('/events/:uid', authRequired, (req, res) => res.send([]))
+router.get('/:id/events/:uid', authRequired, (req, res) => res.send([]))
 
 // Submitting events/messages: requires auth
 router.post('/:id/events', authRequired, (req, res) => res.send([]))

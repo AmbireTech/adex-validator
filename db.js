@@ -5,17 +5,10 @@ const dbName = process.env.DB_MONGO_NAME || 'adexValidator'
 
 let mongoClient = null
 
-// @TODO: we need a better wrapper, abstraction on all of this
 function connect() {
-	return new Promise(function(resolve, reject) {
-		MongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
-			if (err) {
-				reject(err)
-			} else {
-				mongoClient = client
-				resolve()
-			}
-		})
+	return MongoClient.connect(url, { useNewUrlParser: true })
+	.then(function(client) {
+		mongoClient = client
 	})
 }
 

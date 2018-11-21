@@ -13,25 +13,40 @@ function authRequired(req, res, next) {
 
 	const token = authorization.slice(BEARER_PREFIX.length)
 
-	const sessions = db.getMongo().collection('sessions')
-	//const findOneSession = sessions.findOne
-	//console.log(sessions)
-	// First, check if we already have the session
-	// @TODO: do mdb
-	// Then, check if this is a valid session
-	adapter.sessionFromToken(token)
+	tryGetSession(token)
 	.then(function(session) {
 		if (!session) {
 			res.sendStatus(401)
-			return
+		} else {
+			req.session = session
+			next()
 		}
-		// @TODO: save to mdb
-		req.session = session
-		next()
 	})
 	.catch(function(e) {
 		console.error(e)
 		res.sendStatus(500)
+	})
+}
+
+function tryGetSession(token) {
+	const sessions = db.getMongo().collection('sessions')
+
+	// First, check if we already have the session
+	return sessions.findOne({ _id: token })
+	.then(function(persistedSession) {
+		if (persistedSession) {
+			return persistedSession
+		}
+
+		return adapter.sessionFromToken(token)
+		.then(function(session) {
+			if (!session) {
+				return null
+			} else {
+				return sessions.insert(session)
+				.then(function() { return session })
+			}
+		})
 	})
 }
 
