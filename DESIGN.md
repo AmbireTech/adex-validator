@@ -8,11 +8,13 @@ Reference implementation
 
 ## Colletions
 
-Sessions
-EventAggregates (timed by N seconds, omit empty)
-States
-ValidatorEvents
-Channels
+sessions
+eventAggregates (timed by N seconds, omit empty)
+states - full history, with our own sig
+validatorEvents
+channels
+channelCampaignSpecs
+channelStates
 
 ## Middlewares
 
@@ -29,10 +31,10 @@ Channels
 
 - [x] bootstrap all routes
 - [x] auth middleware; adapter/
+- [ ] channel middleware: loadChannel, checkIfChannelExists
 - [ ] basic sentry
 - [ ] dummy channels, test/db mongo load thingy
 - [ ] bench system, pipelined wrk
-- [ ] channel middleware: loadChannel, checkIfChannelExists
 - [ ] validator worker: basic reaping EventAggregates and upating the state
 - [ ] validator worker: signing, etherjs signer
 - [ ] validator worker: follow - monitor health
