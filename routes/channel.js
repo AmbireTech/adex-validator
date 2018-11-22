@@ -26,7 +26,19 @@ router.post('/:id/events', authRequired, channelIfExists, postEvents)
 function getStatus(withTree, req, res) {
 	//const channelsCol = db.getMongo().collection('channels')
 	// @TODO should we sanitize? probably not; perhaps rewrite _id to id
-	res.send({ channel: req.channel })
+	const resp = { channel: req.channel }
+
+	Promise.resolve()
+	.then(function() {
+		if (withTree) {
+			const channelStateTreesCol = db.getMongo().collection('channelStateTrees')
+			return channelStateTreesCol.findOne({ _id: req.channel._id })
+			.then(function(tree) { resp.tree = tree })
+		}
+	})
+	.then(function() {
+		res.send(resp)
+	})
 }
 
 function getList(req, res, next) {

@@ -35,8 +35,8 @@ channelStates - full history, with our own sig
 - [x] basic sentry
 - [x] dummy channels, test/db mongo load thingy
 - [x] validator worker: scaffold producer, leader, follower
-- [ ] bignumber.js for state trees: we can't represent numbers as JS numbers
-- [ ] validator worker: producer: basic reaping EventAggregates and updating the state
+- [x] bignumber.js for state trees: we can't represent numbers as JS numbers
+- [x] validator worker: producer: basic reaping EventAggregates and updating the state
 - [ ] validator worker: leader: signing, etherjs signer
 - [ ] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
 - [ ] validator worker: follower: monitor health
@@ -47,3 +47,4 @@ channelStates - full history, with our own sig
 - [ ] validator worker: respect campaignSpec and per-impression payment
 - [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
 - [ ] figure out how to properly do limiting max number of events per user
+- [ ] code TODOs
