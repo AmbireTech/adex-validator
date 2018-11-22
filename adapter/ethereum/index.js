@@ -1,5 +1,5 @@
 function sessionFromToken(token) {
-	console.log('TODO', token)
+	console.log('sessionFromToken TODO', token)
 	// @TODO
 	return Promise.resolve(null)
 }

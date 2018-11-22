@@ -24,7 +24,7 @@ function makeRecorder(channelId) {
 		// @TODO: proper, one-at-a-time queue
 		eventAggrCol.insertOne(toSave)
 		.catch(function(err) {
-			console.error('eventAggregator fatail error', err)
+			console.error('eventAggregator fatal error', err)
 		})
 	}
 
