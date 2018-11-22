@@ -10,7 +10,7 @@ Components:
 
 ## Validator worker
 
-The validator worker has two modes: `leader` and `follower`, which refer to the validator types described in adex-protocol.
+The validator worker has two modes: `leader` and `follower`, which refer to the validator types described in [adex-protocol/OUTPACE](https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification).
 
 Both of them run something we call a producer tick, which updates a state tree (stored in `channelStateTrees`) based on the events they receive - so essentially each runs their own independent accounting.
 
