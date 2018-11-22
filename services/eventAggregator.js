@@ -43,6 +43,9 @@ function makeRecorder(channelId) {
 	const throttledPersistAndReset = throttle(AGGREGATION_THROTTLE, persistAndReset)
 
 	return function(userId, events) {
+		// @TODO: type whitelist
+		// @TODO should we flip the structure to make it less levels
+		// e.g. events_IMPRESSION: user => count
 		events.forEach(function(ev) {
 			if (!o.events[userId]) o.events[userId] = {}
 			if (!o.events[userId][ev.type]) o.events[userId][ev.type] = 0
