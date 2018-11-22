@@ -1,5 +1,5 @@
 const { throttle } = require('throttle-debounce')
-const db = require('../db')
+const db = require('../../db')
 
 const AGGREGATION_THROTTLE = 30*1000
 
@@ -43,13 +43,11 @@ function makeRecorder(channelId) {
 	const throttledPersistAndReset = throttle(AGGREGATION_THROTTLE, persistAndReset)
 
 	return function(userId, events) {
-		// @TODO: type whitelist
-		// @TODO should we flip the structure to make it less levels
-		// e.g. events_IMPRESSION: user => count
+		// @TODO only certain events are recognized, so ev.type should be from a whitelist
 		events.forEach(function(ev) {
-			if (!o.events[userId]) o.events[userId] = {}
-			if (!o.events[userId][ev.type]) o.events[userId][ev.type] = 0
-			o.events[userId][ev.type]++
+			if (!o.events[ev.type]) o.events[ev.type] = {}
+			if (!o.events[ev.type][userId]) o.events[ev.type][userId] = 0
+			o.events[ev.type][userId]++
 		})
 		throttledPersistAndReset()
 	}
