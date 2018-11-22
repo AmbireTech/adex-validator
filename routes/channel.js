@@ -2,7 +2,7 @@ const express = require('express')
 const db = require('../db')
 const { authRequired } = require('../middlewares/auth')
 const { channelLoad, channelIfExists } = require('../middlewares/channel')
-const eventAggrService = require('../services/eventAggregator')
+const eventAggrService = require('../services/sentry/eventAggregator')
 
 const router = express.Router()
 

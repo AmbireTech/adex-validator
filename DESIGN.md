@@ -35,11 +35,12 @@ channelStates
 - [x] basic sentry
 - [x] dummy channels, test/db mongo load thingy
 - [ ] bignumber.js for state trees: we can't represent numbers as JS numbers
-- [ ] validator worker: basic reaping EventAggregates and updating the state
-- [ ] validator worker: signing, etherjs signer
-- [ ] validator worker: follow: state validation function
-- [ ] validator worker: follow: monitor health
-- [ ] validator worker: propagate events to other validators
+- [ ] validator worker: scaffold producer, leader, follower
+- [ ] validator worker: producer: basic reaping EventAggregates and updating the state
+- [ ] validator worker: leader: signing, etherjs signer
+- [ ] validator worker: follower: state validation function
+- [ ] validator worker: follower: monitor health
+- [ ] validator worker: propagate events to other validators; decide whether the leader does it, or follower(s), or both
 - [ ] auth: proper ethereum-based token (EWT/JWT?)
 - [ ] watcher, ethereum configs
 - [ ] bench system, pipelined wrk
