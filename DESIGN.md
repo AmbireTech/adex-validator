@@ -10,11 +10,11 @@ Reference implementation
 
 sessions
 eventAggregates (timed by N seconds, omit empty)
-states - full history, with our own sig
 validatorEvents
 channels
 channelCampaignSpecs
-channelStates
+channelStateTrees
+channelStates - full history, with our own sig
 
 ## Middlewares
 
@@ -45,3 +45,4 @@ channelStates
 - [ ] watcher, ethereum configs
 - [ ] bench system, pipelined wrk
 - [ ] validator worker: respect campaignSpec and per-impression payment
+- [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
