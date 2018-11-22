@@ -34,8 +34,9 @@ channelStates - full history, with our own sig
 - [x] channel middleware: channelLoad, channelExists 
 - [x] basic sentry
 - [x] dummy channels, test/db mongo load thingy
+- [x] validator worker: scaffold producer, leader, follower
 - [ ] bignumber.js for state trees: we can't represent numbers as JS numbers
-- [ ] validator worker: scaffold producer, leader, follower
+- [ ] figure out how to properly do limiting max number of events per user
 - [ ] validator worker: producer: basic reaping EventAggregates and updating the state
 - [ ] validator worker: leader: signing, etherjs signer
 - [ ] validator worker: follower: state validation function

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 const db = require('../db')
 const { tick } = require('../services/validatorWorker/producer')
-// @TODO: choose that with a process
+
+// @TODO: depending on role, use either producer.tick, leader.tick or follower.tick
+
+// @TODO: choose that in a rational way, rather than using a magic number
 const MAX_CHANNELS = 512
 
 db.connect()
