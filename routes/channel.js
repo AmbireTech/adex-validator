@@ -2,10 +2,11 @@ const express = require('express')
 const db = require('../db')
 const { authRequired } = require('../middlewares/auth')
 const { channelLoad, channelIfExists } = require('../middlewares/channel')
+const eventAggrService = require('../services/eventAggregator')
 
 const router = express.Router()
 
-// @TODO: channel middleware
+const CHANNELS_FIND_MAX = 100
 
 // Channel information: public, cachable
 router.get('/list', getList)
@@ -27,16 +28,17 @@ function getStatus(withTree, req, res) {
 	res.send({ channel: req.channel })
 }
 
-function getList(req, res) {
+function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
-	// @TODO: what happens on error?
+
 	return channelsCol.find()
-	.limit(100)
+	.limit(CHANNELS_FIND_MAX)
 	.toArray()
 	.then(function(channels) {
 		// @TODO should we sanitize? probably not; perhaps rewrite _id to id
 		res.send({ channels })
 	})
+	.catch(next)
 }
 
 function postValidatorMessages(req, res) {
@@ -46,8 +48,18 @@ function postValidatorMessages(req, res) {
 
 // @TODO: per-channel singleton that keeps the aggregate state
 // and flushes it every N seconds
-function postEvents(req, res) {
-	res.send({})
+// also, this should only accept active channels; the worker should monitor for active channels; `init` messages have to be exchanged
+// @TODO: should this be channelIfActive ?
+function postEvents(req, res, next) {
+	if (!Array.isArray(req.body.events)) {
+		res.sendStatus(400)
+		return
+	}
+	eventAggrService.record(req.params.id, req.session.uid, req.body.events)
+	.then(function() {
+		res.send({ success: true })
+	})
+	.catch(next)
 }
 
 

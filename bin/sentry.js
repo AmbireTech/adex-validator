@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 const express = require('express')
+const bodyParser = require('body-parser')
 const db = require('../db')
 const channelRoutes = require('../routes/channel')
 
 const app = express()
 const port = process.env.PORT || 8005
 
+app.use(bodyParser.json())
 app.use('/channel', channelRoutes)
 
 db.connect()
