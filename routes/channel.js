@@ -25,17 +25,18 @@ router.post('/:id/events', authRequired, channelIfExists, postEvents)
 // Implementations
 function getStatus(withTree, req, res) {
 	//const channelsCol = db.getMongo().collection('channels')
+	// @TODO should we sanitize? probably not; perhaps rewrite _id to id
 	res.send({ channel: req.channel })
 }
 
 function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
 
-	return channelsCol.find()
+	return channelsCol
+	.aggregate([{ '$project': { _id: 0, id: '$_id', status: 1 } }])
 	.limit(CHANNELS_FIND_MAX)
 	.toArray()
 	.then(function(channels) {
-		// @TODO should we sanitize? probably not; perhaps rewrite _id to id
 		res.send({ channels })
 	})
 	.catch(next)
