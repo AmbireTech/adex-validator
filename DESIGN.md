@@ -38,9 +38,11 @@ channelStates - full history, with our own sig
 - [x] bignumber.js for state trees: we can't represent numbers as JS numbers
 - [x] validator worker: producer: basic reaping EventAggregates and updating the state
 - [ ] validator worker: leader: signing, etherjs signer
+- [ ] merkelize and sign: it should sort all hashes before putting into the tree
 - [ ] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
 - [ ] validator worker: follower: monitor health
 - [ ] validator worker: propagate events to other validators; decide whether the leader does it, or follower(s), or both
+- [ ] aggregator: we should count by publisher, not by user
 - [ ] auth: proper ethereum-based token (EWT/JWT?)
 - [ ] watcher, ethereum configs
 - [ ] bench system, pipelined wrk
