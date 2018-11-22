@@ -1,5 +1,13 @@
 # adex-validator-stack-js
 
+Reference implementation of the [AdEx validator stack](https://github.com/adexnetwork/adex-protocol#validator-stack-platform).
+
+Components:
+
+* Sentry
+* Validator worker
+* Watcher
+
 ## API
 
 

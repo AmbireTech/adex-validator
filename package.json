@@ -9,7 +9,7 @@
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
-    "adex-validator-worker": "./bin/validator-worker.js",
+    "adex-validator-worker": "./bin/validatorWorker.js",
     "adex-watcher": "./bin/watcher.js"
   },
   "repository": {
