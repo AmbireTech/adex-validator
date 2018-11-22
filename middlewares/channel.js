@@ -21,7 +21,7 @@ function channelIfExists(req, res, next) {
 	const id = req.params.id
 	const channelsCol = db.getMongo().collection('channels')
 	
-	channelsCol.count({ _id: id }, { limit: 1})
+	channelsCol.countDocuments({ _id: id }, { limit: 1})
 	.then(function(n) {
 		if (!n) {
 			res.sendStatus(404)

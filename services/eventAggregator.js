@@ -35,7 +35,7 @@ function makeRecorder(channelId) {
 			o = newObject()
 			// however, this carries the risk of dropping events if this fails
 			// @TODO: make this a queue of all eventAggregates to be saved, will solve the issue
-			eventAggrCol.insert(toSave)
+			eventAggrCol.insertOne(toSave)
 			.catch(function(err) {
 				console.error('eventAggregator fatail error', err)
 			})

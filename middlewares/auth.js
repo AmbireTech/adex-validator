@@ -39,7 +39,7 @@ function tryGetSession(token) {
 			if (!session) {
 				return null
 			} else {
-				return sessions.insert(session)
+				return sessions.insertOne(session)
 				.then(function() { return session })
 			}
 		})
