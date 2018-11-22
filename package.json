@@ -28,6 +28,7 @@
   "homepage": "https://github.com/AdExNetwork/adex-validator-stack-js#readme",
   "dependencies": {
     "adex-protocol-eth": "git+ssh://git@github.com/adexnetwork/adex-protocol-eth.git",
+    "bn.js": "^4.11.8",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
     "lodash.throttle": "^4.1.1",
