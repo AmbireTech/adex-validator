@@ -21,10 +21,7 @@ function authRequired(req, res, next) {
 			next()
 		}
 	})
-	.catch(function(e) {
-		console.error(e)
-		res.sendStatus(500)
-	})
+	.catch(next)
 }
 
 function tryGetSession(token) {

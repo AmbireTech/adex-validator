@@ -14,10 +14,7 @@ function channelLoad(req, res, next) {
 			next()
 		}
 	})
-	.catch(function(e) {
-		console.error(e)
-		res.sendStatus(500)
-	})
+	.catch(next)
 }
 
 function channelIfExists(req, res, next) {
@@ -32,10 +29,7 @@ function channelIfExists(req, res, next) {
 			next()
 		}
 	})
-	.catch(function(e) {
-		console.error(e)
-		res.sendStatus(500)
-	})
+	.catch(next)
 }
 
 module.exports = { channelLoad, channelIfExists }
