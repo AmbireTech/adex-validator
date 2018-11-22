@@ -32,11 +32,13 @@ channelStates
 - [x] bootstrap all routes
 - [x] auth middleware; adapter/
 - [x] channel middleware: channelLoad, channelExists 
-- [ ] basic sentry
+- [x] basic sentry
 - [ ] dummy channels, test/db mongo load thingy
-- [ ] bench system, pipelined wrk
-- [ ] validator worker: basic reaping EventAggregates and upating the state
+- [ ] validator worker: basic reaping EventAggregates and updating the state
 - [ ] validator worker: signing, etherjs signer
 - [ ] validator worker: follow - monitor health
 - [ ] validator worker: propagate events to other validators
+- [ ] auth: proper ethereum-based token (EWT/JWT?)
 - [ ] watcher, ethereum configs
+- [ ] bench system, pipelined wrk
+- [ ] validator worker: respect campaignSpec and per-impression payment
