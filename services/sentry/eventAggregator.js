@@ -1,4 +1,4 @@
-const { throttle } = require('throttle-debounce')
+const throttle = require('lodash.throttle')
 const db = require('../../db')
 
 const AGGREGATION_THROTTLE = 30*1000
@@ -40,7 +40,7 @@ function makeRecorder(channelId) {
 		persist(toSave)
 	}
 	// @TODO: can this be made to be trailing, not leading?
-	const throttledPersistAndReset = throttle(AGGREGATION_THROTTLE, persistAndReset)
+	const throttledPersistAndReset = throttle(persistAndReset, AGGREGATION_THROTTLE, { leading: false, trailing: true })
 
 	return function(userId, events) {
 		// @TODO only certain events are recognized, so ev.type should be from a whitelist
