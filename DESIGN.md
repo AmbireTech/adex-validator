@@ -33,10 +33,12 @@ channelStates
 - [x] auth middleware; adapter/
 - [x] channel middleware: channelLoad, channelExists 
 - [x] basic sentry
-- [ ] dummy channels, test/db mongo load thingy
+- [x] dummy channels, test/db mongo load thingy
+- [ ] bignumber.js for state trees: we can't represent numbers as JS numbers
 - [ ] validator worker: basic reaping EventAggregates and updating the state
 - [ ] validator worker: signing, etherjs signer
-- [ ] validator worker: follow - monitor health
+- [ ] validator worker: follow: state validation function
+- [ ] validator worker: follow: monitor health
 - [ ] validator worker: propagate events to other validators
 - [ ] auth: proper ethereum-based token (EWT/JWT?)
 - [ ] watcher, ethereum configs
