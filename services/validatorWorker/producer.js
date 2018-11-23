@@ -87,7 +87,6 @@ function mergePayableIntoBalances(balances, events, paymentInfo) {
 }
 
 function logMerge(channel, eventAggrs) {
-	// @TODO optional
 	console.log(`Channel ${channel._id}: processing ${eventAggrs.length} event aggregates`)
 }
 

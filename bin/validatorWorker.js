@@ -70,11 +70,9 @@ function wait(ms) {
 }
 
 function logSnooze() {
-	// @TODO: optional
 	console.log(`validatorWorker: Snoozing, all channels up to date`)
 }
 
 function logPreChannelsTick(channels) {
-	// @TODO optional
 	console.log(`validatorWorker: Processing ${channels.length} channels`)
 }

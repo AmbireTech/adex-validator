@@ -56,7 +56,6 @@ function makeRecorder(channelId) {
 }
 
 function logAggregate(o) {
-	// @TODO: optional
 	console.log(`Event aggregate produced, events for ${Object.keys(o.events).length} users`)
 }
 
