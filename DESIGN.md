@@ -14,7 +14,6 @@ validatorEvents
 channels
 channelCampaignSpecs
 channelStateTrees
-channelStates - full history, with our own sig
 
 ## Middlewares
 

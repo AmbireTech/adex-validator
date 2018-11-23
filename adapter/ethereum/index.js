@@ -13,4 +13,10 @@ function whoami() {
 	return process.env.TEST_IDENTITY
 }
 
-module.exports = { sessionFromToken, whoami }
+function sign(stateRoot) {
+	// @TODO
+	// Channel.hashToSign(contractAddr, stateRoot)
+	return `TODO signature for ${stateRoot.toString('hex')}`
+}
+
+module.exports = { sessionFromToken, whoami, sign }
