@@ -7,6 +7,7 @@ const { tick } = require('../services/validatorWorker/producer')
 // @TODO: choose that in a rational way, rather than using a magic number
 const MAX_CHANNELS = 512
 const SNOOZE_TIME = 20000
+const WAIT_TIME = 1000
 
 db.connect()
 .then(function() {
@@ -18,6 +19,7 @@ db.connect()
 		.toArray()
 		.then(function(channels) {
 			logPreChannelsTick(channels)
+			// @TODO: for each channel, map to a tick that decides whether we're a leader or a follower and does the appropriate action
 			return Promise.all(channels.map(tick))
 		})
 		.then(function(allResults) {
@@ -26,6 +28,7 @@ db.connect()
 				logSnooze(allResults)
 				return wait(SNOOZE_TIME)
 			}
+			return wait(WAIT_TIME)
 		})
 	}
 

@@ -28,7 +28,7 @@ function tick(channel) {
 			logMerge(channel, aggrs)
 
 			if (!aggrs.length) {
-				return { updated: false }
+				return { updated: false, channel }
 			}
 
 			const newStateTree = mergeAggrs(stateTree, aggrs, { amount: 1 })
@@ -40,7 +40,7 @@ function tick(channel) {
 				{ upsert: true }
 			)
 			.then(function() {
-				return { updated: true }
+				return { updated: true, channel, newStateTree }
 			})
 		})
 	})

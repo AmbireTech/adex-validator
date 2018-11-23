@@ -50,3 +50,4 @@ channelStates - full history, with our own sig
 - [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
 - [ ] figure out how to properly do limiting max number of events per user
 - [ ] code TODOs
+- [ ] sentry: ensure there's an easy way to get all signed states historically, and at least one validator from which we can get a state signed by 2 (or more) at once
