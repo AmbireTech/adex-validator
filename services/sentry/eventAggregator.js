@@ -1,7 +1,7 @@
 const throttle = require('lodash.throttle')
 const db = require('../../db')
 
-const AGGREGATION_THROTTLE = 30*1000
+const AGGREGATION_THROTTLE = 10000
 
 const recorders = {}
 
