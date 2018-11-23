@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 const db = require('../db')
-const { tick } = require('../services/validatorWorker/producer')
-
-// @TODO: depending on role, use either producer.tick, leader.tick or follower.tick
+const producer = require('../services/validatorWorker/producer')
+const leader = require('../services/validatorWorker/leader')
+const follower = require('../services/validatorWorker/follower')
 
 // @TODO: choose that in a rational way, rather than using a magic number
 const MAX_CHANNELS = 512
@@ -19,9 +19,8 @@ db.connect()
 		.toArray()
 		.then(function(channels) {
 			logPreChannelsTick(channels)
-			// @TODO: for each channel, map to a tick that decides whether we're a leader or a follower and does the appropriate action
 			return Promise.all([
-				Promise.all(channels.map(tick)),
+				Promise.all(channels.map(validatorTick)),
 				wait(WAIT_TIME)
 			])
 		})
@@ -45,6 +44,12 @@ db.connect()
 	console.error('Fatal error while connecting to the database', err)
 	process.exit(1)
 })
+
+function validatorTick(channel) {
+	// @TODO: depending on role, use either producer.tick, leader.tick or follower.tick
+	// @TODO add validators in test/prep-db
+	return producer.tick(channel)
+}
 
 function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))

@@ -40,6 +40,7 @@ channelStates - full history, with our own sig
 - [ ] validator worker: leader: signing, etherjs signer
 - [ ] merkelize and sign: it should sort all hashes before putting into the tree
 - [ ] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
+- [ ] validator worker: follower: should validate each individual proposed state, and validate whether it's a valid state transition
 - [ ] validator worker: follower: monitor health
 - [ ] validator worker: propagate events to other validators; decide whether the leader does it, or follower(s), or both
 - [ ] aggregator: we should count by publisher, not by user
@@ -51,3 +52,4 @@ channelStates - full history, with our own sig
 - [ ] figure out how to properly do limiting max number of events per user
 - [ ] code TODOs
 - [ ] sentry: ensure there's an easy way to get all signed states historically, and at least one validator from which we can get a state signed by 2 (or more) at once
+- [ ] dockerize
