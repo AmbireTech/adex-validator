@@ -79,11 +79,9 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 // Mutates the balances input
 function mergePayableIntoBalances(balances, events, paymentInfo) {
 	if (!events) return
+	// @TODO: enforce total limit of balances here
 	Object.keys(events).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		// @TODO: this is an easy place where we can limit the impression count
-		// it makes sense too, as it's a natural throttle of 1 per evAggr era
-		// unless acc == publisher, in which case it does not make sense
 		balances[acc] = balances[acc].add(new BN(events[acc] * paymentInfo.amount))
 	})
 }
