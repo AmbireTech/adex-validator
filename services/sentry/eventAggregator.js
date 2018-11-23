@@ -18,13 +18,16 @@ function makeRecorder(channelId) {
 	const newObject = () => { return { channelId, created: new Date(), events: {} } }
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 
-	// persist
-	//const saveQueue = []
+	// persist each individual aggregate
+	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
+	let saveQueue = Promise.resolve()
 	const persist = function(toSave) {
-		// @TODO: proper, one-at-a-time queue
-		eventAggrCol.insertOne(toSave)
-		.catch(function(err) {
-			console.error('eventAggregator fatal error', err)
+		saveQueue = saveQueue.then(function() {
+			return eventAggrCol.insertOne(toSave)
+			.catch(function(err) {
+				console.error('eventAggregator fatal error; will re-try', err)
+				persist(toSave)
+			})
 		})
 	}
 
@@ -39,7 +42,6 @@ function makeRecorder(channelId) {
 		// to ensure we always persist toSave's, we have a separate queue
 		persist(toSave)
 	}
-	// @TODO: can this be made to be trailing, not leading?
 	const throttledPersistAndReset = throttle(persistAndReset, AGGREGATION_THROTTLE, { leading: false, trailing: true })
 
 	return function(userId, events) {
