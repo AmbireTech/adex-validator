@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+const assert = require('assert')
 const db = require('../db')
+const adapter = require('../adapter')
 const producer = require('../services/validatorWorker/producer')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
@@ -14,7 +16,7 @@ db.connect()
 	const channelsCol = db.getMongo().collection('channels')
 	
 	function allChannelsTick() {
-		return channelsCol.find()
+		return channelsCol.find({ validators: adapter.whoami() })
 		.limit(MAX_CHANNELS)
 		.toArray()
 		.then(function(channels) {
@@ -46,9 +48,19 @@ db.connect()
 })
 
 function validatorTick(channel) {
-	// @TODO: depending on role, use either producer.tick, leader.tick or follower.tick
-	// @TODO add validators in test/prep-db
 	return producer.tick(channel)
+	.then(function(result) {
+		// NOTE: this must always return result
+		// if there is no no new state, do nothing
+		if (result.newStateTree) {
+			const validatorIdx = channel.validators.indexOf(adapter.whoami())
+			const isLeader = validatorIdx == 0
+			assert.ok(validatorIdx >= 0, 'validatorTick: processing a channel where we are not validating')
+			console.log(isLeader)
+		}
+	
+		return result
+	})
 }
 
 function wait(ms) {
