@@ -52,14 +52,16 @@ function validatorTick(channel) {
 	.then(function(result) {
 		// NOTE: this must always return result
 		// if there is no no new state, do nothing
-		if (result.newStateTree) {
-			const validatorIdx = channel.validators.indexOf(adapter.whoami())
-			const isLeader = validatorIdx == 0
-			assert.ok(validatorIdx >= 0, 'validatorTick: processing a channel where we are not validating')
-			console.log(isLeader)
+		if (!result.newStateTree) {
+			return result
 		}
-	
-		return result
+
+		const validatorIdx = channel.validators.indexOf(adapter.whoami())
+		assert.ok(validatorIdx >= 0, 'validatorTick: processing a channel where we are not validating')
+
+		const isLeader = validatorIdx == 0
+		const tick = isLeader ? leader.tick : follower.tick
+		return tick(result).then(() => result)
 	})
 }
 
