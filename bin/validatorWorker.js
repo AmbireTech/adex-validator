@@ -20,15 +20,17 @@ db.connect()
 		.then(function(channels) {
 			logPreChannelsTick(channels)
 			// @TODO: for each channel, map to a tick that decides whether we're a leader or a follower and does the appropriate action
-			return Promise.all(channels.map(tick))
+			return Promise.all([
+				Promise.all(channels.map(tick)),
+				wait(WAIT_TIME)
+			])
 		})
-		.then(function(allResults) {
+		.then(function([allResults, _]) {
 			// If nothing is new, snooze
-			if (allResults.every(x => x.updated === false)) {
+			if (allResults.every(x => !x.newStateTree)) {
 				logSnooze(allResults)
 				return wait(SNOOZE_TIME)
 			}
-			return wait(WAIT_TIME)
 		})
 	}
 

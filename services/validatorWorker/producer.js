@@ -28,10 +28,10 @@ function tick(channel) {
 			logMerge(channel, aggrs)
 
 			if (!aggrs.length) {
-				return { updated: false, channel }
+				return { channel }
 			}
 
-			const newStateTree = mergeAggrs(stateTree, aggrs, { amount: 1 })
+			const { balances, newStateTree } = mergeAggrs(stateTree, aggrs, { amount: 1 })
 
 			return stateTreeCol
 			.updateOne(
@@ -40,7 +40,7 @@ function tick(channel) {
 				{ upsert: true }
 			)
 			.then(function() {
-				return { updated: true, channel, newStateTree }
+				return { channel, newStateTree, balances }
 			})
 		})
 	})
@@ -73,7 +73,7 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		newStateTree.balances[acc] = balances[acc].toString(10)
 	})
 
-	return newStateTree
+	return { balances, newStateTree }
 }
 
 // Mutates the balances input
