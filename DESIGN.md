@@ -10,10 +10,9 @@ Reference implementation
 
 sessions
 eventAggregates (timed by N seconds, omit empty)
+channels (should also contain campaignSpec)
+channelStateTrees (full state tree)
 validatorEvents
-channels
-channelCampaignSpecs
-channelStateTrees
 
 ## Middlewares
 
@@ -38,10 +37,10 @@ channelStateTrees
 - [x] validator worker: producer: basic reaping EventAggregates and updating the state
 - [x] validator worker: leader: signing, etherjs signer
 - [x] merkelize and sign: it should sort all hashes before putting into the tree
+- [ ] validator worker: propagate events; leader propagates NewState ev to follower(s), each follower propagates their ApproveState back to the leader
 - [ ] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
 - [ ] validator worker: follower: should validate each individual proposed state, and validate whether it's a valid state transition
 - [ ] validator worker: follower: monitor health
-- [ ] validator worker: propagate events to other validators; decide whether the leader does it, or follower(s), or both
 - [ ] adapter: make signing/whoami work (ethersjs signer)
 - [ ] aggregator: we should count by publisher, not by user
 - [ ] auth: proper ethereum-based token (EWT/JWT?)
@@ -49,7 +48,7 @@ channelStateTrees
 - [ ] bench system, pipelined wrk
 - [ ] validator worker: respect campaignSpec and per-impression payment
 - [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
-- [ ] figure out how to properly do limiting max number of events per user
+- [ ] figure out how to properly do limiting max number of events per user (hint: in the sentry by IP/pow)
 - [ ] code TODOs
-- [ ] sentry: ensure there's an easy way to get all signed states historically, and at least one validator from which we can get a state signed by 2 (or more) at once
+- [ ] sentry: ensure there's an easy way to get all signed states historically, and at least one validator from which we can get a state signed by 2 (or more) at once; easiest solution is simply to allow getting last N validator events (which will contain sigs)
 - [ ] dockerize
