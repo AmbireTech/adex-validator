@@ -48,7 +48,7 @@ function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
 
 	return channelsCol
-	.find({}, { _id: 0 })
+	.find({}, { projection: { _id: 0 } })
 	.limit(CHANNELS_FIND_MAX)
 	.toArray()
 	.then(function(channels) {
