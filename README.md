@@ -48,3 +48,36 @@ POST `/channel/validator-messages`
 ``DB_MONGO_URL``
 
 ``DB_MONGO_NAME``
+
+
+## Testing setup
+
+
+### Leader
+
+#### Sentry
+
+```
+npm start
+```
+
+#### Validator Worker
+
+```
+TEST_IDENTITY=awesomeLeader node bin/validatorWorker.js
+```
+
+
+### Follower
+
+#### Sentry
+
+```
+DB_MONGO_NAME=adexValidatorFollower PORT=8006 npm start
+```
+
+
+#### Validator Worker
+```
+TEST_IDENTITY=awesomeFollower DB_MONGO_NAME=adexValidatorFollower node bin/validatorWorker.js
+```
