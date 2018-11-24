@@ -87,8 +87,9 @@ function augmentWithBalances(approveMsg) {
 		'msg.type': 'NewState',
 		'msg.stateRoot': approveMsg.stateRoot,
 	})
-	.then(function({ msg }) {
-		return { ...approveMsg, balances: msg.balances }
+	.then(function(o) {
+		assert.ok(o && o.msg && o.msg.balances, 'cannot find NewState message corresponding to the ApproveState')
+		return { ...approveMsg, balances: o.msg.balances }
 	})
 }
 
