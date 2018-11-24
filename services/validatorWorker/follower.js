@@ -1,6 +1,7 @@
 const BN = require('bn.js')
 const db = require('../../db')
 const adapter = require('../../adapter')
+const { persistAndPropagate } = require('./lib/propagation')
 
 function tick({channel, newStateTree, balances}) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -25,9 +26,10 @@ function tick({channel, newStateTree, balances}) {
 
 		const stateRoot = newMsg.msg.stateRoot
 		const sig = adapter.sign(stateRoot)
-		console.log({
+		const otherValidators = channel.spec.validators.filter(v => v.id != adapter.whoami())
+		return persistAndPropagate(otherValidators, channel, {
 			type: 'ApproveState',
-			stateRoot: stateRoot.toString('hex'),
+			stateRoot: stateRoot,
 			sig,
 		})
 	})
