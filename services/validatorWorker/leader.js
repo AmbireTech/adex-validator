@@ -23,11 +23,13 @@ function persistAndPropagateValidatorMsg(channel, msg) {
 
 	return validatorMsgCol.insertOne(msg)
 	.then(function() {
-		return Promise.all(
-			followers.map(v => propagateMsg(channel, v, msg))
-		)
+		return Promise.all(followers.map(function(validator) {
+			return propagateMsg(channel, validator, msg)
+			.catch(function(e) {
+				console.error(`validatorWorker: Unable to propagate ${msg.type} to ${validator.id}: ${e.message}`)
+			})
+		}))
 	})
-	// @TODO: more graceful err handling
 }
 
 module.exports = { tick }
