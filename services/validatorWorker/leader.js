@@ -1,6 +1,6 @@
-const fetch = require('node-fetch')
 const adapter = require('../../adapter')
 const db = require('../../db')
+const propagateMsg = require('./lib/propagateMsg')
 
 function tick({ channel, newStateTree, balances }) {
 	// Note: MerkleTree takes care of deduplicating and sorting
@@ -24,31 +24,10 @@ function persistAndPropagateValidatorMsg(channel, msg) {
 	return validatorMsgCol.insertOne(msg)
 	.then(function() {
 		return Promise.all(
-			followers.map(v => propagateMsgTo(channel, v, msg))
+			followers.map(v => propagateMsg(channel, v, msg))
 		)
 	})
-}
-
-// @TODO: this func will be shared b/w leader.js and follower.js
-function propagateMsgTo(channel, validator, msg) {
-	return adapter.getAuthFor(validator)
-	.then(function(authToken) {
-		return fetch(`${validator.url}/channel/${channel.id}/validator-messages`, {
-			method: 'POST',
-			headers: {
-				'content-type': 'application/json',
-				'authorization': `Bearer ${authToken}`
-			},
-			body: JSON.stringify({ messages: [msg] }),
-		})
-		.then(function(resp) {
-			if (resp.status !== 200) {
-				return Promise.reject('request failed with status code ' + resp.status)
-			}
-			return resp.json()
-		})
-		// @TODO: more graceful err handling
-	})
+	// @TODO: more graceful err handling
 }
 
 module.exports = { tick }
