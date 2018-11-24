@@ -57,10 +57,28 @@ function getList(req, res, next) {
 	.catch(next)
 }
 
-function postValidatorMessages(req, res) {
-	console.log(req.body)
-	// @TODO req.channel.validators contains req.session.uid
-	res.send({})
+function postValidatorMessages(req, res, next) {
+	if (!req.channel.validators.includes(req.session.uid)) {
+		res.sendStatus(401)
+		return
+	}
+
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	// @TODO: more sophisticated validation
+	const isValid = Array.isArray(req.body.messages)
+		&& req.body.messages.every(msg => msg.type === 'NewState' || msg.type === 'ApproveState')
+	if (!isValid) {
+		res.sendStatus(400)
+		return
+	}
+
+	Promise.all(
+		req.body.messages.map(msg => validatorMsgCol.insertOne(msg))
+	)
+	.then(function() {
+		res.send({ success: true })
+	})
+	.catch(next)
 }
 
 // also, this should only accept active channels; the worker should monitor for active channels; `init` messages have to be exchanged

@@ -2,7 +2,7 @@ const adapter = require('../../adapter')
 const db = require('../../db')
 const propagateMsg = require('./lib/propagateMsg')
 
-function tick({ channel, newStateTree, balances }) {
+function tick({channel, newStateTree, balances}) {
 	// Note: MerkleTree takes care of deduplicating and sorting
 	const elems = Object.keys(balances).map(acc => adapter.getBalanceLeaf(acc, balances[acc]))
 	const tree = new adapter.MerkleTree(elems)
