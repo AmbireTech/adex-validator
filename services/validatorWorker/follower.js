@@ -3,9 +3,7 @@ const adapter = require('../../adapter')
 
 function tick({channel, newStateTree, balances}) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
-	// we compare only OUR last approved state to the NewState
-	// instead, we must compare from the latest state approved by any >=2/3 validators
-	// otherwise, the leader may perform an invalid state transition from latest approved to a NewState, and trick us into signing it cause we'd be comparing with our own (presumably old)
+	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	return Promise.all([
 		getLatestMsg(channel.id, channel.validators[0], 'NewState'),
 		getLatestMsg(channel.Id, adapter.whoami(), 'ApproveState'),
@@ -37,8 +35,6 @@ function getLatestMsg(channelId, from, type) {
 		return msg
 	})
 }
-
-// @TODO get previously approved state
 
 module.exports = { tick }
 
