@@ -18,7 +18,7 @@ function whoami() {
 function sign(stateRoot) {
 	// @TODO
 	// Channel.hashToSign(contractAddr, stateRoot)
-	return `TODO signature for ${stateRoot.toString('hex')}`
+	return `TODO signature for ${stateRoot.toString('hex')} by ${whoami()}`
 }
 
 function getBalanceLeaf(acc, bal) {
