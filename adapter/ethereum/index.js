@@ -27,7 +27,7 @@ function getBalanceLeaf(acc, bal) {
 
 function getAuthFor(validator) {
 	// @TODO
-	return Promise.resolve(`AUTH_${validator.id}`)
+	return Promise.resolve(`AUTH_${whoami()}`)
 }
 
 module.exports = { sessionFromToken, whoami, sign, getBalanceLeaf, getAuthFor, MerkleTree }

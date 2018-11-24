@@ -22,7 +22,6 @@ function getLatestNewStateMsg(channel) {
 	.toArray()
 	.then(function([newStateMsg]) {
 		// @TODO assert validity
-		console.log(newStateMsg)
 		return newStateMsg
 	})
 }
