@@ -82,6 +82,7 @@ function getLatestMsg(channelId, from, type) {
 function augmentWithBalances(approveMsg) {
 	if (!approveMsg) return
 
+	// @TODO: DB index
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	return validatorMsgCol.findOne({
 		'msg.type': 'NewState',

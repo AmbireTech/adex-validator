@@ -57,4 +57,5 @@ validatorMessages
 - [ ] dockerize
 - [ ] special event types: e.g. validator fees
 - [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
+- [ ] DB indexes for every complex query
 - [ ] session authentication scheme must be secured: we need to ensure the server supplies the challenge and maybe rotates it
