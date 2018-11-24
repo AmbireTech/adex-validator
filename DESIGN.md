@@ -37,10 +37,11 @@ validatorEvents
 - [x] validator worker: producer: basic reaping EventAggregates and updating the state
 - [x] validator worker: leader: signing, etherjs signer
 - [x] merkelize and sign: it should sort all hashes before putting into the tree
-- [ ] campaignSpec and/or extra info in channels
-- [ ] validator worker: propagate events; leader propagates NewState ev to follower(s), each follower propagates their ApproveState back to the leader
-- [ ] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
+- [x] spec and/or extra info in channels
+- [x] validator worker: propagate events; leader propagates NewState ev to follower(s)
+- [ ] validator worker: follower: propagates their ApproveState back to the leader (or to EVERY other validator)
 - [ ] validator worker: follower: should validate each individual proposed state, and validate whether it's a valid state transition
+- [ ] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
 - [ ] validator worker: follower: monitor health
 - [ ] adapter: make signing/whoami work (ethersjs signer)
 - [ ] aggregator: we should count by publisher, not by user
@@ -55,3 +56,4 @@ validatorEvents
 - [ ] dockerize
 - [ ] special event types: e.g. validator fees
 - [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
+- [ ] session authentication scheme must be secured: we need to ensure the server supplies the challenge and maybe rotates it

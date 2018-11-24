@@ -99,7 +99,7 @@ function mergePayableIntoBalances(balances, events, paymentInfo) {
 }
 
 function logMerge(channel, eventAggrs) {
-	console.log(`Channel ${channel.id}: processing ${eventAggrs.length} event aggregates`)
+	console.log(`validatorWorker: channel ${channel.id}: processing ${eventAggrs.length} event aggregates`)
 }
 
 module.exports = { tick }

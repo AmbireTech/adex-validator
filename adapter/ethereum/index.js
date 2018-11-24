@@ -25,4 +25,9 @@ function getBalanceLeaf(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
-module.exports = { sessionFromToken, whoami, sign, getBalanceLeaf, MerkleTree }
+function getAuthFor(validator) {
+	// @TODO
+	return Promise.resolve(`AUTH_${validator.id}`)
+}
+
+module.exports = { sessionFromToken, whoami, sign, getBalanceLeaf, getAuthFor, MerkleTree }

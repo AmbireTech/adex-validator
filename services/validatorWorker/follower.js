@@ -1,4 +1,5 @@
-function tick(channel, newStateTree, balances) {
+function tick({channel, newStateTree, balances}) {
+	console.log(`Follower tick for ${channel.id}`)
 	return Promise.resolve()
 }
 

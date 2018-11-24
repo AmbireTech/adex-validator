@@ -58,12 +58,11 @@ function getList(req, res, next) {
 }
 
 function postValidatorMessages(req, res) {
+	console.log(req.body)
 	// @TODO req.channel.validators contains req.session.uid
 	res.send({})
 }
 
-// @TODO: per-channel singleton that keeps the aggregate state
-// and flushes it every N seconds
 // also, this should only accept active channels; the worker should monitor for active channels; `init` messages have to be exchanged
 // @TODO: should this be channelIfActive ?
 function postEvents(req, res, next) {
