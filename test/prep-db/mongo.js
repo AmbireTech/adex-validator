@@ -2,6 +2,7 @@ db.sessions.insert({ _id: 'x8c9v1b2', uid: 'awesomeTestUser' })
 db.channels.insert({
 	// @TODO: document schema
 	_id: 'awesomeTestChannel',
+	id: 'awesomeTestChannel',
 	status: 'live',
 	// @TODO: ERC20 addr
 	depositAsset: 'DAI',

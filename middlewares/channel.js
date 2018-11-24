@@ -5,12 +5,12 @@ function channelLoad(req, res, next) {
 	const id = req.params.id
 	const channelsCol = db.getMongo().collection('channels')
 	
-	channelsCol.findOne({ _id: id })
-	.then(function(channel) {
-		if (!channel) {
+	channelsCol.find({ _id: id }, { _id: 0 }).toArray()
+	.then(function(channels) {
+		if (!channels.length) {
 			res.sendStatus(404)
 		} else {
-			req.channel = channel
+			req.channel = channels[0]
 			next()
 		}
 	})

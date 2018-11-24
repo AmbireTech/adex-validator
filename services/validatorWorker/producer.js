@@ -10,13 +10,13 @@ function tick(channel) {
 
 	// @TODO obtain channel payment info
 
-	return stateTreeCol.findOne({ _id: channel._id })
+	return stateTreeCol.findOne({ _id: channel.id })
 	.then(function(stateTree) {
 		return stateTree || { balances: {}, lastEvAggr: new Date(0) }
 	})
 	.then(function(stateTree) {
 		return eventAggrCol.find({
-			channelId: channel._id,
+			channelId: channel.id,
 			created: { $gt: stateTree.lastEvAggr }
 		})
 		// @TODO restore this limit, but it requires sorting by created from old to new
@@ -38,7 +38,7 @@ function tick(channel) {
 
 			return stateTreeCol
 			.updateOne(
-				{ _id: channel._id },
+				{ _id: channel.id },
 				{ $set: newStateTree },
 				{ upsert: true }
 			)
@@ -99,7 +99,7 @@ function mergePayableIntoBalances(balances, events, paymentInfo) {
 }
 
 function logMerge(channel, eventAggrs) {
-	console.log(`Channel ${channel._id}: processing ${eventAggrs.length} event aggregates`)
+	console.log(`Channel ${channel.id}: processing ${eventAggrs.length} event aggregates`)
 }
 
 module.exports = { tick }

@@ -32,8 +32,11 @@ function getStatus(withTree, req, res) {
 	.then(function() {
 		if (withTree) {
 			const channelStateTreesCol = db.getMongo().collection('channelStateTrees')
-			return channelStateTreesCol.findOne({ _id: req.channel._id })
-			.then(function(tree) { resp.tree = tree })
+			return channelStateTreesCol.findOne({ _id: req.channel.id })
+			.then(function(tree) {
+				resp.balances = tree.balances
+				resp.lastEvAggr = tree.lastEvAggr
+			})
 		}
 	})
 	.then(function() {
@@ -45,7 +48,7 @@ function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
 
 	return channelsCol
-	.aggregate([{ '$project': { _id: 0, id: '$_id', status: 1 } }])
+	.find({}, { _id: 0 })
 	.limit(CHANNELS_FIND_MAX)
 	.toArray()
 	.then(function(channels) {
