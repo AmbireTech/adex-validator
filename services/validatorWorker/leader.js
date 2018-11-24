@@ -20,7 +20,11 @@ function persistAndPropagateValidatorMsg(channel, msg) {
 	// @TODO: figure out how to ensure the channel object is valid before reaching here; probably in the watcher
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const followers = channel.spec.validators.slice(1)
-	return validatorMsgCol.insertOne({ channelId: channel.id, from: adapter.whoami(), msg })
+	return validatorMsgCol.insertOne({
+		channelId: channel.id,
+		from: adapter.whoami(),
+		msg,
+	})
 	.then(function() {
 		return Promise.all(followers.map(function(validator) {
 			return propagateMsg(channel, validator, msg)

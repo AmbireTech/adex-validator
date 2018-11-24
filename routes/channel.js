@@ -64,7 +64,7 @@ function postValidatorMessages(req, res, next) {
 	}
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	// @TODO: more sophisticated validation
+	// @TODO: more sophisticated validation; perhaps make a model: new ValidatorMessage() and then .isValid()
 	const isValid = Array.isArray(req.body.messages)
 		&& req.body.messages.every(msg => msg.type === 'NewState' || msg.type === 'ApproveState')
 	if (!isValid) {
