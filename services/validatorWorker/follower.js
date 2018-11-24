@@ -16,8 +16,11 @@ function getLatestNewStateMsg(channel) {
 		from: channel.validators[0],
 		channelId: channel.id,
 		'msg.type': 'NewState',
-	}, { limit: 1, sort: { _id: -1 } })
-	.toArray(function([newStateMsg]) {
+	})
+	.sort({ _id: -1 })
+	.limit(1)
+	.toArray()
+	.then(function([newStateMsg]) {
 		// @TODO assert validity
 		console.log(newStateMsg)
 		return newStateMsg
