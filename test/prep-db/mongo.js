@@ -1,4 +1,8 @@
 db.sessions.insert({ _id: 'x8c9v1b2', uid: 'awesomeTestUser' })
+
+db.sessions.insert({ _id: 'AUTH_awesomeLeader', uid: 'awesomeLeader' })
+db.sessions.insert({ _id: 'AUTH_awesomeFollower', uid: 'awesomeFollower' })
+
 db.channels.insert({
 	// @TODO: document schema
 	_id: 'awesomeTestChannel',
