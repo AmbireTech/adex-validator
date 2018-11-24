@@ -37,6 +37,7 @@ validatorEvents
 - [x] validator worker: producer: basic reaping EventAggregates and updating the state
 - [x] validator worker: leader: signing, etherjs signer
 - [x] merkelize and sign: it should sort all hashes before putting into the tree
+- [ ] campaignSpec and/or extra info in channels
 - [ ] validator worker: propagate events; leader propagates NewState ev to follower(s), each follower propagates their ApproveState back to the leader
 - [ ] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
 - [ ] validator worker: follower: should validate each individual proposed state, and validate whether it's a valid state transition
@@ -52,3 +53,4 @@ validatorEvents
 - [ ] code TODOs
 - [ ] sentry: ensure there's an easy way to get all signed states historically, and at least one validator from which we can get a state signed by 2 (or more) at once; easiest solution is simply to allow getting last N validator events (which will contain sigs)
 - [ ] dockerize
+- [ ] special event types: e.g. validator fees

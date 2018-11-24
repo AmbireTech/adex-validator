@@ -9,7 +9,6 @@ function tick(channel) {
 	const stateTreeCol = db.getMongo().collection('channelStateTrees')
 
 	// @TODO obtain channel payment info
-	// @TODO leader/follower: update channel lastUpdated
 
 	return stateTreeCol.findOne({ _id: channel._id })
 	.then(function(stateTree) {
@@ -31,7 +30,11 @@ function tick(channel) {
 				return { channel }
 			}
 
-			const { balances, newStateTree } = mergeAggrs(stateTree, aggrs, { amount: 1 })
+			const { balances, newStateTree } = mergeAggrs(
+				stateTree,
+				aggrs,
+				{ amount: 1, depositAmount: channel.depositAmount }
+			)
 
 			return stateTreeCol
 			.updateOne(
@@ -54,7 +57,7 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 	const balances = {}
 	Object.keys(stateTree.balances).forEach(function(acc) {
 		balances[acc] = new BN(stateTree.balances[acc], 10)
-		assert.ok(!balances[acc].isNeg())
+		assert.ok(!balances[acc].isNeg(), 'balance should not be negative')
 	})
 
 	// Merge in all the aggrs
@@ -77,12 +80,21 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 }
 
 // Mutates the balances input
+// For now, this just disregards anything that goes over the depositAmount
 function mergePayableIntoBalances(balances, events, paymentInfo) {
 	if (!events) return
-	// @TODO: enforce total limit of balances here
+	// @TODO: get everything in BN already (events, paymentInfo)
+	// in other words, use BN.js everywhere
+	const total = Object.values(balances).reduce((a,b) => a.add(b), new BN(0))
+	let remaining = (new BN(paymentInfo.depositAmount, 10)).sub(total)
+	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
 	Object.keys(events).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		balances[acc] = balances[acc].add(new BN(events[acc] * paymentInfo.amount))
+		const toAdd = BN.min(remaining, new BN(events[acc] * paymentInfo.amount))
+		balances[acc] = balances[acc].add(toAdd)
+		remaining = remaining.sub(toAdd)
+
+		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
 	})
 }
 
