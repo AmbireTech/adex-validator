@@ -42,7 +42,7 @@ validatorMessages
 - [x] validator worker: follower: propagates their ApproveState back to the leader (or to EVERY other validator)
 - [x] validator worker: follower: should validate each individual proposed state, and validate whether it's a valid state transition
 - [x] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
-- [ ] validator worker: follower: monitor health
+- [ ] validator worker: follower: monitor health, more logging
 - [ ] validator worker: fix follower tick issue: https://github.com/AdExNetwork/adex-validator-stack-js/issues/5
 - [ ] adapter: make signing/whoami work (ethersjs signer)
 - [ ] aggregator: we should count by publisher, not by user

@@ -1,4 +1,5 @@
 const BN = require('bn.js')
+const assert = require('assert')
 const db = require('../../db')
 const adapter = require('../../adapter')
 const { persistAndPropagate } = require('./lib/propagation')
@@ -8,29 +9,29 @@ function tick({channel, newStateTree, balances}) {
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	return Promise.all([
 		getLatestMsg(channel.id, channel.validators[0], 'NewState'),
-		getLatestMsg(channel.Id, adapter.whoami(), 'ApproveState'),
+		getLatestMsg(channel.id, adapter.whoami(), 'ApproveState')
+			.then(augmentWithBalances),
 	])
 	.then(function([newMsg, approveMsg]) {
 		if (!newMsg) {
 			// there's nothing that we have to do
 			return
 		}
-		const prevBalancesRaw = approveMsg ? approveMsg.msg.balances : {}
-		const prevBalances = toBalanceTree(prevBalancesRaw)
-		const newBalancesRaw = newMsg.msg.balances
-		const newBalances = toBalanceTree(newBalancesRaw)
+
+		const prevBalances = toBalanceTree(approveMsg ? approveMsg.balances : {})
+		const newBalances = toBalanceTree(newMsg.balances)
 		if (!isValidTransition(channel, prevBalances, newBalances)) {
 			console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
 			return
 		}
 
-		const stateRoot = newMsg.msg.stateRoot
-		const sig = adapter.sign(stateRoot)
+		const stateRoot = newMsg.stateRoot
+		const signature = adapter.sign(stateRoot)
 		const otherValidators = channel.spec.validators.filter(v => v.id != adapter.whoami())
 		return persistAndPropagate(otherValidators, channel, {
 			type: 'ApproveState',
 			stateRoot: stateRoot,
-			sig,
+			signature,
 		})
 	})
 }
@@ -53,6 +54,7 @@ function sumTree(tree) {
 }
 
 function toBalanceTree(raw) {
+	assert.ok(raw && typeof(raw) === 'object', 'raw tree is a valid object')
 	const balances = {}
 	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = new BN(bal, 10))
 	return balances
@@ -70,9 +72,23 @@ function getLatestMsg(channelId, from, type) {
 	.sort({ _id: -1 })
 	.limit(1)
 	.toArray()
-	.then(function([msg]) {
+	.then(function([o]) {
 		// @TODO assert validity
-		return msg
+		return o ? o.msg : null
+	})
+}
+
+// ApproveState messages do not contain the full `balances`; so augment them
+function augmentWithBalances(approveMsg) {
+	if (!approveMsg) return
+
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	return validatorMsgCol.findOne({
+		'msg.type': 'NewState',
+		'msg.stateRoot': approveMsg.stateRoot,
+	})
+	.then(function({ msg }) {
+		return { ...approveMsg, balances: msg.balances }
 	})
 }
 
