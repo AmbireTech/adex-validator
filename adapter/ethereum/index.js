@@ -1,3 +1,5 @@
+const { MerkleTree, Channel } = require('adex-protocol-eth/js')
+
 function sessionFromToken(token) {
 	console.log('sessionFromToken TODO', token)
 	// @TODO
@@ -19,4 +21,8 @@ function sign(stateRoot) {
 	return `TODO signature for ${stateRoot.toString('hex')}`
 }
 
-module.exports = { sessionFromToken, whoami, sign }
+function getBalanceLeaf(acc, bal) {
+	return Channel.getBalanceLeaf(acc, bal)
+}
+
+module.exports = { sessionFromToken, whoami, sign, getBalanceLeaf, MerkleTree }
