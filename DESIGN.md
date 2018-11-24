@@ -54,3 +54,4 @@ validatorEvents
 - [ ] sentry: ensure there's an easy way to get all signed states historically, and at least one validator from which we can get a state signed by 2 (or more) at once; easiest solution is simply to allow getting last N validator events (which will contain sigs)
 - [ ] dockerize
 - [ ] special event types: e.g. validator fees
+- [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
