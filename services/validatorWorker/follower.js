@@ -34,8 +34,8 @@ function tick(channel) {
 }
 
 function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
-	const prevBalances = toBalanceTree(approveMsg ? approveMsg.balances : {})
-	const newBalances = toBalanceTree(newMsg.balances)
+	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
+	const newBalances = toBNMap(newMsg.balances)
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
 		return { nothingNew: true }
@@ -54,8 +54,8 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {
-	const sumPrev = sumTree(prev)
-	const sumNext = sumTree(next)
+	const sumPrev = sumMap(prev)
+	const sumNext = sumMap(next)
 	return sumNext >= sumPrev
 		&& sumNext <= channel.depositAmount
 		&& Object.entries(prev).every(([acc, bal]) => {
@@ -66,8 +66,8 @@ function isValidTransition(channel, prev, next) {
 }
 
 function getHealth(channel, our, approved) {
-	const sumOur = sumTree(our)
-	const sumApproved = sumTree(approved)
+	const sumOur = sumMap(our)
+	const sumApproved = sumMap(approved)
 	if (sumApproved.gte(sumOur)) {
 		return 'HEALTHY'
 	}
@@ -77,12 +77,12 @@ function getHealth(channel, our, approved) {
 	return 'HEALTHY'
 }
 
-function sumTree(tree) {
-	return Object.values(tree).reduce((a,b) => a.add(b), new BN(0))
+function sumMap(all) {
+	return Object.values(all).reduce((a,b) => a.add(b), new BN(0))
 }
 
-function toBalanceTree(raw) {
-	assert.ok(raw && typeof(raw) === 'object', 'raw tree is a valid object')
+function toBNMap(raw) {
+	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
 	const balances = {}
 	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = new BN(bal, 10))
 	return balances
