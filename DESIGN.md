@@ -42,12 +42,13 @@ validatorMessages
 - [x] validator worker: follower: propagates their ApproveState back to the leader (or to EVERY other validator)
 - [x] validator worker: follower: should validate each individual proposed state, and validate whether it's a valid state transition
 - [x] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
-- [ ] validator worker: fix follower tick issue: https://github.com/AdExNetwork/adex-validator-stack-js/issues/5, improved logging
+- [x] validator worker: fix follower tick issue: https://github.com/AdExNetwork/adex-validator-stack-js/issues/5, improved logging
 - [ ] validator worker: follower: monitor health, more logging
 - [ ] aggregator: we should count by publisher, not by user
 - [ ] auth: proper ethereum-based token (EWT/JWT?)
 - [ ] adapter: make signing/whoami work (ethersjs signer); consider moving current adapter to adapter/mock
 - [ ] watcher, ethereum configs
+- [ ] validator worker/watcher: propagate `init`
 - [ ] bench system, pipelined wrk
 - [ ] validator worker: respect campaignSpec and per-impression payment
 - [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
