@@ -27,7 +27,7 @@ db.connect()
 		})
 		.then(function([allResults, _]) {
 			// If nothing is new, snooze
-			if (allResults.every(x => x.nothingNew)) {
+			if (allResults.every(x => x && x.nothingNew)) {
 				logSnooze(allResults)
 				return wait(SNOOZE_TIME)
 			}

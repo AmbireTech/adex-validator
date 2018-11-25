@@ -35,7 +35,7 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 	const newBalances = toBalanceTree(newMsg.balances)
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
-		return
+		return { nothingNew: true }
 	}
 
 	const stateRoot = newMsg.stateRoot
