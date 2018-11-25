@@ -24,6 +24,7 @@ function propagate(receiver, channel, msg) {
 
 // receivers are the receiving validators
 function persistAndPropagate(receivers, channel, msg) {
+	logPropagate(receivers, channel, msg)
 	// @TODO: figure out how to ensure the channel object is valid before reaching here; probably in the watcher
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	return validatorMsgCol.insertOne({
@@ -41,5 +42,8 @@ function persistAndPropagate(receivers, channel, msg) {
 	})
 }
 
+function logPropagate(receivers, channel, msg) {
+	console.log(`validatorWorker: channel ${channel.id}: propagating ${msg.type} to ${receivers.length} validators`)
+}
 
 module.exports = { persistAndPropagate, propagate }
