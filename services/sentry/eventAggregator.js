@@ -45,14 +45,22 @@ function makeRecorder(channelId) {
 	const throttledPersistAndReset = throttle(persistAndReset, AGGREGATION_THROTTLE, { leading: false, trailing: true })
 
 	return function(userId, events) {
-		// @TODO only certain events are recognized, so ev.type should be from a whitelist
 		events.forEach(function(ev) {
-			if (!o.events[ev.type]) o.events[ev.type] = {}
-			if (!o.events[ev.type][userId]) o.events[ev.type][userId] = 0
-			o.events[ev.type][userId]++
+			// @TODO: this is one of the places to add other ev types
+			if (ev.type === 'IMPRESSION') {
+				o.events.IMPRESSION = mergeImpressionEv(o.events.IMPRESSION, ev)
+			}
 		})
 		throttledPersistAndReset()
 	}
+}
+
+function mergeImpressionEv(map, ev) {
+	if (!ev.publisher) return map
+	if (!map) map = {}
+	if (!map[ev.publisher]) map[ev.publisher] = 0
+	map[ev.publisher]++
+	return map
 }
 
 function logAggregate(channelId, o) {
