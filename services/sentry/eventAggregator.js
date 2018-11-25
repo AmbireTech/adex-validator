@@ -25,7 +25,7 @@ function makeRecorder(channelId) {
 		saveQueue = saveQueue.then(function() {
 			return eventAggrCol.insertOne(toSave)
 			.catch(function(err) {
-				console.error('eventAggregator fatal error; will re-try', err)
+				console.error('sentry: eventAggregator fatal error; will re-try', err)
 				persist(toSave)
 			})
 		})
@@ -38,7 +38,7 @@ function makeRecorder(channelId) {
 		// this has to be flushed immediately cause otherwise we will drop
 		// everything received while we're sending
 		o = newObject()
-		logAggregate(toSave)
+		logAggregate(channelId, toSave)
 		// to ensure we always persist toSave's, we have a separate queue
 		persist(toSave)
 	}
@@ -55,8 +55,8 @@ function makeRecorder(channelId) {
 	}
 }
 
-function logAggregate(o) {
-	console.log(`Event aggregate produced, events for ${Object.keys(o.events).length} users`)
+function logAggregate(channelId, o) {
+	console.log(`sentry: channel ${channelId}: event aggregate produced, events for ${Object.keys(o.events).length} users`)
 }
 
 module.exports = { record }

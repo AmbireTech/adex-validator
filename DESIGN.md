@@ -42,11 +42,11 @@ validatorMessages
 - [x] validator worker: follower: propagates their ApproveState back to the leader (or to EVERY other validator)
 - [x] validator worker: follower: should validate each individual proposed state, and validate whether it's a valid state transition
 - [x] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
-- [ ] validator worker: follower: monitor health, more logging
 - [ ] validator worker: fix follower tick issue: https://github.com/AdExNetwork/adex-validator-stack-js/issues/5, improved logging
-- [ ] adapter: make signing/whoami work (ethersjs signer); consider moving current adapter to adapter/mock
+- [ ] validator worker: follower: monitor health, more logging
 - [ ] aggregator: we should count by publisher, not by user
 - [ ] auth: proper ethereum-based token (EWT/JWT?)
+- [ ] adapter: make signing/whoami work (ethersjs signer); consider moving current adapter to adapter/mock
 - [ ] watcher, ethereum configs
 - [ ] bench system, pipelined wrk
 - [ ] validator worker: respect campaignSpec and per-impression payment
@@ -59,3 +59,4 @@ validatorMessages
 - [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
 - [ ] DB indexes for every complex query
 - [ ] session authentication scheme must be secured: we need to ensure the server supplies the challenge and maybe rotates it
+- [ ] tests: if we refactor the eventsAggr, validatorMessages, stateTrees access, we can unit test the producer, follower, leader
