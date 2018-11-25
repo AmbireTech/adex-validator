@@ -64,15 +64,16 @@ function postValidatorMessages(req, res, next) {
 	}
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	const messages = req.body.messages
 	// @TODO: more sophisticated validation; perhaps make a model: new ValidatorMessage() and then .isValid()
-	const isValid = Array.isArray(req.body.messages)
-		&& req.body.messages.every(msg => msg.type === 'NewState' || msg.type === 'ApproveState')
+	const isValid = Array.isArray(messages)
+		&& messages.every(msg => msg.type === 'NewState' || msg.type === 'ApproveState')
 	if (!isValid) {
 		res.sendStatus(400)
 		return
 	}
 
-	const toInsert = req.body.messages.map(
+	const toInsert = messages.map(
 		msg => validatorMsgCol.insertOne({
 			channelId: req.channel.id,
 			from: req.session.uid,
@@ -80,6 +81,14 @@ function postValidatorMessages(req, res, next) {
 		})
 	)
 	Promise.all(toInsert)
+	.then(function() {
+		// @TODO: is there a better way to do this
+		// we force an event aggregation (and therefore a follower tick) every time we see a NewState, since we need to react to it 
+		// see https://github.com/AdExNetwork/adex-validator-stack-js/issues/5
+		if (messages.some(msg => msg.type === 'NewState')) {
+			return eventAggrService.record(req.params.id, req.session.uid, [])
+		}
+	})
 	.then(function() {
 		res.send({ success: true })
 	})
