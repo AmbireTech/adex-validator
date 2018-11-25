@@ -44,7 +44,7 @@ validatorMessages
 - [x] validator worker: follower: state validation function; validator events for new states should always have the FULL state; so that the follower can easily compare old/new
 - [x] validator worker: fix follower tick issue: https://github.com/AdExNetwork/adex-validator-stack-js/issues/5, improved logging
 - [x] validator worker: follower: monitor health
-- [ ] aggregator: we should count by publisher, not by user
+- [x] aggregator: we should count by publisher, not by user
 - [ ] auth: proper ethereum-based token (EWT/JWT?)
 - [ ] adapter: make signing/whoami work (ethersjs signer); consider moving current adapter to adapter/mock
 - [ ] watcher, ethereum configs
