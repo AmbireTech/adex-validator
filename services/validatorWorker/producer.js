@@ -4,7 +4,7 @@ const db = require('../../db')
 
 const MAX_PER_TICK = 100
 
-function tick(channel) {
+function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const stateTreeCol = db.getMongo().collection('channelStateTrees')
 
@@ -26,7 +26,7 @@ function tick(channel) {
 		.then(function(aggrs) {
 			logMerge(channel, aggrs)
 
-			if (!aggrs.length) {
+			if (!(aggrs.length || force)) {
 				return { channel }
 			}
 

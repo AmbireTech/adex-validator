@@ -82,14 +82,6 @@ function postValidatorMessages(req, res, next) {
 	)
 	Promise.all(toInsert)
 	.then(function() {
-		// @TODO: is there a better way to do this
-		// we force an event aggregation (and therefore a follower tick) every time we see a NewState, since we need to react to it 
-		// see https://github.com/AdExNetwork/adex-validator-stack-js/issues/5
-		if (messages.some(msg => msg.type === 'NewState')) {
-			return eventAggrService.record(req.params.id, req.session.uid, [])
-		}
-	})
-	.then(function() {
 		res.send({ success: true })
 	})
 	.catch(next)

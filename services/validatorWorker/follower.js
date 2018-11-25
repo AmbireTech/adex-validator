@@ -6,11 +6,6 @@ const { persistAndPropagate } = require('./lib/propagation')
 const producer = require('./producer')
 
 function tick(channel) {
-	return producer.tick(channel)
-		.then(res => res.newStateTree ? afterProducer(res) : { nothingNew: true })
-}
-
-function afterProducer({channel, newStateTree, balances}) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	return Promise.all([
@@ -19,26 +14,37 @@ function afterProducer({channel, newStateTree, balances}) {
 			.then(augmentWithBalances),
 	])
 	.then(function([newMsg, approveMsg]) {
-		if (!newMsg) {
-			// there's nothing that we have to do
-			return
+		const latestApproved = newMsg && approveMsg && newMsg.stateRoot == approveMsg.stateRoot 
+		if (!newMsg || latestApproved) {
+			// there are no NewState messages, only merge all eventAggrs
+			return producer.tick(channel)
+			.then(function(res) {
+				return { nothingNew: !res.newStateTree }
+			})
 		}
 
-		const prevBalances = toBalanceTree(approveMsg ? approveMsg.balances : {})
-		const newBalances = toBalanceTree(newMsg.balances)
-		if (!isValidTransition(channel, prevBalances, newBalances)) {
-			console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
-			return
-		}
-
-		const stateRoot = newMsg.stateRoot
-		const signature = adapter.sign(stateRoot)
-		const otherValidators = channel.spec.validators.filter(v => v.id != adapter.whoami())
-		return persistAndPropagate(otherValidators, channel, {
-			type: 'ApproveState',
-			stateRoot: stateRoot,
-			signature,
+		return producer.tick(channel, true)
+		.then(function(res) {
+			return onNewState({ ...res, newMsg, approveMsg })
 		})
+	})
+}
+
+function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
+	const prevBalances = toBalanceTree(approveMsg ? approveMsg.balances : {})
+	const newBalances = toBalanceTree(newMsg.balances)
+	if (!isValidTransition(channel, prevBalances, newBalances)) {
+		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
+		return
+	}
+
+	const stateRoot = newMsg.stateRoot
+	const signature = adapter.sign(stateRoot)
+	const otherValidators = channel.spec.validators.filter(v => v.id != adapter.whoami())
+	return persistAndPropagate(otherValidators, channel, {
+		type: 'ApproveState',
+		stateRoot: stateRoot,
+		signature,
 	})
 }
 
