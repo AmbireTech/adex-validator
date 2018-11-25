@@ -5,6 +5,9 @@ const adapter = require('../../adapter')
 const { persistAndPropagate } = require('./lib/propagation')
 const producer = require('./producer')
 
+// in primilles
+const HEALTH_THRESHOLD = new BN(950)
+
 function tick(channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
@@ -44,7 +47,7 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 	return persistAndPropagate(otherValidators, channel, {
 		type: 'ApproveState',
 		stateRoot: stateRoot,
-		health: getHealth(channel, balances, newMsg.balances),
+		health: getHealth(channel, balances, newBalances),
 		signature,
 	})
 }
@@ -63,7 +66,14 @@ function isValidTransition(channel, prev, next) {
 }
 
 function getHealth(channel, our, approved) {
-	// @TODO
+	const sumOur = sumTree(our)
+	const sumApproved = sumTree(approved)
+	if (sumApproved.gte(sumOur)) {
+		return 'HEALTHY'
+	}
+	if (sumApproved.mul(new BN(1000)).div(sumOur).lt(HEALTH_THRESHOLD)) {
+		return 'UNHEALTHY'
+	}
 	return 'HEALTHY'
 }
 
