@@ -2,7 +2,6 @@
 const assert = require('assert')
 const db = require('../db')
 const adapter = require('../adapter')
-const producer = require('../services/validatorWorker/producer')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
 
@@ -28,7 +27,7 @@ db.connect()
 		})
 		.then(function([allResults, _]) {
 			// If nothing is new, snooze
-			if (allResults.every(x => !x.newStateTree)) {
+			if (allResults.every(x => x.nothingNew)) {
 				logSnooze(allResults)
 				return wait(SNOOZE_TIME)
 			}
@@ -48,21 +47,12 @@ db.connect()
 })
 
 function validatorTick(channel) {
-	return producer.tick(channel)
-	.then(function(result) {
-		// NOTE: this must always return result
-		// if there is no no new state, do nothing
-		if (!result.newStateTree) {
-			return result
-		}
+	const validatorIdx = channel.validators.indexOf(adapter.whoami())
+	assert.ok(validatorIdx >= 0, 'validatorTick: processing a channel where we are not validating')
 
-		const validatorIdx = channel.validators.indexOf(adapter.whoami())
-		assert.ok(validatorIdx >= 0, 'validatorTick: processing a channel where we are not validating')
-
-		const isLeader = validatorIdx == 0
-		const tick = isLeader ? leader.tick : follower.tick
-		return tick(result).then(() => result)
-	})
+	const isLeader = validatorIdx == 0
+	const tick = isLeader ? leader.tick : follower.tick
+	return tick(channel)
 }
 
 function wait(ms) {

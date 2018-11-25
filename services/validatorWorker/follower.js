@@ -3,8 +3,14 @@ const assert = require('assert')
 const db = require('../../db')
 const adapter = require('../../adapter')
 const { persistAndPropagate } = require('./lib/propagation')
+const producer = require('./producer')
 
-function tick({channel, newStateTree, balances}) {
+function tick(channel) {
+	return producer.tick(channel)
+		.then(res => res.newStateTree ? afterProducer(res) : { nothingNew: true })
+}
+
+function afterProducer({channel, newStateTree, balances}) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	return Promise.all([
