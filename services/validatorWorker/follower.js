@@ -44,21 +44,27 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 	return persistAndPropagate(otherValidators, channel, {
 		type: 'ApproveState',
 		stateRoot: stateRoot,
+		health: getHealth(channel, balances, newMsg.balances),
 		signature,
 	})
 }
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
-function isValidTransition(channel, prevTree, newTree) {
-	const sumPrev = sumTree(prevTree)
-	const sumNew = sumTree(newTree)
+function isValidTransition(channel, from, to) {
+	const sumPrev = sumTree(from)
+	const sumNew = sumTree(to)
 	return sumNew >= sumPrev
 		&& sumNew <= channel.depositAmount
-		&& Object.entries(newTree).every(([acc, bal]) => {
-			const prevBal = prevTree[acc]
+		&& Object.entries(to).every(([acc, bal]) => {
+			const prevBal = from[acc]
 			if (!prevBal) return true
 			return bal.gte(prevBal)
 		})
+}
+
+function getHealth(channel, our, approved) {
+	// @TODO
+	return 'HEALTHY'
 }
 
 function sumTree(tree) {
