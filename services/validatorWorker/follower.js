@@ -50,15 +50,15 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 }
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
-function isValidTransition(channel, from, to) {
-	const sumPrev = sumTree(from)
-	const sumNew = sumTree(to)
-	return sumNew >= sumPrev
-		&& sumNew <= channel.depositAmount
-		&& Object.entries(to).every(([acc, bal]) => {
-			const prevBal = from[acc]
-			if (!prevBal) return true
-			return bal.gte(prevBal)
+function isValidTransition(channel, prev, next) {
+	const sumPrev = sumTree(prev)
+	const sumNext = sumTree(next)
+	return sumNext >= sumPrev
+		&& sumNext <= channel.depositAmount
+		&& Object.entries(prev).every(([acc, bal]) => {
+			const nextBal = next[acc]
+			if (!nextBal) return false
+			return nextBal.gte(bal)
 		})
 }
 
