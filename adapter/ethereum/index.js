@@ -1,10 +1,5 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 
-function sessionFromToken(token) {
-	console.log('sessionFromToken TODO', token)
-	// @TODO
-	return Promise.resolve(null)
-}
 
 function whoami() {
 	// @TODO
@@ -25,6 +20,12 @@ function getBalanceLeaf(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
+// Authentication tokens
+function sessionFromToken(token) {
+	console.log('sessionFromToken TODO', token)
+	// @TODO
+	return Promise.resolve(null)
+}
 function getAuthFor(validator) {
 	// @TODO
 	return Promise.resolve(`AUTH_${whoami()}`)

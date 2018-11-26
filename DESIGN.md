@@ -61,3 +61,4 @@ validatorMessages
 - [ ] DB indexes for every complex query
 - [ ] session authentication scheme must be secured: we need to ensure the server supplies the challenge and maybe rotates it
 - [ ] tests: if we refactor the eventsAggr, validatorMessages, stateTrees access, we can unit test the producer, follower, leader
+- [ ] substrate adapter
