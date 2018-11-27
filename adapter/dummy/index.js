@@ -9,7 +9,7 @@ function whoami() {
 }
 
 function sign(stateRoot) {
-	return `Dummy adapter signature for ${stateRoot.toString('hex')} by ${whoami()}`
+	return Promise.resolve(`Dummy adapter signature for ${stateRoot.toString('hex')} by ${whoami()}`)
 }
 
 function getBalanceLeaf(acc, bal) {

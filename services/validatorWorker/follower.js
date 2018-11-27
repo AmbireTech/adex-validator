@@ -42,17 +42,20 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 		return { nothingNew: true }
 	}
 
+	const otherValidators = channel.spec.validators.filter(v => v.id != adapter.whoami())
 	const stateRoot = newMsg.stateRoot
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
-	const signature = adapter.sign(stateRootRaw)
-	const otherValidators = channel.spec.validators.filter(v => v.id != adapter.whoami())
-	return persistAndPropagate(otherValidators, channel, {
-		type: 'ApproveState',
-		stateRoot: stateRoot,
-		health: getHealth(channel, balances, newBalances),
-		signature,
+	return adapter.sign(stateRootRaw)
+	.then(function(signature) {
+		return persistAndPropagate(otherValidators, channel, {
+			type: 'ApproveState',
+			stateRoot: stateRoot,
+			health: getHealth(channel, balances, newBalances),
+			signature,
+		})
 	})
 }
+
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {

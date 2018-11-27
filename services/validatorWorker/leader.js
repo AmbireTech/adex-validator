@@ -13,13 +13,15 @@ function afterProducer({channel, newStateTree, balances}) {
 	const elems = Object.keys(balances).map(acc => adapter.getBalanceLeaf(acc, balances[acc]))
 	const tree = new adapter.MerkleTree(elems)
 	const stateRootRaw = tree.getRoot()
-	const signature = adapter.sign(stateRootRaw)
-	const stateRoot = stateRootRaw.toString('hex')
-	return persistAndPropagate(followers, channel, {
-		type: 'NewState',
-		...newStateTree,
-		stateRoot,
-		signature,
+	return adapter.sign(stateRootRaw)
+	.then(function(signature) {
+		const stateRoot = stateRootRaw.toString('hex')
+		return persistAndPropagate(followers, channel, {
+			type: 'NewState',
+			...newStateTree,
+			stateRoot,
+			signature,
+		})
 	})
 }
 
