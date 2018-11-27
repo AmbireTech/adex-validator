@@ -1,1 +1,1 @@
-module.exports = require('./ethereum')
+module.exports = require('./dummy')
