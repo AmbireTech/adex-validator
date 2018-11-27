@@ -34,6 +34,7 @@ function tick(channel) {
 }
 
 function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
+	// @TODO: how do we ensure the validity of newMsg?
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
@@ -42,7 +43,8 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 	}
 
 	const stateRoot = newMsg.stateRoot
-	const signature = adapter.sign(stateRoot)
+	const stateRootRaw = Buffer.from(stateRoot, 'hex')
+	const signature = adapter.sign(stateRootRaw)
 	const otherValidators = channel.spec.validators.filter(v => v.id != adapter.whoami())
 	return persistAndPropagate(otherValidators, channel, {
 		type: 'ApproveState',
