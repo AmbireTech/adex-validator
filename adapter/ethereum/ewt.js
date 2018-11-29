@@ -1,6 +1,8 @@
 const base64 = require('base64url')
+const ethers = require('ethers')
 
 // see https://github.com/ethereum/EIPs/issues/1341
+// Implements EIP 1341: Ethereum Web Tokens
 
 const HEADER = base64.encode(JSON.stringify({
 	type: 'JWT',
@@ -21,8 +23,13 @@ function sign(signer, payload) {
 	})
 }
 
-function verify(token, token) {
-	
+function verify(signer, token) {
+	const parts = token.split('.')
+	const msg = parts.slice(0, 2).join('.')
+	const sigBuf = Buffer.from(parts[2], 'base64')
+	return Promise.resolve(
+		ethers.utils.verifyMessage(msg, sigBuf) === signer.address
+	)
 }
 
 module.exports = { sign, verify }
