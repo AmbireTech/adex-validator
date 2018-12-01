@@ -43,10 +43,8 @@ function sessionFromToken(token) {
 
 function getAuthFor(validator) {
 	// we will self-generate a challenge to contain whoever we're authenticating to, the validity period and the current time
-	// we will sign that challenge and use that, and build a complete token containing hash.whoami.challenge.sig
+	// we will sign that challenge and use that, and build a complete token using the EWT (JWT subset) standard
 	// we would allow /session_revoke, which forever revokes the session (early; otherwise it will self-revoke when the validity period expires)
-	// EWT/JWT is kind of similar to this, so reconsider it
-	// also, we need to cache those! and maybe check them first before saving to the DB
 	if (tokensForAuth.has(validator.id)) {
 		return Promise.resolve(tokensForAuth.get(validator.id))
 	}
@@ -62,6 +60,11 @@ function getAuthFor(validator) {
 	})
 }
 
-//const p = () => getAuthFor({ url: 'http://localhost:8005' }).then(t => sessionFromToken(t)).then(x => console.log(x))
+// ~230ms for 100k operations; takes minutes to do it w/o cache
+//const work = () => getAuthFor({ url: 'http://localhost:8005' }).then(t => sessionFromToken(t))
+//const start = Date.now()
+//let p = Promise.resolve()
+//for (var i=0; i!=100000; i++) p = p.then(work)
+//p.then(() => console.log(Date.now()-start))
 
 module.exports = { sessionFromToken, whoami, sign, getBalanceLeaf, getAuthFor, MerkleTree }
