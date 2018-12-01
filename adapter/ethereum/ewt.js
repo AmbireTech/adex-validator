@@ -23,13 +23,12 @@ function sign(signer, payload) {
 	})
 }
 
-function verify(signer, token) {
+function verify(token) {
 	const parts = token.split('.')
 	const msg = parts.slice(0, 2).join('.')
 	const sigBuf = Buffer.from(parts[2], 'base64')
-	return Promise.resolve(
-		ethers.utils.verifyMessage(msg, sigBuf) === signer.address
-	)
+	const recoveredAddr = ethers.utils.verifyMessage(msg, sigBuf)
+	return Promise.resolve(recoveredAddr)
 }
 
 module.exports = { sign, verify }
