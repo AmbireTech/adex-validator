@@ -9,9 +9,15 @@ const tokensVerified = new Map()
 // Tokens that we've generated to authenticate with someone (address => token)
 const tokensForAuth = new Map()
 
-// @TODO some relatively secure & persistent way to initialize this wallet; there is fromEncryptedJson, fromMnemonic
-const wallet = Wallet.createRandom()
-console.log(`Ethereum address: ${whoami()}`)
+let wallet
+
+function init() {
+	return Wallet.fromEncryptedJson(process.env.ETH_JSON, process.env.ETH_PWD)
+	.then(w => {
+		wallet = w
+		console.log(`Ethereum address: ${whoami()}`)
+	})
+}
 
 function whoami() {
 	return wallet.address
@@ -67,4 +73,4 @@ function getAuthFor(validator) {
 //for (var i=0; i!=100000; i++) p = p.then(work)
 //p.then(() => console.log(Date.now()-start))
 
-module.exports = { sessionFromToken, whoami, sign, getBalanceLeaf, getAuthFor, MerkleTree }
+module.exports = { init, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }

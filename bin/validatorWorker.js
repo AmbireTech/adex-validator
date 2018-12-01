@@ -12,6 +12,9 @@ const WAIT_TIME = 1000
 
 db.connect()
 .then(function() {
+	return adapter.init()
+})
+.then(function() {
 	const channelsCol = db.getMongo().collection('channels')
 	
 	function allChannelsTick() {

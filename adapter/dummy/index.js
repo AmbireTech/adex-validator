@@ -1,8 +1,12 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 
+function init() {
+	return Promise.resolve()
+}
+
 function whoami() {
 	if (!process.env.TEST_IDENTITY) {
-		console.error('ethereum adapter unimplemented! please run with TEST_IDENTITY=awesomeLeader (or awesomeFollower)')
+		console.error('using dummy adapter! please run with TEST_IDENTITY=awesomeLeader (or awesomeFollower)')
 		process.exit(1)
 	}
 	return process.env.TEST_IDENTITY
@@ -25,4 +29,4 @@ function getAuthFor(validator) {
 	return Promise.resolve(`AUTH_${whoami()}`)
 }
 
-module.exports = { sessionFromToken, whoami, sign, getBalanceLeaf, getAuthFor, MerkleTree }
+module.exports = { init, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }
