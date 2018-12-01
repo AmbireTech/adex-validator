@@ -1,6 +1,9 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 const { Wallet } = require('ethers')
 const url = require('url')
+const util = require('util')
+const fs = require('fs')
+const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
 
 // Tokens that we have verified (tokenId => session)
@@ -12,7 +15,8 @@ const tokensForAuth = new Map()
 let wallet
 
 function init() {
-	return Wallet.fromEncryptedJson(process.env.ETH_JSON, process.env.ETH_PWD)
+	return readFile(process.env.ETH_KEYSTORE)
+	.then(json => Wallet.fromEncryptedJson(json, process.env.ETH_PWD))
 	.then(w => {
 		wallet = w
 		console.log(`Ethereum address: ${whoami()}`)
