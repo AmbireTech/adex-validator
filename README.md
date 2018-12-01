@@ -49,6 +49,12 @@ POST `/channel/validator-messages`
 
 ``DB_MONGO_NAME``
 
+### Ethereum adapter
+
+``ETH_KEYSTORE``
+
+``ETH_PWD``
+
 
 ## Testing setup
 
@@ -64,7 +70,7 @@ npm start
 #### Validator Worker
 
 ```
-TEST_IDENTITY=awesomeLeader node bin/validatorWorker.js
+ADAPTER=dummy TEST_IDENTITY=awesomeLeader node bin/validatorWorker.js
 ```
 
 
@@ -79,5 +85,5 @@ DB_MONGO_NAME=adexValidatorFollower PORT=8006 npm start
 
 #### Validator Worker
 ```
-TEST_IDENTITY=awesomeFollower DB_MONGO_NAME=adexValidatorFollower node bin/validatorWorker.js
+ADAPTER=dummy TEST_IDENTITY=awesomeFollower DB_MONGO_NAME=adexValidatorFollower node bin/validatorWorker.js
 ```
