@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const assert = require('assert')
+const yargs = require('yargs')
 const db = require('../db')
 const adapter = require('../adapter')
 const leader = require('../services/validatorWorker/leader')
@@ -10,9 +11,16 @@ const MAX_CHANNELS = 512
 const SNOOZE_TIME = 20000
 const WAIT_TIME = 1000
 
+const argv = yargs
+	.usage('Usage $0 [options]')
+	.describe('keystoreFile', 'path to JSON Ethereum keystore file')
+	.describe('keystorePwd', 'password to unlock the Ethereum keystore file')
+	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
+	.argv
+
 db.connect()
 .then(function() {
-	return adapter.init()
+	return adapter.init(argv)
 })
 .then(function() {
 	const channelsCol = db.getMongo().collection('channels')

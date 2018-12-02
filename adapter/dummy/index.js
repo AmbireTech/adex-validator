@@ -3,8 +3,8 @@ const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 let identity
 
 function init(opts) {
-	if (typeof(opts.identity) !== 'string') throw 'dummy adapter: identity required'
-	identity = opts.identity
+	if (typeof(opts.dummyIdentity) !== 'string') throw 'dummy adapter: identity required'
+	identity = opts.dummyIdentity
 	return Promise.resolve()
 }
 
