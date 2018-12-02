@@ -1,15 +1,15 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 
-function init() {
+let identity
+
+function init(opts) {
+	if (typeof(opts.identity) !== 'string') throw 'dummy adapter: identity required'
+	identity = opts.identity
 	return Promise.resolve()
 }
 
 function whoami() {
-	if (!process.env.TEST_IDENTITY) {
-		console.error('using dummy adapter! please run with TEST_IDENTITY=awesomeLeader (or awesomeFollower)')
-		process.exit(1)
-	}
-	return process.env.TEST_IDENTITY
+	return identity
 }
 
 function sign(stateRoot) {

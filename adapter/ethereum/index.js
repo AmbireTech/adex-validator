@@ -14,9 +14,11 @@ const tokensForAuth = new Map()
 
 let wallet
 
-function init() {
-	return readFile(process.env.ETH_KEYSTORE)
-	.then(json => Wallet.fromEncryptedJson(json, process.env.ETH_PWD))
+function init(opts) {
+	if (typeof(opts.keystoreFile) !== 'string') throw 'ethereum adapter: keystoreFile required'
+	if (typeof(opts.keystorePwd) !== 'string') throw 'ethereum adapter: keystorePwd required'
+	return readFile(opts.keystoreFile)
+	.then(json => Wallet.fromEncryptedJson(json, opts.keystorePwd))
 	.then(w => {
 		wallet = w
 		console.log(`Ethereum address: ${whoami()}`)
