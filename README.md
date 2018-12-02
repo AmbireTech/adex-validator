@@ -49,12 +49,15 @@ POST `/channel/validator-messages`
 
 ``DB_MONGO_NAME``
 
-### Ethereum adapter
+## Command line arguments
 
-``ETH_KEYSTORE``
+``--adapter`` - `dummy` or `ethereum`
 
-``ETH_PWD``
+``--keystoreFile`` - path to JSON keystore file (Ethereum adapter)
 
+``--keystorePwd`` - password for the JSON keystore file (Ethereum adapter)
+
+``--dummyIdentity`` - dummy adapter identity (Dummy adapter)
 
 ## Testing setup
 
