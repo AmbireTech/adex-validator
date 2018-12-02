@@ -3,13 +3,19 @@ const producer = require('./producer')
 
 function tick(adapter, channel) {
 	return producer.tick(channel)
-		.then(res => res.newStateTree ? afterProducer(adapter, res) : { nothingNew: true })
+		.then(
+			res => res.newStateTree ?
+				afterProducer(adapter, res)
+				: { nothingNew: true }
+		)
 }
 
 function afterProducer(adapter, {channel, newStateTree, balances}) {
 	const followers = channel.spec.validators.slice(1)
 	// Note: MerkleTree takes care of deduplicating and sorting
-	const elems = Object.keys(balances).map(acc => adapter.getBalanceLeaf(acc, balances[acc]))
+	const elems = Object.keys(balances).map(
+		acc => adapter.getBalanceLeaf(acc, balances[acc])
+	)
 	const tree = new adapter.MerkleTree(elems)
 	const stateRootRaw = tree.getRoot()
 	return adapter.sign(stateRootRaw)
