@@ -1,4 +1,3 @@
-const adapter = require('../adapter')
 const db = require('../db')
 
 function channelLoad(req, res, next) {
