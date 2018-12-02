@@ -1,8 +1,7 @@
 const fetch = require('node-fetch')
 const db = require('../../../db')
-const adapter = require('../../../adapter')
 
-function propagate(receiver, channel, msg) {
+function propagate(adapter, receiver, channel, msg) {
 	return adapter.getAuthFor(receiver)
 	.then(function(authToken) {
 		return fetch(`${receiver.url}/channel/${channel.id}/validator-messages`, {
@@ -23,7 +22,7 @@ function propagate(receiver, channel, msg) {
 }
 
 // receivers are the receiving validators
-function persistAndPropagate(receivers, channel, msg) {
+function persistAndPropagate(adapter, receivers, channel, msg) {
 	logPropagate(receivers, channel, msg)
 	// @TODO: figure out how to ensure the channel object is valid before reaching here; probably in the watcher
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
@@ -34,7 +33,7 @@ function persistAndPropagate(receivers, channel, msg) {
 	})
 	.then(function() {
 		return Promise.all(receivers.map(function(receiver) {
-			return propagate(receiver, channel, msg)
+			return propagate(adapter, receiver, channel, msg)
 			.catch(function(e) {
 				console.error(`validatorWorker: Unable to propagate ${msg.type} to ${receiver.id}: ${e.message}`)
 			})

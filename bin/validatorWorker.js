@@ -2,7 +2,7 @@
 const assert = require('assert')
 const yargs = require('yargs')
 const db = require('../db')
-const adapter = require('../adapter')
+const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
 
@@ -13,10 +13,16 @@ const WAIT_TIME = 1000
 
 const argv = yargs
 	.usage('Usage $0 [options]')
+	.describe('adapter', 'the adapter for authentication and signing')
+	.choices('adapter', Object.keys(adapters))
+	.default('adapter', 'ethereum')
 	.describe('keystoreFile', 'path to JSON Ethereum keystore file')
 	.describe('keystorePwd', 'password to unlock the Ethereum keystore file')
 	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
+	.demandOption(['adapter'])
 	.argv
+
+const adapter = adapters[argv.adapter]
 
 db.connect()
 .then(function() {
@@ -63,7 +69,7 @@ function validatorTick(channel) {
 
 	const isLeader = validatorIdx == 0
 	const tick = isLeader ? leader.tick : follower.tick
-	return tick(channel)
+	return tick(adapter, channel)
 }
 
 function wait(ms) {

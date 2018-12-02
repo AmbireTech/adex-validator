@@ -1,6 +1,5 @@
 const express = require('express')
 const db = require('../db')
-const { authRequired } = require('../middlewares/auth')
 const { channelLoad, channelIfExists } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 
@@ -99,6 +98,15 @@ function postEvents(req, res, next) {
 		res.send({ success: true })
 	})
 	.catch(next)
+}
+
+// Helpers
+function authRequired(req, res, next) {
+	if (!req.session) {
+		res.sendStatus(401)
+		return
+	}
+	next()
 }
 
 

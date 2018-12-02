@@ -1,5 +1,7 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 
+const db = require('../../db')
+
 let identity
 
 function init(opts) {
@@ -22,7 +24,8 @@ function getBalanceLeaf(acc, bal) {
 
 // Authentication tokens
 function sessionFromToken(token) {
-	return Promise.resolve(null)
+	const sessionCol = db.getMongo().collection('sessions')
+	return sessionCol.findOne({ _id: token })
 }
 function getAuthFor(validator) {
 	// NOTE: for this to work, we need the sessions created in the database beforehand

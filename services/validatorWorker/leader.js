@@ -1,13 +1,12 @@
-const adapter = require('../../adapter')
 const { persistAndPropagate } = require('./lib/propagation')
 const producer = require('./producer')
 
-function tick(channel) {
+function tick(adapter, channel) {
 	return producer.tick(channel)
-		.then(res => res.newStateTree ? afterProducer(res) : { nothingNew: true })
+		.then(res => res.newStateTree ? afterProducer(adapter, res) : { nothingNew: true })
 }
 
-function afterProducer({channel, newStateTree, balances}) {
+function afterProducer(adapter, {channel, newStateTree, balances}) {
 	const followers = channel.spec.validators.slice(1)
 	// Note: MerkleTree takes care of deduplicating and sorting
 	const elems = Object.keys(balances).map(acc => adapter.getBalanceLeaf(acc, balances[acc]))
@@ -16,7 +15,7 @@ function afterProducer({channel, newStateTree, balances}) {
 	return adapter.sign(stateRootRaw)
 	.then(function(signature) {
 		const stateRoot = stateRootRaw.toString('hex')
-		return persistAndPropagate(followers, channel, {
+		return persistAndPropagate(adapter, followers, channel, {
 			type: 'NewState',
 			...newStateTree,
 			stateRoot,

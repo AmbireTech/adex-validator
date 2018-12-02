@@ -1,14 +1,13 @@
 const BN = require('bn.js')
 const assert = require('assert')
 const db = require('../../db')
-const adapter = require('../../adapter')
 const { persistAndPropagate } = require('./lib/propagation')
 const producer = require('./producer')
 
 // in primilles
 const HEALTH_THRESHOLD = new BN(950)
 
-function tick(channel) {
+function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	return Promise.all([
@@ -28,12 +27,12 @@ function tick(channel) {
 
 		return producer.tick(channel, true)
 		.then(function(res) {
-			return onNewState({ ...res, newMsg, approveMsg })
+			return onNewState(adapter, { ...res, newMsg, approveMsg })
 		})
 	})
 }
 
-function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
+function onNewState(adapter, {channel, newStateTree, balances, newMsg, approveMsg}) {
 	// @TODO: how do we ensure the validity of newMsg?
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
@@ -47,7 +46,7 @@ function onNewState({channel, newStateTree, balances, newMsg, approveMsg}) {
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 	return adapter.sign(stateRootRaw)
 	.then(function(signature) {
-		return persistAndPropagate(otherValidators, channel, {
+		return persistAndPropagate(adapter, otherValidators, channel, {
 			type: 'ApproveState',
 			stateRoot: stateRoot,
 			health: getHealth(channel, balances, newBalances),
