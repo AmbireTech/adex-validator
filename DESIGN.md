@@ -48,7 +48,7 @@ validatorMessages
 - [x] auth: proper ethereum-based token (EWT/JWT?)
 - [x] adapter: make signing/whoami work (ethersjs signer); consider moving current adapter to adapter/mock
 - [ ] watcher, ethereum configs
-- [ ] validator worker/watcher: propagate `init`
+- [ ] validator worker/watcher: propagate `init`; should this be in the watcher?
 - [ ] bench system, pipelined wrk
 - [ ] validator worker: respect campaignSpec and per-impression payment
 - [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
