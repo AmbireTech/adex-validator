@@ -1,6 +1,5 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 const { Wallet } = require('ethers')
-const url = require('url')
 const util = require('util')
 const fs = require('fs')
 const readFile = util.promisify(fs.readFile)
@@ -62,7 +61,7 @@ function getAuthFor(validator) {
 	}
 
 	const payload = {
-		host: url.parse(validator.url).host,
+		id: validator.id,
 		era: Math.floor(Date.now()/60000),
 	}
 	return ewt.sign(wallet, payload)
@@ -73,7 +72,7 @@ function getAuthFor(validator) {
 }
 
 // ~230ms for 100k operations; takes minutes to do it w/o cache
-//const work = () => getAuthFor({ url: 'http://localhost:8005' }).then(t => sessionFromToken(t))
+//const work = () => getAuthFor({ id: 'awesomeFollower' }).then(t => sessionFromToken(t))
 //const start = Date.now()
 //let p = Promise.resolve()
 //for (var i=0; i!=100000; i++) p = p.then(work)
