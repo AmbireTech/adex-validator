@@ -14,7 +14,7 @@ function propagate(adapter, receiver, channel, msg) {
 		})
 		.then(function(resp) {
 			if (resp.status !== 200) {
-				return Promise.reject('request failed with status code ' + resp.status)
+				return Promise.reject(new Error('request failed with status code ' + resp.status))
 			}
 			return resp.json()
 		})
@@ -35,7 +35,7 @@ function persistAndPropagate(adapter, receivers, channel, msg) {
 		return Promise.all(receivers.map(function(receiver) {
 			return propagate(adapter, receiver, channel, msg)
 			.catch(function(e) {
-				console.error(`validatorWorker: Unable to propagate ${msg.type} to ${receiver.id}: ${e.message}`)
+				console.error(`validatorWorker: Unable to propagate ${msg.type} to ${receiver.id}: ${e.message || e}`)
 			})
 		}))
 	})
