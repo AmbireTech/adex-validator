@@ -15,6 +15,8 @@ function tick(channel, force) {
 		return stateTree || { balances: {}, lastEvAggr: new Date(0) }
 	})
 	.then(function(stateTree) {
+		// isStateTreeNew is used in order to make the system produce a NewState on each channel we find for the first time
+		const isStateTreeNew = !stateTree._id
 		return eventAggrCol.find({
 			channelId: channel.id,
 			created: { $gt: stateTree.lastEvAggr }
@@ -26,7 +28,8 @@ function tick(channel, force) {
 		.then(function(aggrs) {
 			logMerge(channel, aggrs)
 
-			if (!(aggrs.length || force)) {
+			const shouldUpdate = force || isStateTreeNew || aggrs.length
+			if (!shouldUpdate) {
 				return { channel }
 			}
 
