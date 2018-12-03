@@ -48,9 +48,9 @@ validatorMessages
 - [x] auth: proper ethereum-based token (EWT/JWT?)
 - [x] adapter: make signing/whoami work (ethersjs signer); consider moving current adapter to adapter/mock
 - [x] validator worker/watcher: re-consider `init` event: we won't do it; instead; we will just do a round of NewState/ApproveState
-- [ ] potential bug - what happens if you receive ApproveState but don't know about the channel yet
 - [ ] auth token: check if signed message contains a ref to our hostname and the era is valid (and maybe ID)
 - [ ] sentry: do not record events if we are not a validator of the channel
+- [ ] potential bug - what happens if you receive ApproveState but don't know about the channel yet; perhaps go back to Init
 - [ ] watcher, ethereum configs
 - [ ] bench system, pipelined wrk
 - [ ] validator worker: respect campaignSpec and per-impression payment
