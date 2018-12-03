@@ -16,7 +16,7 @@ function tick(channel, force) {
 	})
 	.then(function(stateTree) {
 		// isStateTreeNew is used in order to make the system produce a NewState on each channel we find for the first time
-		//const isStateTreeNew = !stateTree._id
+		const hasNoPrevStateTree = !stateTree._id
 		return eventAggrCol.find({
 			channelId: channel.id,
 			created: { $gt: stateTree.lastEvAggr }
@@ -30,7 +30,7 @@ function tick(channel, force) {
 
 			const shouldUpdate = force || aggrs.length
 			if (!shouldUpdate) {
-				return { channel }
+				return { channel, hasNoPrevStateTree }
 			}
 
 			const { balances, newStateTree } = mergeAggrs(
@@ -46,7 +46,7 @@ function tick(channel, force) {
 				{ upsert: true }
 			)
 			.then(function() {
-				return { channel, newStateTree, balances }
+				return { channel, balances, hasNoPrevStateTree, newStateTree }
 			})
 		})
 	})

@@ -17,8 +17,8 @@ function tick(adapter, channel) {
 	])
 	.then(function([newMsg, approveMsg]) {
 		const latestApproved = newMsg && approveMsg && newMsg.stateRoot == approveMsg.stateRoot 
+		// there are no NewState messages, only merge all eventAggrs
 		if (!newMsg || latestApproved) {
-			// there are no NewState messages, only merge all eventAggrs
 			return producer.tick(channel)
 			.then(function(res) {
 				return { nothingNew: !res.newStateTree }
@@ -32,7 +32,7 @@ function tick(adapter, channel) {
 	})
 }
 
-function onNewState(adapter, {channel, newStateTree, balances, newMsg, approveMsg}) {
+function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	// @TODO: how do we ensure the validity of newMsg?
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
