@@ -48,7 +48,7 @@ validatorMessages
 - [x] auth: proper ethereum-based token (EWT/JWT?)
 - [x] adapter: make signing/whoami work (ethersjs signer); consider moving current adapter to adapter/mock
 - [x] validator worker/watcher: re-consider `init` event: we won't do it; instead; we will just do a round of NewState/ApproveState
-- [ ] tests: pure functions in follower (isValidTransition, getHealth); what else can be purified?
+- [x] tests: pure functions in follower (isValidTransition, getHealth); what else can be purified?
 - [ ] auth token: check if signed message contains a ref to our ID and the era is valid (might need a refactor, since the sentry needs to initialize the adapter)
 - [ ] sentry: do not record events if we are not a validator of the channel
 - [ ] potential bug - what happens if you receive ApproveState but don't know about the channel yet; perhaps go back to Init or just do a Heartbeat
