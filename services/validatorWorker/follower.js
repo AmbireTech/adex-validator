@@ -2,10 +2,8 @@ const BN = require('bn.js')
 const assert = require('assert')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
+const { isValidTransition, getHealth } = require('./lib/followerRules')
 const producer = require('./producer')
-
-// in primilles
-const HEALTH_THRESHOLD = new BN(950)
 
 function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -55,36 +53,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	})
 }
 
-
-// Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
-function isValidTransition(channel, prev, next) {
-	const sumPrev = sumMap(prev)
-	const sumNext = sumMap(next)
-	return sumNext >= sumPrev
-		&& sumNext <= channel.depositAmount
-		&& Object.entries(prev).every(([acc, bal]) => {
-			const nextBal = next[acc]
-			if (!nextBal) return false
-			return nextBal.gte(bal)
-		})
-}
-
-function getHealth(channel, our, approved) {
-	const sumOur = sumMap(our)
-	const sumApproved = sumMap(approved)
-	if (sumApproved.gte(sumOur)) {
-		return 'HEALTHY'
-	}
-	if (sumApproved.mul(new BN(1000)).div(sumOur).lt(HEALTH_THRESHOLD)) {
-		return 'UNHEALTHY'
-	}
-	return 'HEALTHY'
-}
-
-function sumMap(all) {
-	return Object.values(all).reduce((a,b) => a.add(b), new BN(0))
-}
-
 function toBNMap(raw) {
 	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
 	const balances = {}
@@ -126,5 +94,9 @@ function augmentWithBalances(approveMsg) {
 	})
 }
 
-module.exports = { tick }
+module.exports = {
+	tick,
+	isValidTransition,
+	getHealth,
+}
 
