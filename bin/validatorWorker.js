@@ -28,10 +28,6 @@ db.connect()
 .then(function() {
 	return adapter.init(argv)
 	.then(() => adapter.unlock(argv))
-	.catch(function(e) {
-		console.error("Adapter error", e)
-		process.exit(1)
-	})
 })
 .then(function() {
 	const channelsCol = db.getMongo().collection('channels')

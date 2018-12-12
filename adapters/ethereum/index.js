@@ -1,5 +1,6 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 const { Wallet } = require('ethers')
+const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const fs = require('fs')
 const readFile = util.promisify(fs.readFile)
@@ -11,16 +12,16 @@ const tokensVerified = new Map()
 // Tokens that we've generated to authenticate with someone (address => token)
 const tokensForAuth = new Map()
 
-let keystore = null
+let address = null
 let keystoreJson = null
-let wallet
+let wallet = null
 
 function init(opts) {
 	if (typeof(opts.keystoreFile) !== 'string') throw 'ethereum adapter: keystoreFile required'
 	return readFile(opts.keystoreFile)
 	.then(json => {
 		keystoreJson = json
-		keystore = JSON.parse(json)
+		address = formatAddress('0x'+JSON.parse(json).address)
 		console.log(`Ethereum address: ${whoami()}`)
 	})
 
@@ -37,7 +38,7 @@ function unlock(opts) {
 }
 
 function whoami() {
-	return '0x'+keystore.address
+	return address
 }
 
 function sign(stateRoot) {
