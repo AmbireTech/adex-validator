@@ -1,7 +1,7 @@
 const tape = require('tape')
 
 const BN = require('bn.js')
-const { isValidTransition, campaignHealth } = require('../services/validatorWorker/lib/followerRules')
+const { isValidTransition, getHealth } = require('../services/validatorWorker/lib/followerRules')
 
 const channel = { depositAmount: new BN(100) }
 
@@ -37,5 +37,22 @@ tape('isValidTransition: overall sum is lower', function(t) {
 
 tape('isValidTransition: overall sum is the same, but we remove an entry', function(t) {
 	t.notOk(isValidTransition(channel, { a: new BN(54), b: new BN(3) }, { a: new BN(57) }), 'not a valid transition')
+	t.end()
+})
+
+
+tape('getHealth: the approved balance tree >= our accounting: HEALTHY', function(t) {
+	t.equal(getHealth(channel, { a: new BN(50) }, { a: new BN(50) }), 'HEALTHY')
+	t.equal(getHealth(channel, { a: new BN(50) }, { a: new BN(60) }), 'HEALTHY')
+	t.end()
+})
+
+tape('getHealth: the approved balance tree has less, but within margin: HEALTHY', function(t) {
+	t.equal(getHealth(channel, { a: new BN(80) }, { a: new BN(79) }), 'HEALTHY')
+	t.end()
+})
+
+tape('getHealth: the approved balance tree has less: UNHEALTHY', function(t) {
+	t.equal(getHealth(channel, { a: new BN(80) }, { a: new BN(70) }), 'UNHEALTHY')
 	t.end()
 })
