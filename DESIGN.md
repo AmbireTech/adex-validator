@@ -51,6 +51,7 @@ validatorMessages
 - [x] tests: pure functions in follower (isValidTransition, getHealth)
 - [x] auth token: check if signed message contains a ref to our ID (might need a refactor, since the sentry needs to initialize the adapter)
 - [x] sentry: do not record events if we are not a validator of the channel
+- [x] DB indexes for every complex query
 - [ ] tests: what else can be purified?
 - [ ] potential bug - what happens if you receive ApproveState but don't know about the channel yet; perhaps go back to Init or just do a Heartbeat
 - [ ] watcher, ethereum configs
@@ -63,7 +64,6 @@ validatorMessages
 - [ ] dockerize
 - [ ] special event types: e.g. validator fees
 - [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
-- [ ] DB indexes for every complex query
 - [ ] session authentication scheme must be secured: we need to ensure the server supplies the challenge and maybe rotates it
 - [ ] tests: if we refactor the eventsAggr, validatorMessages, stateTrees access, we can unit test the producer, follower, leader
 - [ ] substrate adapter
