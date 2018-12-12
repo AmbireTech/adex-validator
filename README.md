@@ -55,7 +55,7 @@ POST `/channel/validator-messages`
 
 ``--keystoreFile`` - path to JSON keystore file (Ethereum adapter)
 
-``--keystorePwd`` - password for the JSON keystore file (Ethereum adapter)
+``--keystorePwd`` - password for the JSON keystore file (Ethereum adapter; needed only for the `validatorWorker`)
 
 ``--dummyIdentity`` - dummy adapter identity (Dummy adapter)
 
