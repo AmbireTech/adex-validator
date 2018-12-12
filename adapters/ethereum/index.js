@@ -12,22 +12,24 @@ const tokensVerified = new Map()
 const tokensForAuth = new Map()
 
 let keystore = null
+let keystoreJson = null
 let wallet
 
 function init(opts) {
 	if (typeof(opts.keystoreFile) !== 'string') throw 'ethereum adapter: keystoreFile required'
 	return readFile(opts.keystoreFile)
 	.then(json => {
-		keystore = json
+		keystoreJson = json
+		keystore = JSON.parse(json)
 		console.log(`Ethereum address: ${whoami()}`)
 	})
 
 }
 
 function unlock(opts) {
-	if (keystore === null) throw 'call init() first'
+	if (keystoreJson === null) throw 'call init() first'
 	if (typeof(opts.keystorePwd) !== 'string') throw 'ethereum adapter: keystorePwd required'
-	Wallet.fromEncryptedJson(keystore, opts.keystorePwd)
+	return Wallet.fromEncryptedJson(keystoreJson, opts.keystorePwd)
 	.then(w => {
 		wallet = w
 	})
@@ -35,7 +37,7 @@ function unlock(opts) {
 }
 
 function whoami() {
-	return keystore.address
+	return '0x'+keystore.address
 }
 
 function sign(stateRoot) {
