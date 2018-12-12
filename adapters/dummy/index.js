@@ -10,6 +10,10 @@ function init(opts) {
 	return Promise.resolve()
 }
 
+function unlock() {
+	return Promise.resolve()
+}
+
 function whoami() {
 	return identity
 }
@@ -32,4 +36,4 @@ function getAuthFor(validator) {
 	return Promise.resolve(`AUTH_${whoami()}`)
 }
 
-module.exports = { init, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }
+module.exports = { init, unlock, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }

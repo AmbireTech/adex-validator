@@ -11,21 +11,31 @@ const tokensVerified = new Map()
 // Tokens that we've generated to authenticate with someone (address => token)
 const tokensForAuth = new Map()
 
+let keystore = null
 let wallet
 
 function init(opts) {
 	if (typeof(opts.keystoreFile) !== 'string') throw 'ethereum adapter: keystoreFile required'
-	if (typeof(opts.keystorePwd) !== 'string') throw 'ethereum adapter: keystorePwd required'
 	return readFile(opts.keystoreFile)
-	.then(json => Wallet.fromEncryptedJson(json, opts.keystorePwd))
-	.then(w => {
-		wallet = w
+	.then(json => {
+		keystore = json
 		console.log(`Ethereum address: ${whoami()}`)
 	})
+
+}
+
+function unlock(opts) {
+	if (keystore === null) throw 'call init() first'
+	if (typeof(opts.keystorePwd) !== 'string') throw 'ethereum adapter: keystorePwd required'
+	Wallet.fromEncryptedJson(keystore, opts.keystorePwd)
+	.then(w => {
+		wallet = w
+	})
+
 }
 
 function whoami() {
-	return wallet.address
+	return keystore.address
 }
 
 function sign(stateRoot) {
@@ -78,4 +88,4 @@ function getAuthFor(validator) {
 //for (var i=0; i!=100000; i++) p = p.then(work)
 //p.then(() => console.log(Date.now()-start))
 
-module.exports = { init, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }
+module.exports = { init, unlock, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }

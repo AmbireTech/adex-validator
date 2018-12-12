@@ -27,6 +27,7 @@ const adapter = adapters[argv.adapter]
 db.connect()
 .then(function() {
 	return adapter.init(argv)
+	.then(() => adapter.unlock(argv))
 })
 .then(function() {
 	const channelsCol = db.getMongo().collection('channels')

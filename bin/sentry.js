@@ -12,6 +12,8 @@ const argv = yargs
 	.describe('adapter', 'the adapter for authentication and signing')
 	.choices('adapter', Object.keys(adapters))
 	.default('adapter', 'ethereum')
+	.describe('keystoreFile', 'path to JSON Ethereum keystore file')
+	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
 	.demandOption(['adapter'])
 	.argv
 
@@ -23,8 +25,10 @@ app.use(bodyParser.json())
 app.use(authMiddleware.forAdapter(adapter))
 app.use('/channel', channelRoutes)
 
-// NOTE: no need to do adapter.init(), cause that's only needed if we need signing
 db.connect()
+.then(function() {
+	return adapter.init(argv)
+})
 .then(function() {
 	app.listen(port, () => console.log(`Sentry listening on port ${port}!`))
 })
