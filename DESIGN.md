@@ -54,7 +54,7 @@ validatorMessages
 - [x] DB indexes for every complex query
 - [ ] tests: what else can be purified?
 - [ ] potential bug - what happens if you receive ApproveState but don't know about the channel yet; perhaps go back to Init or just do a Heartbeat
-- [ ] watcher, ethereum configs
+- [ ] ethereum watcher, configs
 - [ ] bench system, pipelined wrk
 - [ ] validator worker: respect campaignSpec and per-impression payment
 - [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
@@ -63,8 +63,6 @@ validatorMessages
 - [ ] sentry: ensure there's an easy way to get all signed states historically, and at least one validator from which we can get a state signed by 2 (or more) at once; easiest solution is simply to allow getting last N validator events (which will contain sigs)
 - [ ] dockerize
 - [ ] special event types: e.g. validator fees
-- [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
-- [ ] session authentication scheme must be secured: we need to ensure the server supplies the challenge and maybe rotates it
-- [ ] tests: if we refactor the eventsAggr, validatorMessages, stateTrees access, we can unit test the producer, follower, leader
-- [ ] substrate adapter
 - [ ] auth token: eras, invalidate periodically and use a new one
+- [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
+- [ ] tests: full integration tests for everything
