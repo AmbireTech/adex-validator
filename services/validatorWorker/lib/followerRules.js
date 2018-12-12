@@ -8,7 +8,7 @@ function isValidTransition(channel, prev, next) {
 	const sumPrev = sumMap(prev)
 	const sumNext = sumMap(next)
 	return sumNext.gte(sumPrev)
-		&& sumNext.lte(channel.depositAmount)
+		&& sumNext.lte(new BN(channel.depositAmount))
 		&& Object.entries(prev).every(([acc, bal]) => {
 			const nextBal = next[acc]
 			if (!nextBal) return false
