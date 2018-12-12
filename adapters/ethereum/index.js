@@ -58,8 +58,12 @@ function sessionFromToken(token) {
 		return Promise.resolve(tokensVerified.get(tokenId))
 	}
 	return ewt.verify(token)
-	.then(function(uid) {
-		const sess = { uid }
+	.then(function({ from, payload }) {
+		if (payload.id !== whoami()) {
+			return Promise.reject(new Error('token payload.id !== whoami(): token was not intended for us'))
+		}
+		// @TODO: validate era too
+		const sess = { uid: from }
 		tokensVerified.set(tokenId, sess)
 		return sess
 	})
@@ -84,10 +88,11 @@ function getAuthFor(validator) {
 	})
 }
 
-// ~230ms for 100k operations; takes minutes to do it w/o cache
-//const work = () => getAuthFor({ id: 'awesomeFollower' }).then(t => sessionFromToken(t))
+// ~350ms for 100k operations; takes minutes to do it w/o cache
+//const work = () => getAuthFor({ id: whoami() }).then(t => sessionFromToken(t))
 //const start = Date.now()
-//let p = Promise.resolve()
+//const argv = require('yargs').argv
+//let p = init(argv).then(()=>unlock(argv))
 //for (var i=0; i!=100000; i++) p = p.then(work)
 //p.then(() => console.log(Date.now()-start))
 

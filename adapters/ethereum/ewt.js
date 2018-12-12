@@ -28,7 +28,12 @@ function verify(token) {
 	const msg = parts.slice(0, 2).join('.')
 	const sigBuf = Buffer.from(parts[2], 'base64')
 	const recoveredAddr = ethers.utils.verifyMessage(msg, sigBuf)
-	return Promise.resolve(recoveredAddr)
+	try {
+		const payload = JSON.parse(base64.decode(parts[1]))
+		return Promise.resolve({ from: recoveredAddr, payload })
+	} catch(e) {
+		return Promise.reject(e)
+	}
 }
 
 module.exports = { sign, verify }
