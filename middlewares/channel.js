@@ -17,11 +17,9 @@ function channelLoad(req, res, next) {
 	.catch(next)
 }
 
-function channelIfExists(req, res, next) {
-	const id = req.params.id
+function channelIfFind(cond, req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
-	
-	channelsCol.countDocuments({ _id: id }, { limit: 1})
+	channelsCol.countDocuments(cond, { limit: 1 })
 	.then(function(n) {
 		if (!n) {
 			res.sendStatus(404)
@@ -32,4 +30,12 @@ function channelIfExists(req, res, next) {
 	.catch(next)
 }
 
-module.exports = { channelLoad, channelIfExists }
+function channelIfExists(req, res, next) {
+	channelIfFind({ _id: req.params.id }, req, res, next)
+}
+
+function channelIfActive(req, res, next) {
+	channelIfFind({ _id: req.params.id, validators: req.whoami }, req, res, next)
+}
+
+module.exports = { channelLoad, channelIfExists, channelIfActive }

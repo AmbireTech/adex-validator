@@ -1,6 +1,6 @@
 const express = require('express')
 const db = require('../db')
-const { channelLoad, channelIfExists } = require('../middlewares/channel')
+const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 
 const router = express.Router()
@@ -18,7 +18,7 @@ router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
-router.post('/:id/events', authRequired, channelIfExists, postEvents)
+router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
 
 // Implementations
@@ -86,8 +86,6 @@ function postValidatorMessages(req, res, next) {
 	.catch(next)
 }
 
-// also, this should only accept active channels; the worker should monitor for active channels; `init` messages have to be exchanged
-// @TODO: should this be channelIfActive ?
 function postEvents(req, res, next) {
 	if (!Array.isArray(req.body.events)) {
 		res.sendStatus(400)

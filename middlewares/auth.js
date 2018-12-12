@@ -4,6 +4,8 @@ const BEARER_PREFIX = 'Bearer '
 
 function forAdapter(adapter) {
 	return function authMiddleware(req, res, next) {
+		req.whoami = adapter.whoami()
+
 		const authorization = req.headers.authorization
 		if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
 			next()
