@@ -67,7 +67,7 @@ POST `/channel/validator-messages`
 #### Sentry
 
 ```
-node bin/sentry --adapter=dummy
+node bin/sentry --adapter=dummy --dummyIdentity=awesomeLeader
 ```
 
 #### Validator Worker
@@ -82,7 +82,7 @@ node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeLeader
 #### Sentry
 
 ```
-DB_MONGO_NAME=adexValidatorFollower PORT=8006 node bin/sentry --adapter=dummy
+DB_MONGO_NAME=adexValidatorFollower PORT=8006 node bin/sentry --adapter=dummy --dummyIdentity=awesomeFollower
 ```
 
 
