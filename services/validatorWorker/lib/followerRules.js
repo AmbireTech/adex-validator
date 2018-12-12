@@ -7,7 +7,7 @@ const HEALTH_THRESHOLD = new BN(950)
 function isValidTransition(channel, prev, next) {
 	const sumPrev = sumMap(prev)
 	const sumNext = sumMap(next)
-	return sumNext >= sumPrev
+	return sumNext.gte(sumPrev)
 		&& sumNext.lte(channel.depositAmount)
 		&& Object.entries(prev).every(([acc, bal]) => {
 			const nextBal = next[acc]
