@@ -55,6 +55,7 @@ function sessionFromToken(token) {
 	// @TODO: should we perform prior validation here? we can also just make ewt.verify stronger
 	const tokenId = token.slice(0, -16)
 	if (tokensVerified.has(tokenId)) {
+		// @TODO: validate era
 		return Promise.resolve(tokensVerified.get(tokenId))
 	}
 	return ewt.verify(token)
@@ -63,7 +64,7 @@ function sessionFromToken(token) {
 			return Promise.reject(new Error('token payload.id !== whoami(): token was not intended for us'))
 		}
 		// @TODO: validate era too
-		const sess = { uid: from }
+		const sess = { uid: from, era: payload.era }
 		tokensVerified.set(tokenId, sess)
 		return sess
 	})
