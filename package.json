@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AdExNetwork/adex-validator-stack-js.git"
+    "url": "git+ssh+https://github.com/AdExNetwork/adex-validator-stack-js.git"
   },
   "keywords": [
     "adex",
@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/AdExNetwork/adex-validator-stack-js#readme",
   "dependencies": {
-    "adex-protocol-eth": "git+ssh://git@github.com/adexnetwork/adex-protocol-eth.git",
+    "adex-protocol-eth": "https://github.com/adexnetwork/adex-protocol-eth.git",
     "base64url": "^3.0.1",
     "bn.js": "^4.11.8",
     "body-parser": "^1.18.3",
