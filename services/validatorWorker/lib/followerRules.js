@@ -19,6 +19,8 @@ function isValidTransition(channel, prev, next) {
 function getHealth(channel, our, approved) {
 	const sumOur = sumMap(our)
 	const sumApproved = sumMap(approved)
+	// division by zero can't happen here, because sumApproved >= sumOur
+	// if sumOur is 0, it will always be true
 	if (sumApproved.gte(sumOur)) {
 		return 'HEALTHY'
 	}
