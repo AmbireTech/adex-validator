@@ -94,6 +94,7 @@ function mergePayableIntoBalances(balances, events, paymentInfo) {
 	Object.keys(events).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
 		const toAdd = BN.min(remaining, new BN(events[acc] * paymentInfo.amount))
+		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
 		balances[acc] = balances[acc].add(toAdd)
 		remaining = remaining.sub(toAdd)
 
