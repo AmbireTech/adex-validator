@@ -40,6 +40,11 @@ tape('isValidTransition: overall sum is the same, but we remove an entry', funct
 	t.end()
 })
 
+tape('isValidTransition: transition to a state with a negative number', function(t) {
+	t.notOk(isValidTransition(channel, {}, { a: new BN(51), b: new BN(-5) }), 'not a valid transition')
+	t.end()
+})
+
 
 //
 // getHealth

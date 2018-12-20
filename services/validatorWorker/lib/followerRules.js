@@ -14,6 +14,7 @@ function isValidTransition(channel, prev, next) {
 			if (!nextBal) return false
 			return nextBal.gte(bal)
 		})
+		&& Object.entries(next).every(([acc, bal]) => !bal.isNeg())
 }
 
 function getHealth(channel, our, approved) {
