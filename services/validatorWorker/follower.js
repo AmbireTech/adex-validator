@@ -93,9 +93,5 @@ function augmentWithBalances(approveMsg) {
 	})
 }
 
-module.exports = {
-	tick,
-	isValidTransition,
-	getHealth,
-}
+module.exports = { tick }
 
