@@ -41,9 +41,17 @@ tape('isValidTransition: overall sum is the same, but we remove an entry', funct
 })
 
 
+//
+// getHealth
+//
 tape('getHealth: the approved balance tree >= our accounting: HEALTHY', function(t) {
 	t.equal(getHealth(channel, { a: new BN(50) }, { a: new BN(50) }), 'HEALTHY')
 	t.equal(getHealth(channel, { a: new BN(50) }, { a: new BN(60) }), 'HEALTHY')
+	t.end()
+})
+
+tape('getHealth: the approved balance tree is positive, our accounting is 0: HEALTHY', function(t) {
+	t.equal(getHealth(channel, {}, { a: new BN(50) }), 'HEALTHY')
 	t.end()
 })
 
