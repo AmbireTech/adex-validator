@@ -32,8 +32,10 @@ tape('/channel/{id}/tree', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('submit events', function(t) {
-	const evBody ='{"events": [{"type": "IMPRESSION", "publisher": "myAwesomePublisher"}]}'
+tape('submit events and ensure they are accounted for', function(t) {
+	const evBody = '{"events": [{"type": "IMPRESSION", "publisher": "myAwesomePublisher"}]}'
+	const expectedBal = '1'
+	let channelTree
 	Promise.all(
 		[leaderUrl, followerUrl].map(url =>
 			fetch(`${url}/channel/${channelId}/events`, {
@@ -55,10 +57,29 @@ tape('submit events', function(t) {
 		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
 		.then(res => res.json())
 	})
-	.then(function(channelTree) {
-		t.equal(channelTree.balances.myAwesomePublisher, '1', 'balances is right')
+	.then(function(resp) {
+		channelTree = resp
+		t.equal(channelTree.balances.myAwesomePublisher, expectedBal, 'balances is right')
+		// We will check the leader, cause this means this happened:
+		// the NewState was generated, sent to the follower,
+		// who generated ApproveState and sent back to the leader
+		return fetch(`${leaderUrl}/channel/${channelId}/validator-messages`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		const msgs = resp.validatorMessages
+		t.ok(Array.isArray(msgs), 'has validatorMessages')
+		const latestNew = msgs.find(x => x.msg.type === 'NewState')
+		const latestApprove = msgs.find(x => x.msg.type === 'ApproveState')
+		t.ok(latestNew, 'has NewState')
+		t.ok(latestApprove, 'has ApproveState')
+		t.equal(latestNew.from, channelTree.channel.validators[0], 'NewState is by the leader')
+		t.equal(latestApprove.from, channelTree.channel.validators[1], 'ApproveState is by the follower')
+		t.equal(latestNew.msg.balances.myAwesomePublisher, expectedBal, 'balances is right')
+		//console.log(channelTree.channel.validators)
+		//console.log(latestNew, latestApprove)
+		// @TODO other assertions
 		t.end()
-		// @TODO check if new states have been produced
 	})
 	.catch(err => t.fail(err))
 })

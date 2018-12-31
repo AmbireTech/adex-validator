@@ -66,6 +66,7 @@ function getValidatorMessages(req, res, next) {
 
 	return validatorMsgCol.find({ channelId: req.params.id }, { msg: 1, from: 1 })
 	.limit(VALIDATOR_MESSAGES_FIND_MAX)
+	.sort({ _id: -1 })
 	.toArray()
 	.then(function(resp) {
 		res.send({ validatorMessages: resp })
