@@ -72,4 +72,4 @@ tape('getHealth: the approved balance tree has less: UNHEALTHY', function(t) {
 })
 
 // @TODO: event aggregator
-// @TODO: producer, possibly leader/follower
+// @TODO: producer, possibly leader/follower; mergePayableIntoBalances

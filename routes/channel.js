@@ -6,11 +6,13 @@ const eventAggrService = require('../services/sentry/eventAggregator')
 const router = express.Router()
 
 const CHANNELS_FIND_MAX = 100
+const VALIDATOR_MESSAGES_FIND_MAX = 10
 
 // Channel information: public, cachable
 router.get('/list', getList)
 router.get('/:id/status', channelLoad, getStatus.bind(null, false))
 router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
+router.get('/:id/validator-messages', getValidatorMessages)
 
 // Channel information: requires auth, cachable
 //router.get('/:id/events/:uid', authRequired, channelIfExists, (req, res) => res.send([]))
@@ -55,6 +57,18 @@ function getList(req, res, next) {
 	.toArray()
 	.then(function(channels) {
 		res.send({ channels })
+	})
+	.catch(next)
+}
+
+function getValidatorMessages(req, res, next) {
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+
+	return validatorMsgCol.find({ channelId: req.params.id }, { msg: 1, from: 1 })
+	.limit(VALIDATOR_MESSAGES_FIND_MAX)
+	.toArray()
+	.then(function(resp) {
+		res.send({ validatorMessages: resp })
 	})
 	.catch(next)
 }

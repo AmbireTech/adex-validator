@@ -49,6 +49,7 @@ tape('submit events', function(t) {
 	// @TODO: this number should be auto calibrated *cough*scientifically according to the event aggregate times and validator worker times
 	// for that purpose, the following constants should be accessible from here
 	// validatorWorker snooze time: 10s, eventAggregator service debounce: 10s
+	// even for the balance tree, we need to wait for both, cause the producer tick updates it
 	.then(() => wait(22000))
 	.then(function() {
 		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
