@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const tape = require('tape')
 
 const BN = require('bn.js')
