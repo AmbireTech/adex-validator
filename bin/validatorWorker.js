@@ -8,7 +8,7 @@ const follower = require('../services/validatorWorker/follower')
 
 // @TODO: choose that in a rational way, rather than using a magic number
 const MAX_CHANNELS = 512
-const SNOOZE_TIME = 20000
+const SNOOZE_TIME = 10000
 const WAIT_TIME = 1000
 
 const argv = yargs
@@ -46,7 +46,6 @@ db.connect()
 		.then(function([allResults, _]) {
 			// If nothing is new, snooze
 			if (allResults.every(x => x && x.nothingNew)) {
-				logSnooze(allResults)
 				return wait(SNOOZE_TIME)
 			}
 		})
@@ -77,10 +76,6 @@ function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))
 }
 
-function logSnooze() {
-	console.log(`validatorWorker: Snoozing, all channels up to date`)
-}
-
 function logPreChannelsTick(channels) {
-	console.log(`validatorWorker: Processing ${channels.length} channels`)
+	console.log(`validatorWorker: processing ${channels.length} channels`)
 }
