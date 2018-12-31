@@ -23,8 +23,6 @@ router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
 // Implementations
 function getStatus(withTree, req, res) {
-	//const channelsCol = db.getMongo().collection('channels')
-	// @TODO should we sanitize? probably not; perhaps rewrite _id to id
 	const resp = { channel: req.channel }
 
 	Promise.resolve()
