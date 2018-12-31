@@ -41,6 +41,19 @@ POST `/channel/events`
 POST `/channel/validator-messages`
 
 
+## Tests
+
+Unit tests:
+
+```
+npm test
+```
+
+Integration tests:
+
+```
+npm run test-integration
+```
 
 ## Environment
 
