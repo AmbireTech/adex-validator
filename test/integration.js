@@ -17,6 +17,7 @@ tape('/channel/list', function(t) {
 		t.equal(resp.channels[0].status, 'live', 'channel is the right status')
 		t.end()
 	})
+	.catch(err => t.fail(err))
 	// @TODO: test channel list filters if there are any
 })
 
@@ -24,13 +25,15 @@ tape('/channel/{id}/tree', function(t) {
 	fetch(`${leaderUrl}/channel/${channelId}/tree`)
 	.then(res => res.json())
 	.then(function(resp) {
-		console.log(resp)
+		t.ok(resp.channel, 'has resp.channel')
+		t.equal(resp.channel.status, 'live', 'channel has right status')
 		t.end()
 	})
+	.catch(err => t.fail(err))
 })
 
 tape('submit events', function(t) {
-	const evData ='{"events": [{"type": "IMPRESSION", "publisher": "myAwesomePublisher"}]}'
+	const evBody ='{"events": [{"type": "IMPRESSION", "publisher": "myAwesomePublisher"}]}'
 	Promise.all(
 		[leaderUrl, followerUrl].map(url =>
 			fetch(`${url}/channel/${channelId}/events`, {
@@ -39,21 +42,24 @@ tape('submit events', function(t) {
 					'authorization': `Bearer ${authToken}`,
 					'content-type': 'application/json',
 				},
-				data: evData
+				body: evBody
 			})
 		)
 	)
-	.then(function([leaderRes, followerRes]) {
-		console.log(leaderRes, followerRes)
-		return wait(30000)
-	})
+	// @TODO: this number should be auto calibrated *cough*scientifically according to the event aggregate times and validator worker times
+	// for that purpose, the following constants should be accessible from here
+	// validatorWorker snooze time: 20s, eventAggregator service debounce: 10s
+	.then(() => wait(32000))
 	.then(function() {
 		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
 		.then(res => res.json())
 	})
 	.then(function(channelTree) {
-		console.log(channelTree)
+		t.equal(channelTree.balances.myAwesomePublisher, 1, 'balances is right')
+		t.end()
+		// @TODO check if new states have been produced
 	})
+	.catch(err => t.fail(err))
 })
 
 
