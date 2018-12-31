@@ -71,8 +71,11 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// We will check the leader, cause this means this happened:
 		// the NewState was generated, sent to the follower,
 		// who generated ApproveState and sent back to the leader
-		return fetch(`${leaderUrl}/channel/${channelId}/validator-messages`)
-		.then(res => res.json())
+		// first wait though, as we need the follower to discover they have an event to approve
+		return wait(11000).then(function() {
+			return fetch(`${leaderUrl}/channel/${channelId}/validator-messages`)
+			.then(res => res.json())
+		})
 	})
 	.then(function(resp) {
 		const msgs = resp.validatorMessages
