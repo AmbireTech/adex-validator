@@ -1,6 +1,6 @@
 #/usr/bin/env bash
 
-# @TODO quieter logs from mongo?
+MONGO_OUT=/dev/null # could be &1
 
 TIMESTAMP=`date +%s`
 
@@ -15,10 +15,10 @@ FOLLOW_ARGS="--adapter=dummy --dummyIdentity=awesomeFollower"
 # Seeding the database
 echo "Using MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
 # awesomeLeader, awesomeFollower and all the channels are seeded in the prep-db
-mongo $LEAD_MONGO ./test/prep-db/mongo.js
-mongo $LEAD_MONGO ./scripts/db-indexes.js
-mongo $FOLLOW_MONGO ./test/prep-db/mongo.js
-mongo $FOLLOW_MONGO ./scripts/db-indexes.js
+mongo $LEAD_MONGO ./test/prep-db/mongo.js >$MONGO_OUT
+mongo $LEAD_MONGO ./scripts/db-indexes.js >$MONGO_OUT
+mongo $FOLLOW_MONGO ./test/prep-db/mongo.js >$MONGO_OUT
+mongo $FOLLOW_MONGO ./scripts/db-indexes.js >$MONGO_OUT
 
 # @TODO separate logs
 # Start sentries
@@ -42,8 +42,8 @@ pkill -P $$
 
 if [ $exitCode -eq 0 ]; then
 	echo "cleaning up DB"
-	mongo $LEAD_MONGO --eval 'db.dropDatabase()'
-	mongo $FOLLOW_MONGO --eval 'db.dropDatabase()'
+	mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
+	mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
 else
 	echo -e "\033[0;31mTests failed, not cleaning up DB\033[0m"
 	echo "MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
