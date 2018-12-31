@@ -36,6 +36,9 @@ function getStatus(withTree, req, res) {
 				if (tree) {
 					resp.balances = tree.balances
 					resp.lastEvAggr = tree.lastEvAggr
+				} else {
+					resp.balances = {}
+					resp.lastEvAggr = new Date(0)
 				}
 			})
 		}
