@@ -55,7 +55,7 @@ tape('submit events', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(channelTree) {
-		t.equal(channelTree.balances.myAwesomePublisher, 1, 'balances is right')
+		t.equal(channelTree.balances.myAwesomePublisher, '1', 'balances is right')
 		t.end()
 		// @TODO check if new states have been produced
 	})
