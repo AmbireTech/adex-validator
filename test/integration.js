@@ -33,7 +33,6 @@ tape('/channel/{id}/tree', function(t) {
 })
 
 tape('submit events and ensure they are accounted for', function(t) {
-	const evBody = '{"events": [{"type": "IMPRESSION", "publisher": "myAwesomePublisher"}]}'
 	const evBody = JSON.stringify({
 		events: [
 			{ type: 'IMPRESSION', publisher: 'myAwesomePublisher' },
@@ -79,7 +78,22 @@ tape('submit events and ensure they are accounted for', function(t) {
 		const msgs = resp.validatorMessages
 		t.ok(Array.isArray(msgs), 'has validatorMessages')
 
+		// ensure NewState is in order
+		const latestNew = msgs.find(x => x.msg.type === 'NewState')
+		t.ok(latestNew, 'has NewState')
+		t.equal(latestNew.from, channelTree.channel.validators[0], 'NewState is by the leader')
+		t.equal(latestNew.msg.balances.myAwesomePublisher, expectedBal, 'balances is right')
+		t.ok(typeof(latestNew.msg.stateRoot) === 'string' && latestNew.msg.stateRoot.length === 64, 'latestNew.stateRoot is sane')
+		t.equals(latestNew.msg.signature, `Dummy adapter signature for ${latestNew.msg.stateRoot} by ${latestNew.from}`, 'latestNew.signature is sane')
 
+		// Ensure ApproveState is in order
+		const latestApprove = msgs.find(x => x.msg.type === 'ApproveState')
+		t.ok(latestApprove, 'has ApproveState')
+		t.equal(latestApprove.from, channelTree.channel.validators[1], 'ApproveState is by the follower')
+		t.ok(typeof(latestApprove.msg.stateRoot) === 'string' && latestApprove.msg.stateRoot.length === 64, 'latestApprove.stateRoot is sane')
+		t.equals(latestApprove.msg.signature, `Dummy adapter signature for ${latestApprove.msg.stateRoot} by ${latestApprove.from}`, 'latestApprove.signature is sane')
+		t.equals(latestNew.msg.stateRoot, latestApprove.msg.stateRoot, 'stateRoot is the same between latest NewState and ApproveState')
+		t.equals(latestApprove.msg.health, 'HEALTHY', 'health value is HEALTHY')
 		//console.log(channelTree.channel.validators)
 		//console.log(latestNew, latestApprove)
 		// @TODO other assertions
