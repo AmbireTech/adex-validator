@@ -33,8 +33,10 @@ function getStatus(withTree, req, res) {
 			const channelStateTreesCol = db.getMongo().collection('channelStateTrees')
 			return channelStateTreesCol.findOne({ _id: req.channel.id })
 			.then(function(tree) {
-				resp.balances = tree.balances
-				resp.lastEvAggr = tree.lastEvAggr
+				if (tree) {
+					resp.balances = tree.balances
+					resp.lastEvAggr = tree.lastEvAggr
+				}
 			})
 		}
 	})
