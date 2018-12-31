@@ -69,3 +69,6 @@ tape('getHealth: the approved balance tree has less: UNHEALTHY', function(t) {
 	t.equal(getHealth(channel, { a: new BN(80) }, { a: new BN(70) }), 'UNHEALTHY')
 	t.end()
 })
+
+// @TODO: event aggregator
+// @TODO: producer, possibly leader/follower
