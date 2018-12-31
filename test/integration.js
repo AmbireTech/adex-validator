@@ -48,8 +48,8 @@ tape('submit events', function(t) {
 	)
 	// @TODO: this number should be auto calibrated *cough*scientifically according to the event aggregate times and validator worker times
 	// for that purpose, the following constants should be accessible from here
-	// validatorWorker snooze time: 20s, eventAggregator service debounce: 10s
-	.then(() => wait(32000))
+	// validatorWorker snooze time: 10s, eventAggregator service debounce: 10s
+	.then(() => wait(22000))
 	.then(function() {
 		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
 		.then(res => res.json())
