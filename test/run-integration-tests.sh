@@ -33,8 +33,6 @@ DB_MONGO_NAME=$FOLLOW_MONGO bin/validatorWorker.js $FOLLOW_ARGS &
 
 # Run the integration tests
 ./test/integration.js
-#curl http://localhost:${LEAD_PORT}/channel/list
-#echo
 exitCode=$?
 
 # end all jobs (sentries, workers)
