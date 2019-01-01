@@ -11,6 +11,12 @@ const channelId = 'awesomeTestChannel'
 const defaultPubName = 'myAwesomePublisher'
 const expectedDepositAmnt = 1000
 
+// @TODO: this number should be auto calibrated *cough* scientifically according to the event aggregate times and validator worker times
+// for that purpose, the following constants should be accessible from here
+// validatorWorker snooze time: 10s, eventAggregator service debounce: 10s
+// even for the balance tree, we need to wait for both, cause the producer tick updates it
+const waitTime = 21000
+
 tape('/channel/list', function(t) {
 	fetch(`${leaderUrl}/channel/list`)
 	.then(res => res.json())
@@ -62,11 +68,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 	Promise.all(
 		[leaderUrl, followerUrl].map(url => postEvents(url, channelId, evBody))
 	)
-	// @TODO: this number should be auto calibrated *cough* scientifically according to the event aggregate times and validator worker times
-	// for that purpose, the following constants should be accessible from here
-	// validatorWorker snooze time: 10s, eventAggregator service debounce: 10s
-	// even for the balance tree, we need to wait for both, cause the producer tick updates it
-	.then(() => wait(22000))
+	.then(() => wait(waitTime))
 	.then(function() {
 		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
 		.then(res => res.json())
@@ -136,7 +138,7 @@ tape('health works correctly', function(t) {
 	)
 	//postEvents(followerUrl, channelId, JSON.stringify(genImpressions(4)))
 	// wait for the events to be aggregated and new states to be issued
-	.then(() => wait(21000))
+	.then(() => wait(waitTime))
 	.then(function() {
 		// get the latest state
 		return fetch(`${followerUrl}/channel/${channelId}/validator-messages`)
@@ -150,7 +152,7 @@ tape('health works correctly', function(t) {
 		// send events to the leader so it catches up
 		return postEvents(leaderUrl, channelId, JSON.stringify(genImpressions(diff)))
 	})
-	.then(() => wait(21000))
+	.then(() => wait(waitTime))
 	.then(function() {
 		return fetch(`${followerUrl}/channel/${channelId}/validator-messages`)
 		.then(res => res.json())
@@ -175,7 +177,7 @@ tape('cannot exceed channel deposit', function(t) {
 			)
 		))
 	})
-	.then(() => wait(21000))
+	.then(() => wait(waitTime))
 	.then(function() {
 		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
 		.then(res => res.json())
@@ -218,7 +220,6 @@ function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))
 }
 
-// @TODO full sentry tests
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
 // @TODO can't trick with negative values (again, by POST validator-messages)
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
