@@ -28,12 +28,14 @@ tape('/channel/list', function(t) {
 	// @TODO: test channel list filters if there are any
 })
 
-tape('/channel/{id}/status: non existant channel', function(t) {
-	fetch(`${leaderUrl}/channel/xxxtentacion/tree`)
-	.then(function(res) {
-		t.equal(res.status, 404, 'status should be 404')
-		t.end()
-	})
+tape('/channel/{id}/{status,tree}: non existant channel', function(t) {
+	Promise.all(['status', 'tree'].map(path =>
+		fetch(`${leaderUrl}/channel/xxxtentacion/${path}`)
+		.then(function(res) {
+			t.equal(res.status, 404, 'status should be 404')
+		})
+	))
+	.then(() => t.end())
 	.catch(err => t.fail(err))
 })
 
@@ -169,19 +171,23 @@ tape('health works correctly', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('POST /validator-messages: wrong authentication', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer WRONG AUTH`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({ messages: [] }),
-	})
-	.then(function(resp) {
-		t.equal(resp.status, 401, 'status is Unauthorized')
-		t.end()
-	})
+tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', function(t) {
+	Promise.all(
+		['events', 'validator-messages'].map(path =>
+			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, {
+				method: 'POST',
+				headers: {
+					'authorization': `Bearer WRONG AUTH`,
+					'content-type': 'application/json',
+				},
+				body: JSON.stringify({ messages: [] }),
+			})
+			.then(function(resp) {
+				t.equal(resp.status, 401, 'status is Unauthorized')
+			})
+		)
+	)
+	.then(() => t.end())
 	.catch(err => t.fail(err))
 })
 
