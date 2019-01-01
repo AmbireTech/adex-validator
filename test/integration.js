@@ -199,6 +199,29 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 	.catch(err => t.fail(err))
 })
 
+tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', function(t) {
+	Promise.all([
+		{ type: 1 },
+		// @TODO: implement the validation needed to handle those
+		//{ type: 'NewState' },
+	].map(msg =>
+		fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+			method: 'POST',
+			headers: {
+				'authorization': `Bearer ${dummyVals.auth.leader}`,
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({ messages: [msg] }),
+		})
+		.then(function(resp) {
+			t.equal(resp.status, 400, 'status is BadRequest')
+		})
+	))
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
+
+
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
 	.then(res => res.json())
