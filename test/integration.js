@@ -162,7 +162,11 @@ tape('health works correctly', function(t) {
 		t.equal(lastApprove.msg.health, 'HEALTHY', 'channel is registered as healthy')
 		t.end()
 	})
+	.catch(err => t.fail(err))
 })
+
+//tape('post /validator-messages: invalid message', function(t) {
+//})
 
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${channelId}/status`)
@@ -190,10 +194,22 @@ tape('cannot exceed channel deposit', function(t) {
 		// @TODO state changed to exhausted, unable to take any more events
 		t.end()
 	})
+	.catch(err => t.fail(err))
 })
 
 function postEvents(url, channelId, body) {
 	return fetch(`${url}/channel/${channelId}/events`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${authToken}`,
+			'content-type': 'application/json',
+		},
+		body: body
+	})
+}
+
+function postValidatorMsgs(url, channelId, body) {
+	return fetch(`${url}/channel/${channelId}/validator-messages`, {
 		method: 'POST',
 		headers: {
 			'authorization': `Bearer ${authToken}`,
