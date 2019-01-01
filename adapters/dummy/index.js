@@ -1,6 +1,7 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 
 const db = require('../../db')
+const dummyVals = require('../../test/prep-db/mongo')
 
 let identity
 
@@ -32,8 +33,9 @@ function sessionFromToken(token) {
 	return sessionCol.findOne({ _id: token })
 }
 function getAuthFor(validator) {
-	// NOTE: for this to work, we need the sessions created in the database beforehand (test/prep-db/)
-	return Promise.resolve(`AUTH_${whoami()}`)
+	if (identity === dummyVals.ids.leader) return Promise.resolve(dummyVals.auth.leader)
+	else if (identity === dummyVals.ids.follower) return Promise.resolve(dummyVals.auth.follower)
+	else return Promise.reject(`no auth token for this identity: ${identity}`)
 }
 
 module.exports = { init, unlock, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }
