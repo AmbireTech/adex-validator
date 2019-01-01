@@ -9,6 +9,7 @@ const followerUrl = 'http://localhost:8006'
 const authToken = 'x8c9v1b2'
 const channelId = 'awesomeTestChannel'
 const defaultPubName = 'myAwesomePublisher'
+const expectedDepositAmnt = 1000
 
 tape('/channel/list', function(t) {
 	fetch(`${leaderUrl}/channel/list`)
@@ -21,6 +22,18 @@ tape('/channel/list', function(t) {
 	})
 	.catch(err => t.fail(err))
 	// @TODO: test channel list filters if there are any
+})
+
+tape('/channel/{id}/status', function(t) {
+	fetch(`${leaderUrl}/channel/${channelId}/tree`)
+	.then(res => res.json())
+	.then(function(resp) {
+		t.ok(resp.channel, 'has resp.channel')
+		t.equal(resp.channel.status, 'live', 'channel has right status')
+		t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
+		t.end()
+	})
+	.catch(err => t.fail(err))
 })
 
 tape('/channel/{id}/tree', function(t) {
@@ -168,7 +181,7 @@ tape('cannot exceed channel deposit', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		t.equal(resp.balances[defaultPubName], '1000', 'balance does not exceed the deposit')
+		t.equal(resp.balances[defaultPubName], expectedDepositAmnt.toString(), 'balance does not exceed the deposit')
 		// @TODO state changed to exhausted, unable to take any more events
 		t.end()
 	})
