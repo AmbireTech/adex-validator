@@ -29,6 +29,8 @@ tape('/channel/{id}/tree', function(t) {
 	.then(function(resp) {
 		t.ok(resp.channel, 'has resp.channel')
 		t.equal(resp.channel.status, 'live', 'channel has right status')
+		t.deepEqual(resp.balances, {}, 'channel has balances')
+		t.equal(new Date(resp.lastEvAggr).getTime(0), 0, 'lastEvAggr is 0')
 		t.end()
 	})
 	.catch(err => t.fail(err))
@@ -79,7 +81,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
 		t.equal(lastNew.msg.balances[defaultPubName], expectedBal, 'NewState: balances is right')
 		t.ok(typeof(lastNew.msg.stateRoot) === 'string' && lastNew.msg.stateRoot.length === 64, 'NewState: stateRoot is sane')
-		t.equals(lastNew.msg.signature, getDummySig(lastNew.msg.stateRoot, lastNew.from), 'NewState: signature is sane')
+		t.equal(lastNew.msg.signature, getDummySig(lastNew.msg.stateRoot, lastNew.from), 'NewState: signature is sane')
 		t.deepEqual(lastNew.msg.balances, tree, 'NewState: balances is the same as the one in /tree')
 
 		// Ensure ApproveState is in order
@@ -87,9 +89,9 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.ok(lastApprove, 'has ApproveState')
 		t.equal(lastApprove.from, channel.validators[1], 'ApproveState: is by the follower')
 		t.ok(typeof(lastApprove.msg.stateRoot) === 'string' && lastApprove.msg.stateRoot.length === 64, 'ApproveState: stateRoot is sane')
-		t.equals(lastApprove.msg.signature, getDummySig(lastApprove.msg.stateRoot, lastApprove.from), 'ApproveState: signature is sane')
-		t.equals(lastNew.msg.stateRoot, lastApprove.msg.stateRoot, 'stateRoot is the same between latest NewState and ApproveState')
-		t.equals(lastApprove.msg.health, 'HEALTHY', 'ApproveState: health value is HEALTHY')
+		t.equal(lastApprove.msg.signature, getDummySig(lastApprove.msg.stateRoot, lastApprove.from), 'ApproveState: signature is sane')
+		t.equal(lastNew.msg.stateRoot, lastApprove.msg.stateRoot, 'stateRoot is the same between latest NewState and ApproveState')
+		t.equal(lastApprove.msg.health, 'HEALTHY', 'ApproveState: health value is HEALTHY')
 
 		// Check inclusion proofs of the balance
 		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
@@ -185,7 +187,10 @@ function postEvents(url, channelId, body) {
 
 function genImpressions(n, pubName) {
 	const events = []
-	for (let i=0; i<n; i++) events.push({ type: 'IMPRESSION', publisher: pubName || defaultPubName })
+	for (let i=0; i<n; i++) events.push({
+		type: 'IMPRESSION',
+		publisher: pubName || defaultPubName,
+	})
 	return { events }
 }
 
