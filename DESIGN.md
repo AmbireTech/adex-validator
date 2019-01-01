@@ -52,11 +52,12 @@ validatorMessages
 - [x] auth token: check if signed message contains a ref to our ID (might need a refactor, since the sentry needs to initialize the adapter)
 - [x] sentry: do not record events if we are not a validator of the channel
 - [x] DB indexes for every complex query
+- [x] tests: full integration tests for main parts
 - [ ] potential bug - what happens if you receive ApproveState but don't know about the channel yet; perhaps go back to Init or just do a Heartbeat
 - [ ] ethereum watcher, configs
 - [ ] tests: what else can be purified?
 - [ ] bench system, pipelined wrk
-- [ ] validator worker: respect campaignSpec and per-impression payment
+- [ ] validator worker: respect campaignSpec and per-impression payment amount
 - [ ] figure out "max channels" dynamic: we need a reliable cap; therefore, we need a way for people to check if the limit is reached
 - [ ] figure out how to properly do limiting max number of events per user (hint: in the sentry by IP/pow)
 - [ ] code TODOs
@@ -65,4 +66,4 @@ validatorMessages
 - [ ] special event types: e.g. validator fees
 - [ ] auth token: eras, invalidate periodically and use a new one
 - [ ] validatorWorker limit: make a locking mechanism to ensure it can't run in a more than one instance
-- [ ] tests: full integration tests for everything
+- [ ] after exceeding the budget, change the state and don't accept any more events
