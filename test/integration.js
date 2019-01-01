@@ -171,6 +171,7 @@ tape('health works correctly', function(t) {
 	.catch(err => t.fail(err))
 })
 
+/*
 tape('post /validator-messages: invalid message', function(t) {
 	postValidatorMsgs(leaderUrl, channelId, { messages: [{ type: 1 }] })
 	.then(function(resp) {
@@ -179,6 +180,7 @@ tape('post /validator-messages: invalid message', function(t) {
 	})
 	.catch(err => t.fail(err))
 })
+*/
 
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${channelId}/status`)
