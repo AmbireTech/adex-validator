@@ -78,19 +78,19 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// ensure NewState is in order
 		const lastNew = msgs.find(x => x.msg.type === 'NewState')
 		t.ok(lastNew, 'has NewState')
-		t.equal(lastNew.from, channelTree.channel.validators[0], 'NewState is by the leader')
-		t.equal(lastNew.msg.balances.myAwesomePublisher, expectedBal, 'balances is right')
-		t.ok(typeof(lastNew.msg.stateRoot) === 'string' && lastNew.msg.stateRoot.length === 64, 'lastNew: stateRoot is sane')
-		t.equals(lastNew.msg.signature, `Dummy adapter signature for ${lastNew.msg.stateRoot} by ${lastNew.from}`, 'lastNew: signature is sane')
+		t.equal(lastNew.from, channelTree.channel.validators[0], 'NewState: is by the leader')
+		t.equal(lastNew.msg.balances.myAwesomePublisher, expectedBal, 'NewState: balances is right')
+		t.ok(typeof(lastNew.msg.stateRoot) === 'string' && lastNew.msg.stateRoot.length === 64, 'NewState: stateRoot is sane')
+		t.equals(lastNew.msg.signature, getDummySig(lastNew.msg.stateRoot, lastNew.from), 'NewState: signature is sane')
 
 		// Ensure ApproveState is in order
 		const lastApprove = msgs.find(x => x.msg.type === 'ApproveState')
 		t.ok(lastApprove, 'has ApproveState')
-		t.equal(lastApprove.from, channelTree.channel.validators[1], 'ApproveState is by the follower')
-		t.ok(typeof(lastApprove.msg.stateRoot) === 'string' && lastApprove.msg.stateRoot.length === 64, 'lastApprove: stateRoot is sane')
-		t.equals(lastApprove.msg.signature, `Dummy adapter signature for ${lastApprove.msg.stateRoot} by ${lastApprove.from}`, 'lastApprove: signature is sane')
+		t.equal(lastApprove.from, channelTree.channel.validators[1], 'ApproveState: is by the follower')
+		t.ok(typeof(lastApprove.msg.stateRoot) === 'string' && lastApprove.msg.stateRoot.length === 64, 'ApproveState: stateRoot is sane')
+		t.equals(lastApprove.msg.signature, getDummySig(lastApprove.msg.stateRoot, lastApprove.from), 'ApproveState: signature is sane')
 		t.equals(lastNew.msg.stateRoot, lastApprove.msg.stateRoot, 'stateRoot is the same between latest NewState and ApproveState')
-		t.equals(lastApprove.msg.health, 'HEALTHY', 'health value is HEALTHY')
+		t.equals(lastApprove.msg.health, 'HEALTHY', 'ApproveState: health value is HEALTHY')
 		//console.log(channelTree.channel.validators)
 		//console.log(lastNew, lastApprove)
 		// @TODO other assertions
@@ -107,6 +107,10 @@ function getEventsImpressionsNum(n) {
 	const events = []
 	for (let i=0; i<n; i++) events.push({ type: 'IMPRESSION', publisher: 'myAwesomePublisher' })
 	return { events }
+}
+
+function getDummySig(hash, from) {
+	return `Dummy adapter signature for ${hash} by ${from}`
 }
 
 function wait(ms) {
