@@ -33,13 +33,7 @@ tape('/channel/{id}/tree', function(t) {
 })
 
 tape('submit events and ensure they are accounted for', function(t) {
-	const evBody = JSON.stringify({
-		events: [
-			{ type: 'IMPRESSION', publisher: 'myAwesomePublisher' },
-			{ type: 'IMPRESSION', publisher: 'myAwesomePublisher' },
-			{ type: 'IMPRESSION', publisher: 'myAwesomePublisher' },
-		]
-	})
+	const evBody = JSON.stringify(getEventsImpressionsNum(3))
 	const expectedBal = '3'
 
 	let channelTree
@@ -105,11 +99,21 @@ tape('submit events and ensure they are accounted for', function(t) {
 	.catch(err => t.fail(err))
 })
 
+//tape('health would change', function() {
+//})
+
+
+function getEventsImpressionsNum(n) {
+	const events = []
+	for (let i=0; i<n; i++) events.push({ type: 'IMPRESSION', publisher: 'myAwesomePublisher' })
+	return { events }
+}
 
 function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))
 }
 
 // @TODO can't trick with negative values
+// @TODO health state changes properly
 // @TODO cannot excdeed deposits
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
