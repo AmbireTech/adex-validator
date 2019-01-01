@@ -129,6 +129,31 @@ tape('health works correctly', function(t) {
 	})
 })
 
+tape('cannot exceed channel deposit', function(t) {
+	fetch(`${leaderUrl}/channel/${channelId}/status`)
+	.then(res => res.json())
+	.then(function(resp) {
+		// 1 event pays 1 token for now
+		// @TODO make this work with a more complex model
+		const evCount = resp.channel.depositAmount + 1
+		return Promise.all([leaderUrl, followerUrl].map(url =>
+			postEvents(url, channelId,
+				JSON.stringify(genImpressions(evCount))
+			)
+		))
+	})
+	.then(() => wait(21000))
+	.then(function() {
+		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		assert.equal(resp.balances.myAwesomePublisher, evCount.toString(), 'balance does not exceed the deposit')
+		// @TODO state changed to exhausted, unable to take any more events
+		t.end()
+	})
+})
+
 function postEvents(url, channelId, body) {
 	return fetch(`${url}/channel/${channelId}/events`, {
 		method: 'POST',
@@ -155,8 +180,7 @@ function wait(ms) {
 }
 
 // @TODO can't trick with negative values
-// @TODO cannot exceed deposits
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
 // @TODO merkle inclusion proofs for balances
 // @TODO full sentry tests
-// @TODO consider separate tests for when/if/how /tree is updated?
+// @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
