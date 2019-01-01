@@ -39,6 +39,14 @@ tape('/channel/{id}/{status,tree}: non existant channel', function(t) {
 	.catch(err => t.fail(err))
 })
 
+tape('POST /channel/{id}/events: non existant channel', function(t) {
+	return postEvents(leaderUrl, 'xxxtentacion', [])
+	.then(function(resp) {
+		t.equal(resp.status, 404, 'status should be 404')
+		t.end()
+	})
+})
+
 tape('/channel/{id}/status', function(t) {
 	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
 	.then(res => res.json())
