@@ -36,7 +36,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 	const evBody = JSON.stringify(getEventsImpressionsNum(3))
 	const expectedBal = '3'
 
-	let channelTree
+	let channel
 
 	Promise.all(
 		[leaderUrl, followerUrl].map(url =>
@@ -60,8 +60,8 @@ tape('submit events and ensure they are accounted for', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		channelTree = resp
-		t.equal(channelTree.balances.myAwesomePublisher, expectedBal, 'balances is right')
+		channel = resp.channel
+		t.equal(resp.balances.myAwesomePublisher, expectedBal, 'balances is right')
 		// We will check the leader, cause this means this happened:
 		// the NewState was generated, sent to the follower,
 		// who generated ApproveState and sent back to the leader
@@ -78,7 +78,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// ensure NewState is in order
 		const lastNew = msgs.find(x => x.msg.type === 'NewState')
 		t.ok(lastNew, 'has NewState')
-		t.equal(lastNew.from, channelTree.channel.validators[0], 'NewState: is by the leader')
+		t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
 		t.equal(lastNew.msg.balances.myAwesomePublisher, expectedBal, 'NewState: balances is right')
 		t.ok(typeof(lastNew.msg.stateRoot) === 'string' && lastNew.msg.stateRoot.length === 64, 'NewState: stateRoot is sane')
 		t.equals(lastNew.msg.signature, getDummySig(lastNew.msg.stateRoot, lastNew.from), 'NewState: signature is sane')
@@ -86,7 +86,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// Ensure ApproveState is in order
 		const lastApprove = msgs.find(x => x.msg.type === 'ApproveState')
 		t.ok(lastApprove, 'has ApproveState')
-		t.equal(lastApprove.from, channelTree.channel.validators[1], 'ApproveState: is by the follower')
+		t.equal(lastApprove.from, channel.validators[1], 'ApproveState: is by the follower')
 		t.ok(typeof(lastApprove.msg.stateRoot) === 'string' && lastApprove.msg.stateRoot.length === 64, 'ApproveState: stateRoot is sane')
 		t.equals(lastApprove.msg.signature, getDummySig(lastApprove.msg.stateRoot, lastApprove.from), 'ApproveState: signature is sane')
 		t.equals(lastNew.msg.stateRoot, lastApprove.msg.stateRoot, 'stateRoot is the same between latest NewState and ApproveState')
@@ -99,8 +99,29 @@ tape('submit events and ensure they are accounted for', function(t) {
 	.catch(err => t.fail(err))
 })
 
-//tape('health would change', function() {
-//})
+tape('health would change', function(t) {
+	fetch(`${followerUrl}/channel/${channelId}/events`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${authToken}`,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify(getEventsImpressionsNum(3))
+	})
+	// wait for the events to be aggregated and new states to be issued
+	.then(() => wait(21000))
+	.then(function() {
+		// get the latest state
+		return fetch(`${followerUrl}/channel/${channelId}/validator-messages`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
+		//t.equal(lastApprove.health, 'UNHEALTHY', 'channel is registered as unhealthy')
+		// @TODO: send events to the leader now, and expect the health to recover
+		t.end()
+	})
+})
 
 
 function getEventsImpressionsNum(n) {
@@ -119,5 +140,7 @@ function wait(ms) {
 
 // @TODO can't trick with negative values
 // @TODO health state changes properly
-// @TODO cannot excdeed deposits
+// @TODO cannot exceed deposits
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
+// @TODO merkle inclusion proofs for balances
+// @TODO full sentry tests
