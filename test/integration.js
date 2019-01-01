@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const tape = require('tape')
 const fetch = require('node-fetch')
+const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 
 // those are hardcoded in ./test/prep-db
 const leaderUrl = 'http://localhost:8005'
@@ -37,11 +38,12 @@ tape('submit events and ensure they are accounted for', function(t) {
 	const expectedBal = '3'
 
 	let channel
+	let tree
 
 	Promise.all(
 		[leaderUrl, followerUrl].map(url => postEvents(url, channelId, evBody))
 	)
-	// @TODO: this number should be auto calibrated *cough*scientifically according to the event aggregate times and validator worker times
+	// @TODO: this number should be auto calibrated *cough* scientifically according to the event aggregate times and validator worker times
 	// for that purpose, the following constants should be accessible from here
 	// validatorWorker snooze time: 10s, eventAggregator service debounce: 10s
 	// even for the balance tree, we need to wait for both, cause the producer tick updates it
@@ -52,6 +54,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 	})
 	.then(function(resp) {
 		channel = resp.channel
+		tree = resp.balances
 		t.equal(resp.balances.myAwesomePublisher, expectedBal, 'balances is right')
 		// We will check the leader, cause this means this happened:
 		// the NewState was generated, sent to the follower,
@@ -73,6 +76,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.equal(lastNew.msg.balances.myAwesomePublisher, expectedBal, 'NewState: balances is right')
 		t.ok(typeof(lastNew.msg.stateRoot) === 'string' && lastNew.msg.stateRoot.length === 64, 'NewState: stateRoot is sane')
 		t.equals(lastNew.msg.signature, getDummySig(lastNew.msg.stateRoot, lastNew.from), 'NewState: signature is sane')
+		t.deepEqual(lastNew.msg.balances, tree, 'NewState: balances is the same as the one in /tree')
 
 		// Ensure ApproveState is in order
 		const lastApprove = msgs.find(x => x.msg.type === 'ApproveState')
@@ -82,9 +86,19 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.equals(lastApprove.msg.signature, getDummySig(lastApprove.msg.stateRoot, lastApprove.from), 'ApproveState: signature is sane')
 		t.equals(lastNew.msg.stateRoot, lastApprove.msg.stateRoot, 'stateRoot is the same between latest NewState and ApproveState')
 		t.equals(lastApprove.msg.health, 'HEALTHY', 'ApproveState: health value is HEALTHY')
-		//console.log(channelTree.channel.validators)
-		//console.log(lastNew, lastApprove)
-		// @TODO other assertions
+
+		// Check inclusion proofs of the balance
+		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
+		const mTree = new MerkleTree(allLeafs)
+		const stateRoot = lastNew.msg.stateRoot
+		t.equals(mTree.getRoot().toString('hex'), stateRoot, 'stateRoot matches merkle tree root')
+
+		// this is a bit out of scope, looks like a test of the MerkleTree lib, 
+		// but better be safe than sorry
+		const leaf = Channel.getBalanceLeaf('myAwesomePublisher', expectedBal)
+		const proof = mTree.proof(leaf)
+		t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
+
 		t.end()
 	})
 	.catch(err => t.fail(err))
@@ -148,7 +162,7 @@ tape('cannot exceed channel deposit', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		assert.equal(resp.balances.myAwesomePublisher, evCount.toString(), 'balance does not exceed the deposit')
+		t.equal(resp.balances.myAwesomePublisher, '1000', 'balance does not exceed the deposit')
 		// @TODO state changed to exhausted, unable to take any more events
 		t.end()
 	})
@@ -179,8 +193,7 @@ function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))
 }
 
-// @TODO can't trick with negative values
-// @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
-// @TODO merkle inclusion proofs for balances
 // @TODO full sentry tests
+// @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
+// @TODO can't trick with negative values (again, by POST validator-messages)
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
