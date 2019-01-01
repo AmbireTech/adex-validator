@@ -8,7 +8,7 @@ const leaderUrl = 'http://localhost:8005'
 const followerUrl = 'http://localhost:8006'
 const authToken = 'x8c9v1b2'
 const channelId = 'awesomeTestChannel'
-const publisherName = 'myAwesomePublisher'
+const defaultPubName = 'myAwesomePublisher'
 
 tape('/channel/list', function(t) {
 	fetch(`${leaderUrl}/channel/list`)
@@ -35,7 +35,10 @@ tape('/channel/{id}/tree', function(t) {
 })
 
 tape('submit events and ensure they are accounted for', function(t) {
-	const evBody = JSON.stringify(genImpressions(3))
+	const evBody = JSON.stringify({
+		events: genImpressions(3).events
+			.concat(genImpressions(2, 'anotherPublisher').events)
+	})
 	const expectedBal = '3'
 
 	let channel
@@ -56,7 +59,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 	.then(function(resp) {
 		channel = resp.channel
 		tree = resp.balances
-		t.equal(resp.balances[publisherName], expectedBal, 'balances is right')
+		t.equal(resp.balances[defaultPubName], expectedBal, 'balances is right')
 		// We will check the leader, cause this means this happened:
 		// the NewState was generated, sent to the follower,
 		// who generated ApproveState and sent back to the leader
@@ -74,7 +77,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		const lastNew = msgs.find(x => x.msg.type === 'NewState')
 		t.ok(lastNew, 'has NewState')
 		t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
-		t.equal(lastNew.msg.balances[publisherName], expectedBal, 'NewState: balances is right')
+		t.equal(lastNew.msg.balances[defaultPubName], expectedBal, 'NewState: balances is right')
 		t.ok(typeof(lastNew.msg.stateRoot) === 'string' && lastNew.msg.stateRoot.length === 64, 'NewState: stateRoot is sane')
 		t.equals(lastNew.msg.signature, getDummySig(lastNew.msg.stateRoot, lastNew.from), 'NewState: signature is sane')
 		t.deepEqual(lastNew.msg.balances, tree, 'NewState: balances is the same as the one in /tree')
@@ -96,7 +99,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 
 		// this is a bit out of scope, looks like a test of the MerkleTree lib, 
 		// but better be safe than sorry
-		const leaf = Channel.getBalanceLeaf(publisherName, expectedBal)
+		const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBal)
 		const proof = mTree.proof(leaf)
 		t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
 
@@ -106,7 +109,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 })
 
 tape('health works correctly', function(t) {
-	const toFollower = 5
+	const toFollower = 8
 	const toLeader = 1
 	const diff = toFollower-toLeader
 	Promise.all(
@@ -163,7 +166,7 @@ tape('cannot exceed channel deposit', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		t.equal(resp.balances[publisherName], '1000', 'balance does not exceed the deposit')
+		t.equal(resp.balances[defaultPubName], '1000', 'balance does not exceed the deposit')
 		// @TODO state changed to exhausted, unable to take any more events
 		t.end()
 	})
@@ -180,9 +183,9 @@ function postEvents(url, channelId, body) {
 	})
 }
 
-function genImpressions(n) {
+function genImpressions(n, pubName) {
 	const events = []
-	for (let i=0; i<n; i++) events.push({ type: 'IMPRESSION', publisher: publisherName })
+	for (let i=0; i<n; i++) events.push({ type: 'IMPRESSION', publisher: pubName || defaultPubName })
 	return { events }
 }
 
