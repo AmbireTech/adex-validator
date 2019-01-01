@@ -171,16 +171,21 @@ tape('health works correctly', function(t) {
 	.catch(err => t.fail(err))
 })
 
-/*
-tape('post /validator-messages: invalid message', function(t) {
-	postValidatorMsgs(leaderUrl, channelId, { messages: [{ type: 1 }] })
+tape('POST /validator-messages: wrong authentication', function(t) {
+	fetch(`${leaderUrl}/channel/${channelId}/validator-messages`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${authToken}`,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify({ messages: [] }),
+	})
 	.then(function(resp) {
-		console.log(resp)
+		t.equal(resp.status, 401, 'status is Unauthorized')
 		t.end()
 	})
 	.catch(err => t.fail(err))
 })
-*/
 
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${channelId}/status`)
@@ -220,17 +225,6 @@ function postEvents(url, channelId, events) {
 	})
 }
 
-function postValidatorMsgs(url, channelId, messages) {
-	return fetch(`${url}/channel/${channelId}/validator-messages`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${authToken}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({ messages }),
-	})
-}
-
 function genImpressions(n, pubName) {
 	const events = []
 	for (let i=0; i<n; i++) events.push({
@@ -248,7 +242,9 @@ function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))
 }
 
+// @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO can't submit validator messages if we are not authenticated as a validator (channelIfActive)
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
 // @TODO can't trick with negative values (again, by POST validator-messages)
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
+// @TODO: tests for the adapters and especially ewt
