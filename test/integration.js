@@ -33,22 +33,13 @@ tape('/channel/{id}/tree', function(t) {
 })
 
 tape('submit events and ensure they are accounted for', function(t) {
-	const evBody = JSON.stringify(getEventsImpressionsNum(3))
+	const evBody = JSON.stringify(genImpressions(3))
 	const expectedBal = '3'
 
 	let channel
 
 	Promise.all(
-		[leaderUrl, followerUrl].map(url =>
-			fetch(`${url}/channel/${channelId}/events`, {
-				method: 'POST',
-				headers: {
-					'authorization': `Bearer ${authToken}`,
-					'content-type': 'application/json',
-				},
-				body: evBody
-			})
-		)
+		[leaderUrl, followerUrl].map(url => postEvents(url, channelId, evBody))
 	)
 	// @TODO: this number should be auto calibrated *cough*scientifically according to the event aggregate times and validator worker times
 	// for that purpose, the following constants should be accessible from here
@@ -99,15 +90,18 @@ tape('submit events and ensure they are accounted for', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('health would change', function(t) {
-	fetch(`${followerUrl}/channel/${channelId}/events`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${authToken}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify(getEventsImpressionsNum(3))
-	})
+tape('health works correctly', function(t) {
+	const toFollower = 5
+	const toLeader = 1
+	const diff = toFollower-toLeader
+	Promise.all(
+		[leaderUrl, followerUrl].map(url =>
+			postEvents(url, channelId,
+				JSON.stringify(genImpressions(url == followerUrl ? toFollower : toLeader))
+			)
+		)
+	)
+	//postEvents(followerUrl, channelId, JSON.stringify(genImpressions(4)))
 	// wait for the events to be aggregated and new states to be issued
 	.then(() => wait(21000))
 	.then(function() {
@@ -117,14 +111,36 @@ tape('health would change', function(t) {
 	})
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
-		//t.equal(lastApprove.health, 'UNHEALTHY', 'channel is registered as unhealthy')
-		// @TODO: send events to the leader now, and expect the health to recover
+		// @TODO: Should we assert balances numbers?
+		t.equal(lastApprove.msg.health, 'UNHEALTHY', 'channel is registered as unhealthy')
+
+		// send events to the leader so it catches up
+		return postEvents(leaderUrl, channelId, JSON.stringify(genImpressions(diff)))
+	})
+	.then(() => wait(21000))
+	.then(function() {
+		return fetch(`${followerUrl}/channel/${channelId}/validator-messages`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
+		t.equal(lastApprove.msg.health, 'HEALTHY', 'channel is registered as healthy')
 		t.end()
 	})
 })
 
+function postEvents(url, channelId, body) {
+	return fetch(`${url}/channel/${channelId}/events`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${authToken}`,
+			'content-type': 'application/json',
+		},
+		body: body
+	})
+}
 
-function getEventsImpressionsNum(n) {
+function genImpressions(n) {
 	const events = []
 	for (let i=0; i<n; i++) events.push({ type: 'IMPRESSION', publisher: 'myAwesomePublisher' })
 	return { events }
@@ -139,8 +155,8 @@ function wait(ms) {
 }
 
 // @TODO can't trick with negative values
-// @TODO health state changes properly
 // @TODO cannot exceed deposits
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
 // @TODO merkle inclusion proofs for balances
 // @TODO full sentry tests
+// @TODO consider separate tests for when/if/how /tree is updated?
