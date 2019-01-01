@@ -55,6 +55,12 @@ Integration tests:
 npm run test-integration
 ```
 
+Run both:
+
+```
+npm test && npm run test-integration
+```
+
 ## Environment
 
 ``PORT``
