@@ -3,13 +3,11 @@ const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 
-// those are hardcoded in ./test/prep-db
-const leaderUrl = 'http://localhost:8005'
-const followerUrl = 'http://localhost:8006'
-const authToken = 'x8c9v1b2'
-const channelId = 'awesomeTestChannel'
-const defaultPubName = 'myAwesomePublisher'
-const expectedDepositAmnt = 1000
+const dummyVals = require('./prep-db/mongo')
+const leaderUrl = dummyVals.channel.spec.validators[0].url
+const followerUrl = dummyVals.channel.spec.validators[1].url
+const defaultPubName = dummyVals.ids.publisher
+const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 // @TODO: this number should be auto calibrated *cough* scientifically according to the event aggregate times and validator worker times
 // for that purpose, the following constants should be accessible from here
@@ -40,7 +38,7 @@ tape('/channel/{id}/status: non existant channel', function(t) {
 })
 
 tape('/channel/{id}/status', function(t) {
-	fetch(`${leaderUrl}/channel/${channelId}/tree`)
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
 	.then(res => res.json())
 	.then(function(resp) {
 		t.ok(resp.channel, 'has resp.channel')
@@ -52,7 +50,7 @@ tape('/channel/{id}/status', function(t) {
 })
 
 tape('/channel/{id}/tree', function(t) {
-	fetch(`${leaderUrl}/channel/${channelId}/tree`)
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
 	.then(res => res.json())
 	.then(function(resp) {
 		t.ok(resp.channel, 'has resp.channel')
@@ -72,11 +70,11 @@ tape('submit events and ensure they are accounted for', function(t) {
 	let tree
 
 	Promise.all(
-		[leaderUrl, followerUrl].map(url => postEvents(url, channelId, evs))
+		[leaderUrl, followerUrl].map(url => postEvents(url, dummyVals.channel.id, evs))
 	)
 	.then(() => wait(waitTime))
 	.then(function() {
-		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
+		return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
 		.then(res => res.json())
 	})
 	.then(function(resp) {
@@ -88,7 +86,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// who generated ApproveState and sent back to the leader
 		// first wait though, as we need the follower to discover they have an event to approve
 		return wait(11000).then(function() {
-			return fetch(`${leaderUrl}/channel/${channelId}/validator-messages`)
+			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`)
 			.then(res => res.json())
 		})
 	})
@@ -137,17 +135,17 @@ tape('health works correctly', function(t) {
 	const diff = toFollower-toLeader
 	Promise.all(
 		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, channelId,
+			postEvents(url, dummyVals.channel.id,
 				genImpressions(url == followerUrl ? toFollower : toLeader)
 			)
 		)
 	)
-	//postEvents(followerUrl, channelId, genImpressions(4))
+	//postEvents(followerUrl, dummyVals.channel.id, genImpressions(4))
 	// wait for the events to be aggregated and new states to be issued
 	.then(() => wait(waitTime))
 	.then(function() {
 		// get the latest state
-		return fetch(`${followerUrl}/channel/${channelId}/validator-messages`)
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`)
 		.then(res => res.json())
 	})
 	.then(function(resp) {
@@ -156,11 +154,11 @@ tape('health works correctly', function(t) {
 		t.equal(lastApprove.msg.health, 'UNHEALTHY', 'channel is registered as unhealthy')
 
 		// send events to the leader so it catches up
-		return postEvents(leaderUrl, channelId, genImpressions(diff))
+		return postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
-		return fetch(`${followerUrl}/channel/${channelId}/validator-messages`)
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`)
 		.then(res => res.json())
 	})
 	.then(function(resp) {
@@ -172,10 +170,10 @@ tape('health works correctly', function(t) {
 })
 
 tape('POST /validator-messages: wrong authentication', function(t) {
-	fetch(`${leaderUrl}/channel/${channelId}/validator-messages`, {
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 		method: 'POST',
 		headers: {
-			'authorization': `Bearer ${authToken}`,
+			'authorization': `Bearer WRONG AUTH`,
 			'content-type': 'application/json',
 		},
 		body: JSON.stringify({ messages: [] }),
@@ -188,19 +186,19 @@ tape('POST /validator-messages: wrong authentication', function(t) {
 })
 
 tape('cannot exceed channel deposit', function(t) {
-	fetch(`${leaderUrl}/channel/${channelId}/status`)
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
 	.then(res => res.json())
 	.then(function(resp) {
 		// 1 event pays 1 token for now
 		// @TODO make this work with a more complex model
 		const evCount = resp.channel.depositAmount + 1
 		return Promise.all([leaderUrl, followerUrl].map(url =>
-			postEvents(url, channelId, genImpressions(evCount))
+			postEvents(url, dummyVals.channel.id, genImpressions(evCount))
 		))
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
-		return fetch(`${leaderUrl}/channel/${channelId}/tree`)
+		return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
 		.then(res => res.json())
 	})
 	.then(function(resp) {
@@ -218,7 +216,7 @@ function postEvents(url, channelId, events) {
 	return fetch(`${url}/channel/${channelId}/events`, {
 		method: 'POST',
 		headers: {
-			'authorization': `Bearer ${authToken}`,
+			'authorization': `Bearer ${dummyVals.auth.user}`,
 			'content-type': 'application/json',
 		},
 		body: JSON.stringify({ events }),

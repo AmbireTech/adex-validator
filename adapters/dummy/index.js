@@ -32,7 +32,7 @@ function sessionFromToken(token) {
 	return sessionCol.findOne({ _id: token })
 }
 function getAuthFor(validator) {
-	// NOTE: for this to work, we need the sessions created in the database beforehand
+	// NOTE: for this to work, we need the sessions created in the database beforehand (test/prep-db/)
 	return Promise.resolve(`AUTH_${whoami()}`)
 }
 
