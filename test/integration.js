@@ -30,6 +30,15 @@ tape('/channel/list', function(t) {
 	// @TODO: test channel list filters if there are any
 })
 
+tape('/channel/{id}/status: non existant channel', function(t) {
+	fetch(`${leaderUrl}/channel/xxxtentacion/tree`)
+	.then(function(res) {
+		t.equal(res.status, 404, 'status should be 404')
+		t.end()
+	})
+	.catch(err => t.fail(err))
+})
+
 tape('/channel/{id}/status', function(t) {
 	fetch(`${leaderUrl}/channel/${channelId}/tree`)
 	.then(res => res.json())
@@ -56,17 +65,14 @@ tape('/channel/{id}/tree', function(t) {
 })
 
 tape('submit events and ensure they are accounted for', function(t) {
-	const evBody = JSON.stringify({
-		events: genImpressions(3).events
-			.concat(genImpressions(2, 'anotherPublisher').events)
-	})
+	const evs = genImpressions(3).concat(genImpressions(2, 'anotherPublisher'))
 	const expectedBal = '3'
 
 	let channel
 	let tree
 
 	Promise.all(
-		[leaderUrl, followerUrl].map(url => postEvents(url, channelId, evBody))
+		[leaderUrl, followerUrl].map(url => postEvents(url, channelId, evs))
 	)
 	.then(() => wait(waitTime))
 	.then(function() {
@@ -132,11 +138,11 @@ tape('health works correctly', function(t) {
 	Promise.all(
 		[leaderUrl, followerUrl].map(url =>
 			postEvents(url, channelId,
-				JSON.stringify(genImpressions(url == followerUrl ? toFollower : toLeader))
+				genImpressions(url == followerUrl ? toFollower : toLeader)
 			)
 		)
 	)
-	//postEvents(followerUrl, channelId, JSON.stringify(genImpressions(4)))
+	//postEvents(followerUrl, channelId, genImpressions(4))
 	// wait for the events to be aggregated and new states to be issued
 	.then(() => wait(waitTime))
 	.then(function() {
@@ -150,7 +156,7 @@ tape('health works correctly', function(t) {
 		t.equal(lastApprove.msg.health, 'UNHEALTHY', 'channel is registered as unhealthy')
 
 		// send events to the leader so it catches up
-		return postEvents(leaderUrl, channelId, JSON.stringify(genImpressions(diff)))
+		return postEvents(leaderUrl, channelId, genImpressions(diff))
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
@@ -165,8 +171,14 @@ tape('health works correctly', function(t) {
 	.catch(err => t.fail(err))
 })
 
-//tape('post /validator-messages: invalid message', function(t) {
-//})
+tape('post /validator-messages: invalid message', function(t) {
+	postValidatorMsgs(leaderUrl, channelId, { messages: [{ type: 1 }] })
+	.then(function(resp) {
+		console.log(resp)
+		t.end()
+	})
+	.catch(err => t.fail(err))
+})
 
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${channelId}/status`)
@@ -176,9 +188,7 @@ tape('cannot exceed channel deposit', function(t) {
 		// @TODO make this work with a more complex model
 		const evCount = resp.channel.depositAmount + 1
 		return Promise.all([leaderUrl, followerUrl].map(url =>
-			postEvents(url, channelId,
-				JSON.stringify(genImpressions(evCount))
-			)
+			postEvents(url, channelId, genImpressions(evCount))
 		))
 	})
 	.then(() => wait(waitTime))
@@ -197,25 +207,25 @@ tape('cannot exceed channel deposit', function(t) {
 	.catch(err => t.fail(err))
 })
 
-function postEvents(url, channelId, body) {
+function postEvents(url, channelId, events) {
 	return fetch(`${url}/channel/${channelId}/events`, {
 		method: 'POST',
 		headers: {
 			'authorization': `Bearer ${authToken}`,
 			'content-type': 'application/json',
 		},
-		body: body
+		body: JSON.stringify({ events }),
 	})
 }
 
-function postValidatorMsgs(url, channelId, body) {
+function postValidatorMsgs(url, channelId, messages) {
 	return fetch(`${url}/channel/${channelId}/validator-messages`, {
 		method: 'POST',
 		headers: {
 			'authorization': `Bearer ${authToken}`,
 			'content-type': 'application/json',
 		},
-		body: body
+		body: JSON.stringify({ messages }),
 	})
 }
 
@@ -225,7 +235,7 @@ function genImpressions(n, pubName) {
 		type: 'IMPRESSION',
 		publisher: pubName || defaultPubName,
 	})
-	return { events }
+	return events
 }
 
 function getDummySig(hash, from) {
@@ -236,6 +246,7 @@ function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))
 }
 
+// @TODO can't submit validator messages if we are not authenticated as a validator (channelIfActive)
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
 // @TODO can't trick with negative values (again, by POST validator-messages)
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
