@@ -112,4 +112,4 @@ function wait(ms) {
 
 // @TODO can't trick with negative values
 // @TODO cannot excdeed deposits
-// @TODO can't submit states that aren't signed and valid (everything re msg propagation)
+// @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
