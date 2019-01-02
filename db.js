@@ -14,7 +14,7 @@ function connect() {
 
 function getMongo() {
 	if (mongoClient) return mongoClient.db(dbName)
-	else return null
+	else throw 'db.connect() needs to be invoked before using getMongo()'
 }
 
 module.exports = { connect, getMongo }
