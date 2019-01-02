@@ -224,6 +224,27 @@ tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follo
 	.catch(err => t.fail(err))
 })
 
+tape('POST /channel/{id}/events: malformed events', function(t) {
+	Promise.all([
+		null,
+		{ type: 1 },
+		{ type: null },
+	].map(ev =>
+		fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
+			method: 'POST',
+			headers: {
+				'authorization': `Bearer ${dummyVals.auth.user}`,
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({ events: [ev] }),
+		})
+		.then(function(resp) {
+			t.equal(resp.status, 400, 'status is BadRequest')
+		})
+	))
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
 
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
