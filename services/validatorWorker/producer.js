@@ -1,29 +1,26 @@
 const assert = require('assert')
 const BN = require('bn.js')
 const db = require('../../db')
-
-const MAX_PER_TICK = 100
+const cfg = require('../../cfg')
 
 function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const stateTreeCol = db.getMongo().collection('channelStateTrees')
-
-	// @TODO obtain channel payment info
 
 	return stateTreeCol.findOne({ _id: channel.id })
 	.then(function(stateTree) {
 		return stateTree || { balances: {}, lastEvAggr: new Date(0) }
 	})
 	.then(function(stateTree) {
-		// isStateTreeNew is used in order to make the system produce a NewState on each channel we find for the first time
+		// hasNoPrevStateTree is used in order to make the system produce a NewState on each channel we find for the first time
 		const hasNoPrevStateTree = !stateTree._id
+		// Process eventAggregates, from old to new, newer than the lastEvAggr time
 		return eventAggrCol.find({
 			channelId: channel.id,
 			created: { $gt: stateTree.lastEvAggr }
 		})
-		// @TODO restore this limit, but it requires sorting by created from old to new
-		// otherwise, created: { $gt: xxx } would break
-		//.limit(MAX_PER_TICK)
+		.sort({ created: 1 })
+		.limit(cfg.PRODUCER_MAX_AGGR_PER_TICK)
 		.toArray()
 		.then(function(aggrs) {
 			logMerge(channel, aggrs)
@@ -36,6 +33,7 @@ function tick(channel, force) {
 			const { balances, newStateTree } = mergeAggrs(
 				stateTree,
 				aggrs,
+				// @TODO obtain channel payment info
 				{ amount: 1, depositAmount: channel.depositAmount }
 			)
 
@@ -53,6 +51,7 @@ function tick(channel, force) {
 }
 
 // Pure, should not mutate inputs
+// @TODO isolate those pure functions into a separate file
 function mergeAggrs(stateTree, aggrs, paymentInfo) {
 	const newStateTree = { balances: {}, lastEvAggr: stateTree.lastEvAggr }
 
