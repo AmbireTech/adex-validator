@@ -102,7 +102,7 @@ function postValidatorMessages(req, res, next) {
 
 function postEvents(req, res, next) {
 	const events = req.body.events
-	const isValid = Array.isArray(events) && events.every(ev => ev && typeof(ev.type)==='string')
+	const isValid = Array.isArray(events) && events.every(isEventValid)
 	if (!isValid) {
 		res.sendStatus(400)
 		return
@@ -124,6 +124,10 @@ function isValidatorMsgValid(msg) {
 			(msg.type === 'NewState' && typeof(msg.balances) === 'object')
 			|| msg.type === 'ApproveState'
 		)
+}
+
+function isEventValid(ev) {
+	return ev && typeof(ev.type)==='string'
 }
 
 function authRequired(req, res, next) {
