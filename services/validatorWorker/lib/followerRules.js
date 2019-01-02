@@ -1,7 +1,6 @@
 const BN = require('bn.js')
-
-// in promilles
-const HEALTH_THRESHOLD = new BN(950)
+const cfg = require('../../../cfg')
+const HEALTH_THRESHOLD = new BN(cfg.HEALTH_THRESHOLD_PROMILLES)
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {
