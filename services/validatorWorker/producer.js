@@ -12,8 +12,6 @@ function tick(channel, force) {
 		return stateTree || { balances: {}, lastEvAggr: new Date(0) }
 	})
 	.then(function(stateTree) {
-		// hasNoPrevStateTree is used in order to make the system produce a NewState on each channel we find for the first time
-		const hasNoPrevStateTree = !stateTree._id
 		// Process eventAggregates, from old to new, newer than the lastEvAggr time
 		return eventAggrCol.find({
 			channelId: channel.id,
@@ -27,7 +25,7 @@ function tick(channel, force) {
 
 			const shouldUpdate = force || aggrs.length
 			if (!shouldUpdate) {
-				return { channel, hasNoPrevStateTree }
+				return { channel }
 			}
 
 			const { balances, newStateTree } = mergeAggrs(
@@ -44,7 +42,7 @@ function tick(channel, force) {
 				{ upsert: true }
 			)
 			.then(function() {
-				return { channel, balances, hasNoPrevStateTree, newStateTree }
+				return { channel, balances, newStateTree }
 			})
 		})
 	})
