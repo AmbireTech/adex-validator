@@ -24,7 +24,6 @@ function init(opts) {
 		address = formatAddress('0x'+JSON.parse(json).address)
 		console.log(`Ethereum address: ${whoami()}`)
 	})
-
 }
 
 function unlock(opts) {
@@ -34,7 +33,6 @@ function unlock(opts) {
 	.then(w => {
 		wallet = w
 	})
-
 }
 
 function whoami() {

@@ -27,10 +27,10 @@ function verify(token) {
 	const parts = token.split('.')
 	const msg = parts.slice(0, 2).join('.')
 	const sigBuf = Buffer.from(parts[2], 'base64')
-	const recoveredAddr = ethers.utils.verifyMessage(msg, sigBuf)
+	const from = ethers.utils.verifyMessage(msg, sigBuf)
 	try {
 		const payload = JSON.parse(base64.decode(parts[1]))
-		return Promise.resolve({ from: recoveredAddr, payload })
+		return Promise.resolve({ from, payload })
 	} catch(e) {
 		return Promise.reject(e)
 	}
