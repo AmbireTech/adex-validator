@@ -1,15 +1,11 @@
 #!/usr/bin/env node
 const assert = require('assert')
 const yargs = require('yargs')
+const cfg = require('../cfg')
 const db = require('../db')
 const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
-
-const MAX_CHANNELS = 512
-// @TODO: choose that in a rational way, rather than using a magic number
-const SNOOZE_TIME = 1000
-const WAIT_TIME = 500
 
 const argv = yargs
 	.usage('Usage $0 [options]')
@@ -34,18 +30,18 @@ db.connect()
 	
 	function allChannelsTick() {
 		return channelsCol.find({ validators: adapter.whoami() })
-		.limit(MAX_CHANNELS)
+		.limit(cfg.MAX_CHANNELS)
 		.toArray()
 		.then(function(channels) {
 			return Promise.all([
 				Promise.all(channels.map(validatorTick)),
-				wait(WAIT_TIME)
+				wait(cfg.WAIT_TIME)
 			])
 		})
 		.then(function([allResults, _]) {
 			// If nothing is new, snooze
 			if (allResults.every(x => x && x.nothingNew)) {
-				return wait(SNOOZE_TIME)
+				return wait(cfg.SNOOZE_TIME)
 			}
 			logPostChannelsTick(allResults)
 		})
@@ -78,4 +74,7 @@ function wait(ms) {
 
 function logPostChannelsTick(channels) {
 	console.log(`validatorWorker: processed ${channels.length} channels`)
+	if (channels.length === cfg.MAX_CHANNELS) {
+		console.log(`validatorWorker: WARNING: channel limit cfg.MAX_CHANNELS=${cfg.MAX_CHANNELS} reached`)
+	}
 }
