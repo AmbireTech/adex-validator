@@ -2,6 +2,7 @@ const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 const { Wallet } = require('ethers')
 const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
+const assert = require('assert')
 const fs = require('fs')
 const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
@@ -17,7 +18,7 @@ let keystoreJson = null
 let wallet = null
 
 function init(opts) {
-	if (typeof(opts.keystoreFile) !== 'string') throw 'ethereum adapter: keystoreFile required'
+	assert.ok(typeof(opts.keystoreFile) == 'string', 'keystoreFile required')
 	return readFile(opts.keystoreFile)
 	.then(json => {
 		keystoreJson = json
@@ -27,8 +28,8 @@ function init(opts) {
 }
 
 function unlock(opts) {
-	if (keystoreJson === null) throw 'call init() first'
-	if (typeof(opts.keystorePwd) !== 'string') throw 'ethereum adapter: keystorePwd required'
+	assert.ok(keystoreJson != null, 'init() needs to be called before unlock()')
+	assert.ok(typeof(opts.keystorePwd) == 'string', 'keystorePwd required')
 	return Wallet.fromEncryptedJson(keystoreJson, opts.keystorePwd)
 	.then(w => {
 		wallet = w

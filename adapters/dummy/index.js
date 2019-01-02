@@ -1,11 +1,11 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
-
+const assert = require('assert')
 const dummyVals = require('../../test/prep-db/mongo')
 
 let identity = null
 
 function init(opts) {
-	if (typeof(opts.dummyIdentity) !== 'string') throw 'dummy adapter: identity required'
+	assert.ok(typeof(opts.dummyIdentity) == 'string', 'dentity required')
 	identity = opts.dummyIdentity
 	return Promise.resolve()
 }
