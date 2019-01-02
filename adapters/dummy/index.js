@@ -1,6 +1,5 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 
-const db = require('../../db')
 const dummyVals = require('../../test/prep-db/mongo')
 
 let identity
@@ -29,12 +28,13 @@ function getBalanceLeaf(acc, bal) {
 
 // Authentication tokens
 function sessionFromToken(token) {
-	const sessionCol = db.getMongo().collection('sessions')
-	return sessionCol.findOne({ _id: token })
+	const who = Object.entries(dummyVals.auth).find(v => v[1] == token)
+	if (who) return Promise.resolve({ uid: dummyVals.ids[who[0]] })
+	else return Promise.resolve(null)
 }
 function getAuthFor(validator) {
-	if (identity === dummyVals.ids.leader) return Promise.resolve(dummyVals.auth.leader)
-	else if (identity === dummyVals.ids.follower) return Promise.resolve(dummyVals.auth.follower)
+	const who = Object.entries(dummyVals.ids).find(v => v[1] == identity)
+	if (who) return Promise.resolve(dummyVals.auth[who[0]])
 	else return Promise.reject(`no auth token for this identity: ${identity}`)
 }
 

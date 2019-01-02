@@ -31,9 +31,5 @@ const dummyVals = {
 
 if (typeof(module) !== 'undefined') module.exports = dummyVals
 if (typeof(db) !== 'undefined') {
-	db.sessions.insert({ _id: dummyVals.auth.user, uid: dummyVals.ids.user })
-	db.sessions.insert({ _id: dummyVals.auth.leader, uid: dummyVals.ids.leader })
-	db.sessions.insert({ _id: dummyVals.auth.follower, uid: dummyVals.ids.follower })
-
 	db.channels.insert(dummyVals.channel)
 }

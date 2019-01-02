@@ -80,6 +80,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 	let tree
 
 	Promise.all(
+		// @TODO maybe we should assert that the status is 200 here?
 		[leaderUrl, followerUrl].map(url => postEvents(url, dummyVals.channel.id, evs))
 	)
 	.then(() => wait(waitTime))
