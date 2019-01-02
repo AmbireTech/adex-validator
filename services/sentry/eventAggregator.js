@@ -1,7 +1,6 @@
 const throttle = require('lodash.throttle')
 const db = require('../../db')
-
-const AGGREGATION_THROTTLE = 10000
+const cfg = require('../../cfg')
 
 const recorders = {}
 
@@ -15,7 +14,7 @@ function record(channelId, userId, events) {
 }
 
 function makeRecorder(channelId) {
-	const newObject = () => { return { channelId, created: new Date(), events: {} } }
+	const newObject = () => ({ channelId, created: new Date(), events: {} })
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 
 	// persist each individual aggregate
@@ -42,7 +41,7 @@ function makeRecorder(channelId) {
 		// to ensure we always persist toSave's, we have a separate queue
 		persist(toSave)
 	}
-	const throttledPersistAndReset = throttle(persistAndReset, AGGREGATION_THROTTLE, { leading: false, trailing: true })
+	const throttledPersistAndReset = throttle(persistAndReset, cfg.AGGR_THROTTLE, { leading: false, trailing: true })
 
 	return function(userId, events) {
 		events.forEach(function(ev) {

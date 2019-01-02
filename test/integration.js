@@ -3,18 +3,17 @@ const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 
+const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
-// @TODO: this number should be auto calibrated *cough* scientifically according to the event aggregate times and validator worker times
-// for that purpose, the following constants should be accessible from here
-// validatorWorker snooze time: 10s, eventAggregator service debounce: 10s
-// even for the balance tree, we need to wait for both, cause the producer tick updates it
-const waitTime = 21000
-const waitAggrTime = 11000
+// Times to wait before being sure the sentry + validator workers have updated everything
+// 500ms is just to "make sure" we're giving it enough time
+const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME*2 + cfg.WAIT_TIME*2 + 500
+const waitAggrTime = cfg.AGGR_THROTTLE + 500
 
 tape('/channel/list', function(t) {
 	fetch(`${leaderUrl}/channel/list`)
