@@ -202,6 +202,7 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 
 tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', function(t) {
 	Promise.all([
+		null,
 		{ type: 1 },
 		{ type: 'NewState' },
 		{ type: 'NewState', balances: 'iamobject' },
