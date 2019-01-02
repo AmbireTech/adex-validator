@@ -8,7 +8,6 @@ Reference implementation
 
 ## Colletions
 
-sessions
 eventAggregates (timed by N seconds, omit empty)
 channels (should also contain campaignSpec)
 channelStateTrees (full state tree)
