@@ -78,7 +78,6 @@ function getLatestMsg(channelId, from, type) {
 	.limit(1)
 	.toArray()
 	.then(function([o]) {
-		// @TODO assert validity
 		return o ? o.msg : null
 	})
 }
