@@ -203,7 +203,7 @@ tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follo
 	Promise.all([
 		{ type: 1 },
 		// @TODO: implement the validation needed to handle those
-		//{ type: 'NewState' },
+		{ type: 'NewState' },
 	].map(msg =>
 		fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',

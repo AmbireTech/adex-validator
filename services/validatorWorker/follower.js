@@ -31,7 +31,6 @@ function tick(adapter, channel) {
 }
 
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
-	// @TODO: how do we ensure the validity of newMsg?
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
 	if (!isValidTransition(channel, prevBalances, newBalances)) {

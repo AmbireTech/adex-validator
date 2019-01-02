@@ -82,9 +82,7 @@ function postValidatorMessages(req, res, next) {
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const messages = req.body.messages
-	// @TODO: more sophisticated validation; perhaps make a model: new ValidatorMessage() and then .isValid()
-	const isValid = Array.isArray(messages)
-		&& messages.every(msg => msg.type === 'NewState' || msg.type === 'ApproveState')
+	const isValid = Array.isArray(messages) && messages.every(isValidatorMsgValid)
 	if (!isValid) {
 		res.sendStatus(400)
 		return
@@ -117,6 +115,16 @@ function postEvents(req, res, next) {
 }
 
 // Helpers
+function isValidatorMsgValid(msg) {
+	// @TODO either make this more sophisticated, or rewrite this in a type-safe lang
+	return typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64
+		&& typeof(msg.signature) === 'string'
+		&& (
+			(msg.type === 'NewState' && typeof(msg.balances) === 'object')
+			|| msg.type === 'ApproveState'
+		)
+}
+
 function authRequired(req, res, next) {
 	if (!req.session) {
 		res.sendStatus(401)
