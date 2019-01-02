@@ -15,7 +15,6 @@ const dummyVals = {
 		_id: 'awesomeTestChannel',
 		id: 'awesomeTestChannel',
 		status: 'live',
-		// @TODO: ERC20 addr
 		depositAsset: 'DAI',
 		depositAmount: 1000,
 		validators: ['awesomeLeader', 'awesomeFollower'],
