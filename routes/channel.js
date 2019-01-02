@@ -101,11 +101,13 @@ function postValidatorMessages(req, res, next) {
 }
 
 function postEvents(req, res, next) {
-	if (!Array.isArray(req.body.events)) {
+	const events = req.body.events
+	const isValid = Array.isArray(events) && events.every(ev => ev && typeof(ev.type)==='string')
+	if (!isValid) {
 		res.sendStatus(400)
 		return
 	}
-	eventAggrService.record(req.params.id, req.session.uid, req.body.events)
+	eventAggrService.record(req.params.id, req.session.uid, events)
 	.then(function() {
 		res.send({ success: true })
 	})
@@ -115,7 +117,8 @@ function postEvents(req, res, next) {
 // Helpers
 function isValidatorMsgValid(msg) {
 	// @TODO either make this more sophisticated, or rewrite this in a type-safe lang
-	return typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64
+	return msg
+		&& typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64
 		&& typeof(msg.signature) === 'string'
 		&& (
 			(msg.type === 'NewState' && typeof(msg.balances) === 'object')

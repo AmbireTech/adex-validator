@@ -13,7 +13,7 @@ function reduce(userId, aggr, ev) {
 }
 
 function mergeImpressionEv(map, ev) {
-	if (!ev.publisher) return map
+	if (typeof(ev.publisher)!=='string') return map
 	if (!map) map = {}
 	if (!map[ev.publisher]) map[ev.publisher] = 0
 	map[ev.publisher]++
