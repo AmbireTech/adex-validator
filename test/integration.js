@@ -14,6 +14,7 @@ const expectedDepositAmnt = dummyVals.channel.depositAmount
 // validatorWorker snooze time: 10s, eventAggregator service debounce: 10s
 // even for the balance tree, we need to wait for both, cause the producer tick updates it
 const waitTime = 21000
+const waitAggrTime = 11000
 
 tape('/channel/list', function(t) {
 	fetch(`${leaderUrl}/channel/list`)
@@ -96,7 +97,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// the NewState was generated, sent to the follower,
 		// who generated ApproveState and sent back to the leader
 		// first wait though, as we need the follower to discover they have an event to approve
-		return wait(11000).then(function() {
+		return wait(waitAggrTime).then(function() {
 			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`)
 			.then(res => res.json())
 		})
@@ -276,7 +277,7 @@ function getDummySig(hash, from) {
 }
 
 function wait(ms) {
-	return new Promise((resolve, reject) => setTimeout(resolve, ms))
+	return new Promise((resolve, _) => setTimeout(resolve, ms))
 }
 
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth

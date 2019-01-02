@@ -61,7 +61,7 @@ db.connect()
 
 function validatorTick(channel) {
 	const validatorIdx = channel.validators.indexOf(adapter.whoami())
-	assert.ok(validatorIdx >= 0, 'validatorTick: processing a channel where we are not validating')
+	assert.ok(validatorIdx !== -1, 'validatorTick: processing a channel where we are not validating')
 
 	const isLeader = validatorIdx == 0
 	const tick = isLeader ? leader.tick : follower.tick
@@ -69,7 +69,7 @@ function validatorTick(channel) {
 }
 
 function wait(ms) {
-	return new Promise((resolve, reject) => setTimeout(resolve, ms))
+	return new Promise((resolve, _) => setTimeout(resolve, ms))
 }
 
 function logPostChannelsTick(channels) {
