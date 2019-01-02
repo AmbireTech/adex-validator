@@ -117,6 +117,7 @@ function postEvents(req, res, next) {
 // Helpers
 function isValidatorMsgValid(msg) {
 	// @TODO either make this more sophisticated, or rewrite this in a type-safe lang
+	// for example, we should validate if every value in balances is a positive integer
 	return msg
 		&& typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64
 		&& typeof(msg.signature) === 'string'
