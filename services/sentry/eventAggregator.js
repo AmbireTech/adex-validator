@@ -2,14 +2,14 @@ const throttle = require('lodash.throttle')
 const db = require('../../db')
 const cfg = require('../../cfg')
 
-const recorders = {}
+const recorders = new Map()
 
 function record(channelId, userId, events) {
-	if (!recorders[channelId]) {
-		recorders[channelId] = makeRecorder(channelId)
+	if (!recorders.has(channelId)) {
+		recorders.set(channelId, makeRecorder(channelId))
 	}
 
-	recorders[channelId](userId, events)
+	recorders.get(channelId)(userId, events)
 	return Promise.resolve()
 }
 
@@ -19,6 +19,7 @@ function makeRecorder(channelId) {
 
 	// persist each individual aggregate
 	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
+	// @TODO figure out if this will leak memory (cause of the long promise chain we are creating)
 	let saveQueue = Promise.resolve()
 	const persist = function(toSave) {
 		saveQueue = saveQueue.then(function() {
