@@ -5,7 +5,7 @@ const dummyVals = require('../../test/prep-db/mongo')
 let identity = null
 
 function init(opts) {
-	assert.ok(typeof(opts.dummyIdentity) == 'string', 'dentity required')
+	assert.ok(typeof(opts.dummyIdentity) == 'string', 'dummyIdentity required')
 	identity = opts.dummyIdentity
 	return Promise.resolve()
 }
