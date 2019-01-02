@@ -52,7 +52,6 @@ function getBalanceLeaf(acc, bal) {
 
 // Authentication tokens
 function sessionFromToken(token) {
-	// @TODO: should we perform prior validation here? we can also just make ewt.verify stronger
 	const tokenId = token.slice(0, -16)
 	if (tokensVerified.has(tokenId)) {
 		// @TODO: validate era
