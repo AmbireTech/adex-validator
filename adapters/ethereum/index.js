@@ -41,6 +41,7 @@ function whoami() {
 }
 
 function sign(stateRoot) {
+	assert.ok(wallet, 'unlock() must be called before sign()')
 	// signMessage takes Arrayish, so Buffer too: https://docs.ethers.io/ethers.js/html/api-utils.html#arrayish
 	return wallet.signMessage(stateRoot)
 }
