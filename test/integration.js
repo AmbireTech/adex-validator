@@ -202,8 +202,9 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', function(t) {
 	Promise.all([
 		{ type: 1 },
-		// @TODO: implement the validation needed to handle those
 		{ type: 'NewState' },
+		{ type: 'NewState', balances: 'iamobject' },
+		{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' },
 	].map(msg =>
 		fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
