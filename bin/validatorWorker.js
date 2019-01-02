@@ -6,10 +6,10 @@ const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
 
-// @TODO: choose that in a rational way, rather than using a magic number
 const MAX_CHANNELS = 512
-const SNOOZE_TIME = 10000
-const WAIT_TIME = 1000
+// @TODO: choose that in a rational way, rather than using a magic number
+const SNOOZE_TIME = 1000
+const WAIT_TIME = 500
 
 const argv = yargs
 	.usage('Usage $0 [options]')
@@ -37,7 +37,6 @@ db.connect()
 		.limit(MAX_CHANNELS)
 		.toArray()
 		.then(function(channels) {
-			logPreChannelsTick(channels)
 			return Promise.all([
 				Promise.all(channels.map(validatorTick)),
 				wait(WAIT_TIME)
@@ -48,6 +47,7 @@ db.connect()
 			if (allResults.every(x => x && x.nothingNew)) {
 				return wait(SNOOZE_TIME)
 			}
+			logPostChannelsTick(allResults)
 		})
 	}
 
@@ -76,6 +76,6 @@ function wait(ms) {
 	return new Promise((resolve, reject) => setTimeout(resolve, ms))
 }
 
-function logPreChannelsTick(channels) {
-	console.log(`validatorWorker: processing ${channels.length} channels`)
+function logPostChannelsTick(channels) {
+	console.log(`validatorWorker: processed ${channels.length} channels`)
 }

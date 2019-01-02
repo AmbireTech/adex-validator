@@ -103,6 +103,7 @@ function mergePayableIntoBalances(balances, events, paymentInfo) {
 }
 
 function logMerge(channel, eventAggrs) {
+	if (eventAggrs.length === 0) return
 	console.log(`validatorWorker: channel ${channel.id}: processing ${eventAggrs.length} event aggregates`)
 }
 
