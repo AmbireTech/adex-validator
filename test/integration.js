@@ -279,8 +279,8 @@ function wait(ms) {
 	return new Promise((resolve, _) => setTimeout(resolve, ms))
 }
 
+// @TODO: malformed events?
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
-// @TODO can't submit validator messages if we are not authenticated as a validator (channelIfActive)
 // @TODO can't submit states that aren't signed and valid (everything re msg propagation); perhaps forge invalid states and try to submit directly by POST /channel/:id/validator-messages
 // @TODO can't trick with negative values (again, by POST validator-messages)
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator

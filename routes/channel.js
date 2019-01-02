@@ -1,12 +1,10 @@
 const express = require('express')
 const db = require('../db')
+const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 
 const router = express.Router()
-
-const CHANNELS_FIND_MAX = 100
-const VALIDATOR_MESSAGES_FIND_MAX = 10
 
 // Channel information: public, cachable
 router.get('/list', getList)
@@ -53,7 +51,7 @@ function getList(req, res, next) {
 
 	return channelsCol
 	.find({}, { projection: { _id: 0 } })
-	.limit(CHANNELS_FIND_MAX)
+	.limit(cfg.CHANNELS_FIND_LIMIT)
 	.toArray()
 	.then(function(channels) {
 		res.send({ channels })
@@ -65,11 +63,11 @@ function getValidatorMessages(req, res, next) {
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 
 	return validatorMsgCol.find({ channelId: req.params.id }, { msg: 1, from: 1 })
-	.limit(VALIDATOR_MESSAGES_FIND_MAX)
+	.limit(cfg.MSGS_FIND_LIMIT)
 	.sort({ _id: -1 })
 	.toArray()
-	.then(function(resp) {
-		res.send({ validatorMessages: resp })
+	.then(function(validatorMessages) {
+		res.send({ validatorMessages })
 	})
 	.catch(next)
 }
