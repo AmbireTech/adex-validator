@@ -34,7 +34,7 @@ function tick(channel, force) {
 				stateTree,
 				aggrs,
 				// @TODO obtain channel payment info
-				{ amount: 1, depositAmount: channel.depositAmount }
+				{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
 			)
 
 			return stateTreeCol
@@ -85,14 +85,14 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 // For now, this just disregards anything that goes over the depositAmount
 function mergePayableIntoBalances(balances, events, paymentInfo) {
 	if (!events) return
-	// @TODO: get everything in BN already (events, paymentInfo)
-	// in other words, use BN.js everywhere
-	const total = Object.values(balances).reduce((a,b) => a.add(b), new BN(0))
-	let remaining = (new BN(paymentInfo.depositAmount, 10)).sub(total)
+	// @TODO use BN for the events
+	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
+	let remaining = paymentInfo.depositAmount.sub(total)
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
 	Object.keys(events).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		const toAdd = BN.min(remaining, new BN(events[acc] * paymentInfo.amount))
+		const eventCount = new BN(events[acc])
+		const toAdd = BN.min(remaining, eventCount.mul(paymentInfo.amount))
 		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
 		balances[acc] = balances[acc].add(toAdd)
 		remaining = remaining.sub(toAdd)
