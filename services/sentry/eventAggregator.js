@@ -1,6 +1,7 @@
 const throttle = require('lodash.throttle')
 const db = require('../../db')
 const cfg = require('../../cfg')
+const eventReducer = require('./lib/eventReducer')
 
 const recorders = new Map()
 
@@ -14,7 +15,6 @@ function record(channelId, userId, events) {
 }
 
 function makeRecorder(channelId) {
-	const newObject = () => ({ channelId, created: new Date(), events: {} })
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 
 	// persist each individual aggregate
@@ -32,12 +32,14 @@ function makeRecorder(channelId) {
 	}
 
 	// persist and reset
-	let o = newObject()
+	let aggr = eventReducer.newAggr(channelId)
 	const persistAndReset = function() {
-		const toSave = o
-		// this has to be flushed immediately cause otherwise we will drop
-		// everything received while we're sending
-		o = newObject()
+		const toSave = aggr
+		// do not change the order of operations here
+		// aggr needs to be reset immediately after toSave = aggr, otherwise we will lose data
+		// cause persist() will copy the object while we're still using it to save stuff
+		aggr = eventReducer.newAggr(channelId)
+
 		logAggregate(channelId, toSave)
 		// to ensure we always persist toSave's, we have a separate queue
 		persist(toSave)
@@ -45,26 +47,13 @@ function makeRecorder(channelId) {
 	const throttledPersistAndReset = throttle(persistAndReset, cfg.AGGR_THROTTLE, { leading: false, trailing: true })
 
 	return function(userId, events) {
-		events.forEach(function(ev) {
-			// @TODO: this is one of the places to add other ev types
-			if (ev.type === 'IMPRESSION') {
-				o.events.IMPRESSION = mergeImpressionEv(o.events.IMPRESSION, ev)
-			}
-		})
+		aggr = events.reduce(eventReducer.reduce.bind(null, userId), aggr)
 		throttledPersistAndReset()
 	}
 }
 
-function mergeImpressionEv(map, ev) {
-	if (!ev.publisher) return map
-	if (!map) map = {}
-	if (!map[ev.publisher]) map[ev.publisher] = 0
-	map[ev.publisher]++
-	return map
-}
-
-function logAggregate(channelId, o) {
-	console.log(`sentry: channel ${channelId}: event aggregate produced, events for ${Object.keys(o.events).length} users`)
+function logAggregate(channelId, aggr) {
+	console.log(`sentry: channel ${channelId}: event aggregate produced`)
 }
 
 module.exports = { record }
