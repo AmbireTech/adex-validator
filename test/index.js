@@ -71,5 +71,12 @@ tape('getHealth: the approved balance tree has less: UNHEALTHY', function(t) {
 	t.end()
 })
 
+tape('getHealth: they have the same amount, but for a different entity', function(t) {
+	t.equal(getHealth(channel, { a: new BN(80) }, { b: new BN(80) }), 'UNHEALTHY')
+	t.equal(getHealth(channel, { a: new BN(80) }, { b: new BN(40), a: new BN(40) }), 'UNHEALTHY')
+	t.equal(getHealth(channel, { a: new BN(100), b: new BN(1) }, { a: new BN(100) }), 'HEALTHY')
+	t.end()
+})
+
 // @TODO: event aggregator
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances

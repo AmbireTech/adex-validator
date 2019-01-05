@@ -18,20 +18,30 @@ function isValidTransition(channel, prev, next) {
 
 function getHealth(channel, our, approved) {
 	const sumOur = sumMap(our)
-	const sumApproved = sumMap(approved)
+	const sumApprovedMins = sumMins(our, approved)
 	// division by zero can't happen here, because sumApproved >= sumOur
 	// if sumOur is 0, it will always be true
-	if (sumApproved.gte(sumOur)) {
+	if (sumApprovedMins.gte(sumOur)) {
 		return 'HEALTHY'
 	}
-	if (sumApproved.mul(new BN(1000)).div(sumOur).lt(HEALTH_THRESHOLD)) {
+	if (sumApprovedMins.mul(new BN(1000)).div(sumOur).lt(HEALTH_THRESHOLD)) {
 		return 'UNHEALTHY'
 	}
 	return 'HEALTHY'
 }
 
+function sumBNs(bns) {
+	return bns.reduce((a,b) => a.add(b), new BN(0))
+}
+
 function sumMap(all) {
-	return Object.values(all).reduce((a,b) => a.add(b), new BN(0))
+	return sumBNs(Object.values(all))
+}
+
+function sumMins(our, approved) {
+	// since the min(anything, non existant val) is always 0, we need to sum the mins of the intersecting keys only
+	// for this, it's sufficient to iterate the keys of whichever map
+	return sumBNs(Object.keys(our).map(k => BN.min(our[k], approved[k] || new BN(0))))
 }
 
 module.exports = { isValidTransition, getHealth }
