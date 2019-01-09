@@ -50,7 +50,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 		return persistAndPropagate(adapter, otherValidators, channel, {
 			type: 'ApproveState',
 			stateRoot: stateRoot,
-			health: getHealth(channel, balances, newBalances),
+			health: getHealth(balances, newBalances),
 			signature,
 		})
 	})

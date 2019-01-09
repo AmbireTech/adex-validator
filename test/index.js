@@ -51,30 +51,32 @@ tape('isValidTransition: transition to a state with a negative number', function
 // getHealth
 //
 tape('getHealth: the approved balance tree >= our accounting: HEALTHY', function(t) {
-	t.equal(getHealth(channel, { a: new BN(50) }, { a: new BN(50) }), 'HEALTHY')
-	t.equal(getHealth(channel, { a: new BN(50) }, { a: new BN(60) }), 'HEALTHY')
+	t.equal(getHealth({ a: new BN(50) }, { a: new BN(50) }), 'HEALTHY')
+	t.equal(getHealth({ a: new BN(50) }, { a: new BN(60) }), 'HEALTHY')
 	t.end()
 })
 
 tape('getHealth: the approved balance tree is positive, our accounting is 0: HEALTHY', function(t) {
-	t.equal(getHealth(channel, {}, { a: new BN(50) }), 'HEALTHY')
+	t.equal(getHealth({}, { a: new BN(50) }), 'HEALTHY')
 	t.end()
 })
 
 tape('getHealth: the approved balance tree has less, but within margin: HEALTHY', function(t) {
-	t.equal(getHealth(channel, { a: new BN(80) }, { a: new BN(79) }), 'HEALTHY')
+	t.equal(getHealth({ a: new BN(80) }, { a: new BN(79) }), 'HEALTHY')
 	t.end()
 })
 
 tape('getHealth: the approved balance tree has less: UNHEALTHY', function(t) {
-	t.equal(getHealth(channel, { a: new BN(80) }, { a: new BN(70) }), 'UNHEALTHY')
+	t.equal(getHealth({ a: new BN(80) }, { a: new BN(70) }), 'UNHEALTHY')
 	t.end()
 })
 
-tape('getHealth: they have the same amount, but for a different entity', function(t) {
-	t.equal(getHealth(channel, { a: new BN(80) }, { b: new BN(80) }), 'UNHEALTHY')
-	t.equal(getHealth(channel, { a: new BN(80) }, { b: new BN(40), a: new BN(40) }), 'UNHEALTHY')
-	t.equal(getHealth(channel, { a: new BN(100), b: new BN(1) }, { a: new BN(100) }), 'HEALTHY')
+tape('getHealth: they have the same sum, but different entities are earning', function(t) {
+	t.equal(getHealth({ a: new BN(80) }, { b: new BN(80) }), 'UNHEALTHY')
+	t.equal(getHealth({ a: new BN(80) }, { b: new BN(40), a: new BN(40) }), 'UNHEALTHY')
+	t.equal(getHealth({ a: new BN(80) }, { b: new BN(20), a: new BN(60) }), 'UNHEALTHY')
+	t.equal(getHealth({ a: new BN(80) }, { b: new BN(2), a: new BN(78) }), 'HEALTHY')
+	t.equal(getHealth({ a: new BN(100), b: new BN(1) }, { a: new BN(100) }), 'HEALTHY')
 	t.end()
 })
 
