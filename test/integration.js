@@ -121,7 +121,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.ok(typeof(lastApprove.msg.stateRoot) === 'string' && lastApprove.msg.stateRoot.length === 64, 'ApproveState: stateRoot is sane')
 		t.equal(lastApprove.msg.signature, getDummySig(lastApprove.msg.stateRoot, lastApprove.from), 'ApproveState: signature is sane')
 		t.equal(lastNew.msg.stateRoot, lastApprove.msg.stateRoot, 'stateRoot is the same between latest NewState and ApproveState')
-		t.equal(lastApprove.msg.health, 'HEALTHY', 'ApproveState: health value is HEALTHY')
+		t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is HEALTHY')
 
 		// Check inclusion proofs of the balance
 		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
@@ -162,7 +162,7 @@ tape('health works correctly', function(t) {
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
 		// @TODO: Should we assert balances numbers?
-		t.equal(lastApprove.msg.health, 'UNHEALTHY', 'channel is registered as unhealthy')
+		t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
 
 		// send events to the leader so it catches up
 		return postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
@@ -174,7 +174,7 @@ tape('health works correctly', function(t) {
 	})
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
-		t.equal(lastApprove.msg.health, 'HEALTHY', 'channel is registered as healthy')
+		t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
 		t.end()
 	})
 	.catch(err => t.fail(err))
@@ -192,7 +192,7 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 				body: JSON.stringify({ messages: [] }),
 			})
 			.then(function(resp) {
-				t.equal(resp.status, 401, 'status is Unauthorized')
+				t.equal(resp.status, 401, 'status must be Unauthorized')
 			})
 		)
 	)
@@ -217,7 +217,7 @@ tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follo
 			body: JSON.stringify({ messages: [msg] }),
 		})
 		.then(function(resp) {
-			t.equal(resp.status, 400, 'status is BadRequest')
+			t.equal(resp.status, 400, 'status must be BadRequest')
 		})
 	))
 	.then(() => t.end())

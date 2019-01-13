@@ -2,7 +2,7 @@ const BN = require('bn.js')
 const assert = require('assert')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidTransition, getHealth } = require('./lib/followerRules')
+const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 
 function tick(adapter, channel) {
@@ -50,7 +50,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 		return persistAndPropagate(adapter, otherValidators, channel, {
 			type: 'ApproveState',
 			stateRoot: stateRoot,
-			health: getHealth(balances, newBalances),
+			isHealthy: isHealthy(balances, newBalances),
 			signature,
 		})
 	})

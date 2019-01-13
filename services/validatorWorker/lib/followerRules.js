@@ -17,18 +17,18 @@ function isValidTransition(channel, prev, next) {
 		&& Object.entries(next).every(([acc, bal]) => !bal.isNeg())
 }
 
-function getHealth(our, approved) {
+function isHealthy(our, approved) {
 	const sumOur = sumMap(our)
 	const sumApprovedMins = sumMins(our, approved)
 	// division by zero can't happen here, because sumApproved >= sumOur
 	// if sumOur is 0, it will always be true
 	if (sumApprovedMins.gte(sumOur)) {
-		return 'HEALTHY'
+		return true
 	}
 	if (sumApprovedMins.mul(new BN(1000)).div(sumOur).lt(HEALTH_THRESHOLD)) {
-		return 'UNHEALTHY'
+		return false
 	}
-	return 'HEALTHY'
+	return true
 }
 
 function sumBNs(bns) {
@@ -47,4 +47,4 @@ function sumMins(our, approved) {
 	)
 }
 
-module.exports = { isValidTransition, getHealth }
+module.exports = { isValidTransition, isHealthy }
