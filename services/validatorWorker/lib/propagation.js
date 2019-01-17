@@ -4,11 +4,6 @@ const db = require('../../../db')
 function propagate(adapter, receiver, channel, msg) {
 	return adapter.getAuthFor(receiver)
 	.then(function(authToken) {
-		
-		console.log({ msg })
-		console.log(`propagating ${receiver.url}/channel/${channel.id}/validator-messages`)
-		console.log({ authToken })
-
 		return fetch(`${receiver.url}/channel/${channel.id}/validator-messages`, {
 			method: 'POST',
 			headers: {
