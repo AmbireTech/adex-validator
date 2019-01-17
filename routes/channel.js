@@ -17,7 +17,7 @@ router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 // @TODO get events or at least eventAggregates
 
 // Validator information
-router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessage)
+router.get('/:id/validator-messages/:uid/:type?', channelIfExists, channelLoad, getValidatorMessage)
 
 
 // Submitting events/messages: requires auth
