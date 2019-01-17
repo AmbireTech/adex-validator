@@ -53,33 +53,30 @@ function getStatus(withTree, req, res) {
 	})
 }
 
-// Implementation of get validator messages last recent N
+// Implementation of getValidatorMmessages 
+// It retrieves the last recent N
 // validator messages
-function getValidatorMessage(req, res){
+function getValidatorMessage(req, res, next){
 	const resp = { channel: req.channel }
 	const { type, id, uid } = req.params
 	let { limit } = req.query
 
-	Promise.resolve()
-	.then(function() {
-		const validatorCol = db.getMongo().collection('validatorMessages')
+	const validatorCol = db.getMongo().collection('validatorMessages')
 
-		return validatorCol.find({
-				"channelId": id,
-				"from": uid,
-				"msg.type": type,
-			}
-		)
-		.sort({$natural: -1})
-		.limit(limit || 1)
-		.toArray()
-		.then(function(result){
-			resp.messages = result
-		})
-	})
-	.then(function(){
+	return validatorCol.find({
+			"channelId": id,
+			"from": uid,
+			"msg.type": type,
+		}
+	)
+	.sort({$natural: -1})
+	.limit(limit || 1)
+	.toArray()
+	.then(function(result){
+		resp.messages = result
 		res.send(resp)
 	})
+	.catch(next)
 }
 
 function getList(req, res, next) {
