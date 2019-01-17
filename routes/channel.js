@@ -74,7 +74,7 @@ function getValidatorMessage(req, res){
 		.limit(limit || 1)
 		.toArray()
 		.then(function(result){
-			resp.events = result
+			resp.messages = result
 		})
 	})
 	.then(function(){
