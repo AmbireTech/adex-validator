@@ -13,13 +13,14 @@ router.get('/:id/status', channelLoad, getStatus.bind(null, false))
 router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 
 // Channel information: requires auth, cachable
-//router.get('/:id/events/:uid', authRequired, channelIfExists, (req, res) => res.send([]))
+router.get('/:id/events/:uid/:type?', channelIfExists, getEvent)
 // @TODO get events or at least eventAggregates
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
+// 
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -33,12 +34,45 @@ function getStatus(withTree, req, res) {
 			const channelStateTreesCol = db.getMongo().collection('channelStateTrees')
 			return channelStateTreesCol.findOne({ _id: req.channel.id })
 			.then(function(tree) {
-				resp.balances = tree.balances
-				resp.lastEvAggr = tree.lastEvAggr
+				if (tree) {
+                    resp.balances = tree.balances
+                    resp.lastEvAggr = tree.lastEvAggr
+                } else {
+                    resp.balances = {}
+                    resp.lastEvAggr = new Date(0)
+                }
 			})
 		}
 	})
 	.then(function() {
+		res.send(resp)
+	})
+}
+
+// Implementation 
+function getEvent(req, res){
+	const resp = { channel: req.channel }
+	const { type, id, uid } = req.params
+	let { limit } = req.query
+
+	Promise.resolve()
+	.then(function() {
+		const validatorCol = db.getMongo().collection('validatorMessages')
+
+		return validatorCol.find({
+				"channelId": id,
+				"from": uid,
+				"msg.type": type,
+			}
+		)
+		.sort({$natural: -1})
+		.limit(limit || 1)
+		.toArray()
+		.then(function(result){
+			resp.events = result
+		})
+	})
+	.then(function(){
 		res.send(resp)
 	})
 }
