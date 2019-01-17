@@ -13,8 +13,12 @@ router.get('/:id/status', channelLoad, getStatus.bind(null, false))
 router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 
 // Channel information: requires auth, cachable
-router.get('/:id/events/:uid/:type?', channelIfExists, getEvent)
+// router.get('/:id/events/:uid', authRequired, channelIfExists, (req, res) => res.send([]))
 // @TODO get events or at least eventAggregates
+
+// Validator information
+router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessage)
+
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
@@ -49,8 +53,9 @@ function getStatus(withTree, req, res) {
 	})
 }
 
-// Implementation 
-function getEvent(req, res){
+// Implementation of get validator messages last recent N
+// validator messages
+function getValidatorMessage(req, res){
 	const resp = { channel: req.channel }
 	const { type, id, uid } = req.params
 	let { limit } = req.query
