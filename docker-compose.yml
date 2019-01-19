@@ -30,5 +30,5 @@ services:
     container_name: mongodb
     image: mongo
     ports: 
-      - 27017:27017
+      - 28000:27017
 
