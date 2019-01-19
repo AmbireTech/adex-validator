@@ -8,6 +8,10 @@ services:
       - "8005:8005"
     links: 
       - mongo
+    environment: 
+      - PORT=8005
+      - IDENTITY=awesomeLeader
+      - ADAPTER=dummy
   follower:
     container_name: adex_follower
     restart: always
@@ -19,6 +23,7 @@ services:
     environment: 
       - PORT=8006
       - IDENTITY=awesomeFollower
+      - ADAPTER=dummy
   mongo:
     container_name: mongo
     image: mongo
