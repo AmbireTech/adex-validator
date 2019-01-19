@@ -128,3 +128,11 @@ DB_MONGO_NAME=adexValidatorFollower PORT=8006 node bin/sentry --adapter=dummy --
 ```
 DB_MONGO_NAME=adexValidatorFollower node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeFollower
 ```
+
+
+## Docker
+The docker setup provides a leader, follower and mongo image. 
+
+```sh
+docker-compose up
+```
