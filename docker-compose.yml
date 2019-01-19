@@ -2,31 +2,33 @@ version: "3"
 services:
   leader:
     container_name: adex_leader
-    restart: always
     build: .
     ports: 
-      - "8005:8005"
-    links: 
-      - mongo
+      - 8005:8005
     environment: 
       - PORT=8005
       - IDENTITY=awesomeLeader
       - ADAPTER=dummy
+      - DB_MONGO_URL=mongodb://mongodb:27017
+      - DB_MONGO_NAME=adexValidator
+    depends_on: 
+      - mongodb
   follower:
     container_name: adex_follower
-    restart: always
     build: .
     ports: 
-      - "8006:8006"
-    links: 
-      - mongo
+      - 8006:8006
     environment: 
       - PORT=8006
+      - DB_MONGO_URL=mongodb://mongodb:27017
+      - DB_MONGO_NAME=adexValidatorFollower
       - IDENTITY=awesomeFollower
       - ADAPTER=dummy
-  mongo:
-    container_name: mongo
+    depends_on: 
+      - mongodb
+  mongodb:
+    container_name: mongodb
     image: mongo
     ports: 
-      - "27017:27017"
+      - 27017:27017
 

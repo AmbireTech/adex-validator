@@ -18,13 +18,14 @@ WORKDIR /app
 
 RUN apk add --no-cache bash git openssh
 
-ADD . .
-
 RUN mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-
-RUN npm install && npm install -g pm2
 
 EXPOSE ${PORT}
 
-CMD pm2 start bin/validatorWorker.js -- --adapter=${ADAPTER} --dummyIdentity=${IDENTITY} && \
-    PORT=${PORT} pm2 start bin/sentry.js -- --adapter=${ADAPTER} --dummyIdentity=${IDENTITY}
+ADD . .
+
+RUN npm install && npm install -g pm2
+
+CMD pm2 start -x bin/validatorWorker.js -- --adapter=${ADAPTER} --dummyIdentity=${IDENTITY} && \
+    PORT=${PORT} pm2-docker start bin/sentry.js -- --adapter=${ADAPTER} --dummyIdentity=${IDENTITY}
+    
