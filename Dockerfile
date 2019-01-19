@@ -9,6 +9,8 @@ ARG ARG_IDENTITY=awesomeLeader
 ENV PORT=$ARG_PORT
 ENV ADAPTER=$ARG_ADAPTER
 ENV IDENTITY=$ARG_IDENTITY
+ENV DB_MONGO_URL=
+ENV DB_MONGO_NAME=
 
 RUN echo 'http://dl-3.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories && \
     apk upgrade --update && \ 
