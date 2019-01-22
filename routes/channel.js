@@ -10,16 +10,18 @@ const router = express.Router()
 router.get('/list', getList)
 router.get('/:id/status', channelLoad, getStatus.bind(null, false))
 router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
-router.get('/:id/validator-messages', getValidatorMessages)
 
 // Channel information: requires auth, cachable
-//router.get('/:id/events/:uid', authRequired, channelIfExists, (req, res) => res.send([]))
+// router.get('/:id/events/:uid', authRequired, channelIfExists, (req, res) => res.send([]))
 // @TODO get events or at least eventAggregates
+
+// Validator information
+router.get('/:id/validator-messages', getValidatorMessages)
+router.get('/:id/validator-messages/:uid/:type?', channelIfExists, channelLoad, getValidatorMessagesDetailed)
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
-
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -59,6 +61,7 @@ function getList(req, res, next) {
 	.catch(next)
 }
 
+// @TODO: the next two functions could be joined into one
 function getValidatorMessages(req, res, next) {
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 
@@ -71,6 +74,33 @@ function getValidatorMessages(req, res, next) {
 	})
 	.catch(next)
 }
+// Implementation of getValidatorMessagesDetailed
+// It retrieves the last recent N
+// validator messages
+function getValidatorMessagesDetailed(req, res, next){
+	const resp = { channel: req.channel }
+	const { type, id, uid } = req.params
+	let { limit } = req.query
+
+	const validatorCol = db.getMongo().collection('validatorMessages')
+
+	return validatorCol.find({
+			"channelId": id,
+			"from": uid,
+			"msg.type": type,
+		}
+	)
+	.sort({$natural: -1})
+	.limit(limit || 1)
+	.toArray()
+	.then(function(result){
+		resp.messages = result
+		res.send(resp)
+	})
+	.catch(next)
+}
+
+
 
 function postValidatorMessages(req, res, next) {
 	if (!req.channel.validators.includes(req.session.uid)) {
