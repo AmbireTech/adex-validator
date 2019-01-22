@@ -33,7 +33,7 @@ GET `/channel/:id/tree` - get the full balances tree; you can use that to genera
 
 #### Requires authentication, can be cached:
 
-GET `/channel/:id/events/:user` (**NOT IMPLEMENTED**)
+GET `/channel/:id/event-aggregates/:user` (**NOT IMPLEMENTED**)
 
 #### Requires authentication:
 
