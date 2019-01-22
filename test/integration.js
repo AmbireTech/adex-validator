@@ -72,6 +72,8 @@ tape('/channel/{id}/tree', function(t) {
 	.catch(err => t.fail(err))
 })
 
+// @TODO: validator-messages, and it's filters
+
 tape('submit events and ensure they are accounted for', function(t) {
 	const evs = genImpressions(3).concat(genImpressions(2, 'anotherPublisher'))
 	const expectedBal = '3'

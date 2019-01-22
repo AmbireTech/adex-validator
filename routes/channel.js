@@ -17,7 +17,7 @@ router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 
 // Validator information
 router.get('/:id/validator-messages', getValidatorMessages)
-router.get('/:id/validator-messages/:uid/:type?', channelIfExists, channelLoad, getValidatorMessagesDetailed)
+router.get('/:id/validator-messages/:uid/:type?', channelIfExists, channelLoad, getValidatorMessages)
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
@@ -61,46 +61,27 @@ function getList(req, res, next) {
 	.catch(next)
 }
 
-// @TODO: the next two functions could be joined into one
-function getValidatorMessages(req, res, next) {
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-
-	return validatorMsgCol.find({ channelId: req.params.id }, { msg: 1, from: 1 })
-	.limit(cfg.MSGS_FIND_LIMIT)
-	.sort({ _id: -1 })
-	.toArray()
-	.then(function(validatorMessages) {
-		res.send({ validatorMessages })
-	})
-	.catch(next)
-}
 // Implementation of getValidatorMessagesDetailed
 // It retrieves the last recent N
 // validator messages
-function getValidatorMessagesDetailed(req, res, next){
-	const resp = { channel: req.channel }
+function getValidatorMessages(req, res, next){
 	const { type, id, uid } = req.params
-	let { limit } = req.query
+	const { limit } = req.query
 
 	const validatorCol = db.getMongo().collection('validatorMessages')
+	const query = { channelId: id }
+	if (typeof(uid) === 'string') query.from = uid
+	if (typeof(type) === 'string') query['msg.type'] = type
 
-	return validatorCol.find({
-			"channelId": id,
-			"from": uid,
-			"msg.type": type,
-		}
-	)
-	.sort({$natural: -1})
-	.limit(limit || 1)
+	validatorCol.find(query)
+	.sort({_id: -1})
+	.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
 	.toArray()
-	.then(function(result){
-		resp.messages = result
-		res.send(resp)
+	.then(function(validatorMessages) {
+		res.send({ validatorMessages, channel: req.channel })
 	})
 	.catch(next)
 }
-
-
 
 function postValidatorMessages(req, res, next) {
 	if (!req.channel.validators.includes(req.session.uid)) {
