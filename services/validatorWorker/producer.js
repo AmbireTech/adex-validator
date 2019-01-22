@@ -1,42 +1,38 @@
 const assert = require('assert')
 const BN = require('bn.js')
 const db = require('../../db')
-
-const MAX_PER_TICK = 100
+const cfg = require('../../cfg')
 
 function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const stateTreeCol = db.getMongo().collection('channelStateTrees')
-
-	// @TODO obtain channel payment info
 
 	return stateTreeCol.findOne({ _id: channel.id })
 	.then(function(stateTree) {
 		return stateTree || { balances: {}, lastEvAggr: new Date(0) }
 	})
 	.then(function(stateTree) {
-		// isStateTreeNew is used in order to make the system produce a NewState on each channel we find for the first time
-		const hasNoPrevStateTree = !stateTree._id
+		// Process eventAggregates, from old to new, newer than the lastEvAggr time
 		return eventAggrCol.find({
 			channelId: channel.id,
 			created: { $gt: stateTree.lastEvAggr }
 		})
-		// @TODO restore this limit, but it requires sorting by created from old to new
-		// otherwise, created: { $gt: xxx } would break
-		//.limit(MAX_PER_TICK)
+		.sort({ created: 1 })
+		.limit(cfg.PRODUCER_MAX_AGGR_PER_TICK)
 		.toArray()
 		.then(function(aggrs) {
 			logMerge(channel, aggrs)
 
 			const shouldUpdate = force || aggrs.length
 			if (!shouldUpdate) {
-				return { channel, hasNoPrevStateTree }
+				return { channel }
 			}
 
 			const { balances, newStateTree } = mergeAggrs(
 				stateTree,
 				aggrs,
-				{ amount: 1, depositAmount: channel.depositAmount }
+				// @TODO obtain channel payment info
+				{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
 			)
 
 			return stateTreeCol
@@ -46,13 +42,14 @@ function tick(channel, force) {
 				{ upsert: true }
 			)
 			.then(function() {
-				return { channel, balances, hasNoPrevStateTree, newStateTree }
+				return { channel, balances, newStateTree }
 			})
 		})
 	})
 }
 
 // Pure, should not mutate inputs
+// @TODO isolate those pure functions into a separate file
 function mergeAggrs(stateTree, aggrs, paymentInfo) {
 	const newStateTree = { balances: {}, lastEvAggr: stateTree.lastEvAggr }
 
@@ -86,14 +83,14 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 // For now, this just disregards anything that goes over the depositAmount
 function mergePayableIntoBalances(balances, events, paymentInfo) {
 	if (!events) return
-	// @TODO: get everything in BN already (events, paymentInfo)
-	// in other words, use BN.js everywhere
-	const total = Object.values(balances).reduce((a,b) => a.add(b), new BN(0))
-	let remaining = (new BN(paymentInfo.depositAmount, 10)).sub(total)
+	// @TODO use BN for the events
+	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
+	let remaining = paymentInfo.depositAmount.sub(total)
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
 	Object.keys(events).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		const toAdd = BN.min(remaining, new BN(events[acc] * paymentInfo.amount))
+		const eventCount = new BN(events[acc])
+		const toAdd = BN.min(remaining, eventCount.mul(paymentInfo.amount))
 		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
 		balances[acc] = balances[acc].add(toAdd)
 		remaining = remaining.sub(toAdd)
@@ -103,6 +100,7 @@ function mergePayableIntoBalances(balances, events, paymentInfo) {
 }
 
 function logMerge(channel, eventAggrs) {
+	if (eventAggrs.length === 0) return
 	console.log(`validatorWorker: channel ${channel.id}: processing ${eventAggrs.length} event aggregates`)
 }
 

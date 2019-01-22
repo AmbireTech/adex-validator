@@ -1,11 +1,11 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
+const assert = require('assert')
+const dummyVals = require('../../test/prep-db/mongo')
 
-const db = require('../../db')
-
-let identity
+let identity = null
 
 function init(opts) {
-	if (typeof(opts.dummyIdentity) !== 'string') throw 'dummy adapter: identity required'
+	assert.ok(typeof(opts.dummyIdentity) == 'string', 'dummyIdentity required')
 	identity = opts.dummyIdentity
 	return Promise.resolve()
 }
@@ -28,12 +28,14 @@ function getBalanceLeaf(acc, bal) {
 
 // Authentication tokens
 function sessionFromToken(token) {
-	const sessionCol = db.getMongo().collection('sessions')
-	return sessionCol.findOne({ _id: token })
+	const who = Object.entries(dummyVals.auth).find(v => v[1] == token)
+	if (who) return Promise.resolve({ uid: dummyVals.ids[who[0]] })
+	else return Promise.resolve(null)
 }
 function getAuthFor(validator) {
-	// NOTE: for this to work, we need the sessions created in the database beforehand
-	return Promise.resolve(`AUTH_${whoami()}`)
+	const who = Object.entries(dummyVals.ids).find(v => v[1] == identity)
+	if (who) return Promise.resolve(dummyVals.auth[who[0]])
+	else return Promise.reject(`no auth token for this identity: ${identity}`)
 }
 
 module.exports = { init, unlock, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }

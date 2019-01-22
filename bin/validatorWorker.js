@@ -1,15 +1,11 @@
 #!/usr/bin/env node
 const assert = require('assert')
 const yargs = require('yargs')
+const cfg = require('../cfg')
 const db = require('../db')
 const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
-
-// @TODO: choose that in a rational way, rather than using a magic number
-const MAX_CHANNELS = 512
-const SNOOZE_TIME = 20000
-const WAIT_TIME = 1000
 
 const argv = yargs
 	.usage('Usage $0 [options]')
@@ -34,21 +30,20 @@ db.connect()
 	
 	function allChannelsTick() {
 		return channelsCol.find({ validators: adapter.whoami() })
-		.limit(MAX_CHANNELS)
+		.limit(cfg.MAX_CHANNELS)
 		.toArray()
 		.then(function(channels) {
-			logPreChannelsTick(channels)
 			return Promise.all([
 				Promise.all(channels.map(validatorTick)),
-				wait(WAIT_TIME)
+				wait(cfg.WAIT_TIME)
 			])
 		})
 		.then(function([allResults, _]) {
 			// If nothing is new, snooze
 			if (allResults.every(x => x && x.nothingNew)) {
-				logSnooze(allResults)
-				return wait(SNOOZE_TIME)
+				return wait(cfg.SNOOZE_TIME)
 			}
+			logPostChannelsTick(allResults)
 		})
 	}
 
@@ -66,7 +61,7 @@ db.connect()
 
 function validatorTick(channel) {
 	const validatorIdx = channel.validators.indexOf(adapter.whoami())
-	assert.ok(validatorIdx >= 0, 'validatorTick: processing a channel where we are not validating')
+	assert.ok(validatorIdx !== -1, 'validatorTick: processing a channel where we are not validating')
 
 	const isLeader = validatorIdx == 0
 	const tick = isLeader ? leader.tick : follower.tick
@@ -74,13 +69,12 @@ function validatorTick(channel) {
 }
 
 function wait(ms) {
-	return new Promise((resolve, reject) => setTimeout(resolve, ms))
+	return new Promise((resolve, _) => setTimeout(resolve, ms))
 }
 
-function logSnooze() {
-	console.log(`validatorWorker: Snoozing, all channels up to date`)
-}
-
-function logPreChannelsTick(channels) {
-	console.log(`validatorWorker: Processing ${channels.length} channels`)
+function logPostChannelsTick(channels) {
+	console.log(`validatorWorker: processed ${channels.length} channels`)
+	if (channels.length === cfg.MAX_CHANNELS) {
+		console.log(`validatorWorker: WARNING: channel limit cfg.MAX_CHANNELS=${cfg.MAX_CHANNELS} reached`)
+	}
 }

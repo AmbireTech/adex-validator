@@ -4,8 +4,8 @@ const bodyParser = require('body-parser')
 const yargs = require('yargs')
 const db = require('../db')
 const adapters = require('../adapters')
-const channelRoutes = require('../routes/channel')
 const authMiddleware = require('../middlewares/auth')
+const channelRoutes = require('../routes/channel')
 
 const argv = yargs
 	.usage('Usage $0 [options]')

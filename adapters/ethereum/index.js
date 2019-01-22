@@ -2,6 +2,7 @@ const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 const { Wallet } = require('ethers')
 const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
+const assert = require('assert')
 const fs = require('fs')
 const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
@@ -17,24 +18,22 @@ let keystoreJson = null
 let wallet = null
 
 function init(opts) {
-	if (typeof(opts.keystoreFile) !== 'string') throw 'ethereum adapter: keystoreFile required'
+	assert.ok(typeof(opts.keystoreFile) == 'string', 'keystoreFile required')
 	return readFile(opts.keystoreFile)
 	.then(json => {
 		keystoreJson = json
 		address = formatAddress('0x'+JSON.parse(json).address)
 		console.log(`Ethereum address: ${whoami()}`)
 	})
-
 }
 
 function unlock(opts) {
-	if (keystoreJson === null) throw 'call init() first'
-	if (typeof(opts.keystorePwd) !== 'string') throw 'ethereum adapter: keystorePwd required'
+	assert.ok(keystoreJson != null, 'init() needs to be called before unlock()')
+	assert.ok(typeof(opts.keystorePwd) == 'string', 'keystorePwd required')
 	return Wallet.fromEncryptedJson(keystoreJson, opts.keystorePwd)
 	.then(w => {
 		wallet = w
 	})
-
 }
 
 function whoami() {
@@ -42,6 +41,7 @@ function whoami() {
 }
 
 function sign(stateRoot) {
+	assert.ok(wallet, 'unlock() must be called before sign()')
 	// signMessage takes Arrayish, so Buffer too: https://docs.ethers.io/ethers.js/html/api-utils.html#arrayish
 	return wallet.signMessage(stateRoot)
 }
@@ -52,7 +52,6 @@ function getBalanceLeaf(acc, bal) {
 
 // Authentication tokens
 function sessionFromToken(token) {
-	// @TODO: should we perform prior validation here? we can also just make ewt.verify stronger
 	const tokenId = token.slice(0, -16)
 	if (tokensVerified.has(tokenId)) {
 		// @TODO: validate era

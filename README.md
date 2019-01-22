@@ -24,23 +24,60 @@ The validator worker is the only component that actually needs to access the pri
 
 #### Do not require authentication, can be cached:
 
+GET `/channel/list` - get a list of all channels
+
 GET `/channel/:id/status` - get channel status, and the validator sig(s); should each node maintain all sigs? also, remaining funds in the channel and remaining funds that are not claimed on chain (useful past validUntil); AND the health, perceived by each validator
 
 GET `/channel/:id/tree` - get the full balances tree; you can use that to generate proofs
 
-GET `/channel/list`
 
 #### Requires authentication, can be cached:
 
-GET `/channel/:id/events/:user`
+GET `/channel/:id/event-aggregates/:user` (**NOT IMPLEMENTED**)
 
 #### Requires authentication:
 
-POST `/channel/events`
+POST `/channel/:id/events` - post any events related to a channel (e.g. `IMPRESSION`)
 
-POST `/channel/validator-messages`
+POST `/channel/:id/validator-messages` - requires that you're authenticated as a validator; post validator events (`NewState`, `ApproveState`)
 
 
+## Authentication, adapters
+
+Some methods require authenticating with a token (`Authentication: Bearer {token}`).
+
+The exact type and format of the token is defined by the adapter, and in the case of the Ethereum adapter (`adapters/ethereum`) this is [EWT, a subset of JWT](https://github.com/ethereum/EIPs/issues/1341).
+
+In the adapters, the `getAuthFor(validator)` method is designed to be invoked when you want to generate an authentication token to prove who you are *to the particular validator*. This matters, cause authentication tokens are supposed to be usable only for the validator you intended them for, for better protection in the case of leaks.
+
+The `sessionFromToken(token)` is the method that will verify the token and create the session object from it.
+
+The dummy adapter (`adapters/dummy`) is designed to ease integration testing, and works using pre-set dummy values defined in `test/prep-db/mongo.js` for authentication tokens. The `getAuthFor(validator)` method can only work with particular validator IDs, namely the hardcoded ones in the dummy values.
+
+When posting to `/channel/:id/events`, you can be authenticated as anyone: usually, users will be sending events directly to this route through the [AdEx SDK](https://github.com/adexnetwork/adex-protocol#sdk).
+
+When posting to `/channel/:id/validator-messages`, you need to be authenticated as one of the channel's validators
+
+
+## Tests
+
+Unit tests:
+
+```
+npm test
+```
+
+Integration tests:
+
+```
+npm run test-integration
+```
+
+Run both:
+
+```
+npm test && npm run test-integration
+```
 
 ## Environment
 

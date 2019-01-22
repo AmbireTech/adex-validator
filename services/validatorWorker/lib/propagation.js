@@ -12,13 +12,14 @@ function propagate(adapter, receiver, channel, msg) {
 			},
 			body: JSON.stringify({ messages: [msg] }),
 		})
-		.then(function(resp) {
-			if (resp.status !== 200) {
-				return Promise.reject(new Error('request failed with status code ' + resp.status))
-			}
-			return resp.json()
-		})
 	})
+	.then(function(resp) {
+		if (resp.status !== 200) {
+			return Promise.reject(new Error(`request failed with status code ${resp.status}`))
+		}
+		return resp.json()
+	})
+
 }
 
 function persist(adapter, channel, msg) {

@@ -1,7 +1,7 @@
 const BN = require('bn.js')
-
-// in promilles
-const HEALTH_THRESHOLD = new BN(950)
+const cfg = require('../../../cfg')
+const HEALTH_THRESHOLD = new BN(cfg.HEALTH_THRESHOLD_PROMILLES)
+const ZERO = new BN(0)
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {
@@ -17,22 +17,34 @@ function isValidTransition(channel, prev, next) {
 		&& Object.entries(next).every(([acc, bal]) => !bal.isNeg())
 }
 
-function getHealth(channel, our, approved) {
+function isHealthy(our, approved) {
 	const sumOur = sumMap(our)
-	const sumApproved = sumMap(approved)
+	const sumApprovedMins = sumMins(our, approved)
 	// division by zero can't happen here, because sumApproved >= sumOur
 	// if sumOur is 0, it will always be true
-	if (sumApproved.gte(sumOur)) {
-		return 'HEALTHY'
+	if (sumApprovedMins.gte(sumOur)) {
+		return true
 	}
-	if (sumApproved.mul(new BN(1000)).div(sumOur).lt(HEALTH_THRESHOLD)) {
-		return 'UNHEALTHY'
+	if (sumApprovedMins.mul(new BN(1000)).div(sumOur).lt(HEALTH_THRESHOLD)) {
+		return false
 	}
-	return 'HEALTHY'
+	return true
+}
+
+function sumBNs(bns) {
+	return bns.reduce((a,b) => a.add(b), ZERO)
 }
 
 function sumMap(all) {
-	return Object.values(all).reduce((a,b) => a.add(b), new BN(0))
+	return sumBNs(Object.values(all))
 }
 
-module.exports = { isValidTransition, getHealth }
+function sumMins(our, approved) {
+	// since the min(anything, non existant val) is always 0, we need to sum the mins of the intersecting keys only
+	// for this, it's sufficient to iterate the keys of whichever map
+	return sumBNs(Object.keys(our)
+		.map(k => BN.min(our[k], approved[k] || ZERO))
+	)
+}
+
+module.exports = { isValidTransition, isHealthy }
