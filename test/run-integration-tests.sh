@@ -4,6 +4,8 @@ MONGO_OUT=/dev/null # could be &1
 
 TIMESTAMP=`date +%s`
 
+RUN_EXTERNAL=$1
+
 LEAD_PORT=8005
 LEAD_MONGO="testValStackLeader${TIMESTAMP}"
 LEAD_ARGS="--adapter=dummy --dummyIdentity=awesomeLeader"
@@ -32,7 +34,14 @@ DB_MONGO_NAME=$LEAD_MONGO bin/validatorWorker.js $LEAD_ARGS &
 DB_MONGO_NAME=$FOLLOW_MONGO bin/validatorWorker.js $FOLLOW_ARGS &
 
 # Run the integration tests
-./test/integration.js
+if [ -n "$RUN_EXTERNAL" ]; then
+	echo "Running external tests"
+	cd ./node_modules/adex-validator-stack-test
+	LEADER_DATABASE=$LEAD_MONGO FOLLOWER_DATABASE=$FOLLOW_MONGO npm run test-local
+else 
+	./test/integration.js
+fi
+
 exitCode=$?
 
 # end all jobs (sentries, workers)
