@@ -42,6 +42,6 @@
   },
   "devDependencies": {
     "tape": "^4.9.1",
-    "adex-validator-stack-test": "git+ssh://git@github.com/adexnetwork/adex-validator-stack-test.git"
+    "adex-validator-stack-test": "https://github.com/adexnetwork/adex-validator-stack-test.git"
   }
 }
