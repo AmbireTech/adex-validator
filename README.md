@@ -132,6 +132,9 @@ DB_MONGO_NAME=adexValidatorFollower node bin/validatorWorker.js --adapter=dummy 
 
 ## Docker
 The docker setup provides a leader, follower and mongo image. 
+It uses the ethereum adapter by default which requires a `keystoreFile` and `keystorePwd`
+
+### Configuration
 
 ```sh
 docker-compose up

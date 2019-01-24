@@ -3,7 +3,7 @@ FROM mhart/alpine-node:11
 MAINTAINER samparsky@gmail.com
 
 ARG ARG_PORT=8005
-ARG ARG_ADAPTER=dummy
+ARG ARG_ADAPTER=ethereum
 ARG ARG_IDENTITY=awesomeLeader
 
 ENV PORT=$ARG_PORT
@@ -11,6 +11,8 @@ ENV ADAPTER=$ARG_ADAPTER
 ENV IDENTITY=$ARG_IDENTITY
 ENV DB_MONGO_URL=
 ENV DB_MONGO_NAME=
+ENV KEYSTORE_FILE=
+ENV KEYSTORE_PASSWORD=
 
 RUN echo 'http://dl-3.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories && \
     apk upgrade --update && \ 
@@ -28,6 +30,6 @@ ADD . .
 
 RUN npm install && npm install -g pm2
 
-CMD pm2 start -x bin/validatorWorker.js -- --adapter=${ADAPTER} --dummyIdentity=${IDENTITY} && \
-    PORT=${PORT} pm2-docker start bin/sentry.js -- --adapter=${ADAPTER} --dummyIdentity=${IDENTITY}
+CMD pm2 start -x bin/validatorWorker.js -- --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} --keystorePwd=${KEYSTORE_PASSWORD} && \
+    PORT=${PORT} pm2-docker start bin/sentry.js -- --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE}
     
