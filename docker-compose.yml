@@ -1,0 +1,42 @@
+version: "3"
+services:
+  leader:
+    container_name: adex_leader
+    build: .
+    ports: 
+      - 8005:8005
+    environment: 
+      - PORT=8005
+      - IDENTITY=awesomeLeader
+      - ADAPTER=ethereum
+      - DB_MONGO_URL=mongodb://mongodb:27017
+      - DB_MONGO_NAME=adexValidator
+      - KEYSTORE_FILE=/home/resources/keystore.json
+      - KEYSTORE_PASSWORD=
+    depends_on: 
+      - mongodb
+    volumes:
+      - ./resources/leader:/home/resources/
+  follower:
+    container_name: adex_follower
+    build: .
+    ports: 
+      - 8006:8006
+    environment: 
+      - PORT=8006
+      - DB_MONGO_URL=mongodb://mongodb:27017
+      - DB_MONGO_NAME=adexValidatorFollower
+      - IDENTITY=awesomeFollower
+      - ADAPTER=ethereum
+      - KEYSTORE_FILE=/home/resources/keystore.json
+      - KEYSTORE_PASSWORD=
+    depends_on: 
+      - mongodb
+    volumes:
+      - ./resources/follower:/home/resources/
+  mongodb:
+    container_name: mongodb
+    image: mongo
+    ports: 
+      - 28000:27017
+

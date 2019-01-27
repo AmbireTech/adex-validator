@@ -128,3 +128,22 @@ DB_MONGO_NAME=adexValidatorFollower PORT=8006 node bin/sentry --adapter=dummy --
 ```
 DB_MONGO_NAME=adexValidatorFollower node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeFollower
 ```
+
+
+## Docker
+
+The docker setup provides a leader, follower and mongo image. 
+It uses the ethereum adapter by default which requires a `keystoreFile` and `keystorePwd`
+
+### Configuration
+The docker compose file uses volumes to manage the keystore files.
+Put the keystore files for the leader and follower in the `./resources/leader` and `./resources/follower`
+folders respectively.
+
+Required: You have to specify the keystore password via the `KEYSTORE_PASSWORD` 
+          environment variable in the `docker-compose.yml` file
+
+### Run
+```sh
+docker-compose up
+```
