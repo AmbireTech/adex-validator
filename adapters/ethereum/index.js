@@ -46,6 +46,12 @@ function sign(stateRoot) {
 	return wallet.signMessage(stateRoot)
 }
 
+function verify(stateRoot, signature) {
+	assert.ok(stateRoot, "valid state root must be provided")
+	assert.ok(signature, "valid signature must be provided")
+	return wallet.verifyMessage(stateRoot, signature)
+}
+
 function getBalanceLeaf(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
@@ -96,4 +102,14 @@ function getAuthFor(validator) {
 //for (var i=0; i!=100000; i++) p = p.then(work)
 //p.then(() => console.log(Date.now()-start))
 
-module.exports = { init, unlock, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }
+module.exports = { 
+	init, 
+	unlock, 
+	whoami, 
+	sign, 
+	getBalanceLeaf, 
+	sessionFromToken, 
+	getAuthFor, 
+	MerkleTree,
+	verify,
+}

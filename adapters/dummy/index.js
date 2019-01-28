@@ -38,4 +38,18 @@ function getAuthFor(validator) {
 	else return Promise.reject(`no auth token for this identity: ${identity}`)
 }
 
-module.exports = { init, unlock, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }
+function verify(stateRoot, signature) {
+	return signature === sign(stateRoot)
+}
+
+module.exports = { 
+	init, 
+	unlock, 
+	whoami, 
+	sign, 
+	getBalanceLeaf, 
+	sessionFromToken, 
+	getAuthFor, 
+	MerkleTree,
+	verify
+}
