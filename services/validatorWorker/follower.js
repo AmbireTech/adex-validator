@@ -4,7 +4,6 @@ const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
-const ethereumAdapter = require("../../adapters/ethereum")
 
 function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -39,9 +38,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 		return { nothingNew: true }
 	}
 
-	// @TODO we should verify the signature of newMsg
-	// currently, in order to POST to /validator-messages, we require that you're a validator
-	// but this means that if a validator's auth token leaks, that can be used to trick followers into signing any new state that is a valid state transition
 	const whoami = adapter.whoami()
 	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
 	const {stateRoot, signature } = newMsg
