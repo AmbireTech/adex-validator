@@ -43,12 +43,15 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const {stateRoot, signature } = newMsg
 
 	// verify the signature of newMsg
-	assert.equal(
-		adapter.verify(stateRoot, signature), 
-		true, 
-		"Invalid signature on NEWSTATE"
-	)
-
+	adapter.verify(stateRoot, signature)
+		.then(function(res){
+			assert.equal(
+				res,
+				true, 
+				"Invalid signature on NEWSTATE"
+			)
+		})
+	
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 	return adapter.sign(stateRootRaw)
 	.then(function(signature) {
