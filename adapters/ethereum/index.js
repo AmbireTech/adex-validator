@@ -46,12 +46,12 @@ function sign(stateRoot) {
 	return wallet.signMessage(stateRoot)
 }
 
-function verify(stateRoot, signature) {
+function verify(signer, stateRoot, signature) {
 	assert.ok(stateRoot, "valid state root must be provided")
 	assert.ok(signature, "valid signature must be provided")
-	const address = Wallet.verifyMessage(stateRoot, signature)
+	const address = ethers.utils.verifyMessage(stateRoot, signature)
 
-	return Promise.resolve(address === whoami())
+	return Promise.resolve()
 }
 
 function getBalanceLeaf(acc, bal) {
