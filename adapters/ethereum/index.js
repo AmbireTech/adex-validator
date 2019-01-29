@@ -49,9 +49,14 @@ function sign(stateRoot) {
 function verify(signer, stateRoot, signature) {
 	assert.ok(stateRoot, "valid state root must be provided")
 	assert.ok(signature, "valid signature must be provided")
-	const address = ethers.utils.verifyMessage(stateRoot, signature)
-
-	return Promise.resolve()
+	assert.ok(signer, "valid signer is required")
+	
+	try {
+		const from = ethers.utils.verifyMessage(stateRoot, signature)
+		return Promise.resolve(signer === from)
+	} catch(e){
+		return Promise.resolve(false)
+	}
 }
 
 function getBalanceLeaf(acc, bal) {

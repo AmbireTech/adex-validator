@@ -38,8 +38,16 @@ function getAuthFor(validator) {
 	else return Promise.reject(`no auth token for this identity: ${identity}`)
 }
 
-function verify(stateRoot, signature) {
-	return Promise.resolve(signature.split(" ").length === 7)
+function verify(signer, stateRoot, signature) {
+	/**
+	 * Sample signature
+	 * Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader
+	 * 
+	 */
+	const splitSig = signature.split(" ")
+	const from = splitSig[splitSig.length - 1]
+
+	return Promise.resolve(signer == from)
 }
 
 module.exports = { 
