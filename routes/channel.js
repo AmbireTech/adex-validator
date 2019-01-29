@@ -20,7 +20,7 @@ router.get('/:id/validator-messages', getValidatorMessages)
 router.get('/:id/validator-messages/:uid/:type?', channelIfExists, channelLoad, getValidatorMessages)
 
 // event information
-router.get('/:id/events', authRequired, channelIfExists, getEvents)
+router.get('/:id/events', authRequired, channelIfExists, channelLoad, getEvents)
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
@@ -51,16 +51,21 @@ function getStatus(withTree, req, res) {
 	})
 }
 
-function getEvents(){
+function getEvents(req, res, next){
 	const { uid } = req.session
+	const resp = { channel: req.channel }
+
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	
+	const key = `events.IMPRESSION.${uid}`
+
 	return eventsCol
-	.find({})
-	.limit()
+	.find({
+		[ key ]:  { "$exists": true }
+	})
+	.limit(cfg.EVENTS_FIND_LIMIT)
 	.toArray()
 	.then(function(events) {
-		res.send({events})
+		res.send({ ...resp, events })
 	})
 	.catch(next)
 }
