@@ -2,6 +2,8 @@
 const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
+const keccak256 = require("js-sha3").keccak256
+const abi = require('ethereumjs-abi')
 
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -126,10 +128,18 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is HEALTHY')
 
 		// Check inclusion proofs of the balance
+		// this test case is wrong the stateRoot
+		// can't be equal to the balanceRoot
+		// since the stateRoot = keccak256(channelId, balanceRoot)
 		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
 		const mTree = new MerkleTree(allLeafs)
-		const stateRoot = lastNew.msg.stateRoot
-		t.equals(mTree.getRoot().toString('hex'), stateRoot, 'stateRoot matches merkle tree root')
+		const stateRootRaw = new Buffer(
+			keccak256.arrayBuffer(
+				abi.rawEncode(['bytes', 'bytes'], channel['id'], mTree.getRoot())
+			)
+		).toString('hex')
+		const { stateRoot } = lastNew.msg
+		t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 
 		// this is a bit out of scope, looks like a test of the MerkleTree lib, 
 		// but better be safe than sorry
@@ -183,6 +193,7 @@ tape('health works correctly', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
+		console.log(JSON.stringify(resp))
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
 		// @TODO: Should we assert balances numbers?
 		t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
