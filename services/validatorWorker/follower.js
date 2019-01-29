@@ -41,8 +41,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const whoami = adapter.whoami()
 	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
 	const { stateRoot, signature } = newMsg
-	console.log({ stateRoot })
-	console.log({ signature })
 	// verify the signature of newMsg
 	return adapter.verify(stateRoot, signature)
 		.then(function(res){

@@ -262,7 +262,7 @@ tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follo
 		{ type: 1 },
 		{ type: 'NewState' },
 		{ type: 'NewState', balances: 'iamobject' },
-		{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' }
+		{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' },
 	].map(msg =>
 		fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',

@@ -12,7 +12,7 @@ services:
       - DB_MONGO_URL=mongodb://mongodb:27017
       - DB_MONGO_NAME=adexValidator
       - KEYSTORE_FILE=/home/resources/keystore.json
-      - KEYSTORE_PASSWORD=adexvalidator
+      - KEYSTORE_PASSWORD=
     depends_on: 
       - mongodb
     volumes:
@@ -29,7 +29,7 @@ services:
       - IDENTITY=awesomeFollower
       - ADAPTER=ethereum
       - KEYSTORE_FILE=/home/resources/keystore.json
-      - KEYSTORE_PASSWORD=adexvalidator1
+      - KEYSTORE_PASSWORD=
     depends_on: 
       - mongodb
     volumes:
