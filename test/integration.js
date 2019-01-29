@@ -212,7 +212,7 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 					'authorization': `Bearer WRONG AUTH`,
 					'content-type': 'application/json',
 				},
-				body: JSON.stringify({ messages: [] }),
+				body: JSON.stringify({messages:[]}),
 			})
 			.then(function(resp) {
 				t.equal(resp.status, 401, 'status must be Unauthorized')
@@ -223,13 +223,44 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 	.catch(err => t.fail(err))
 })
 
+tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
+	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify({ 
+			"type": 'NewState', 
+			"stateRoot": "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe",
+			"balances": { "a1" : "1" },
+			"lastEvAggr": "2019-01-23T09:08:29.959Z",
+			"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe" 
+		}),
+	})
+	.then(() => wait(waitTime))
+	.then(function() {
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/ApproveState`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		console.log({resp})
+		// const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
+		// t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
+		t.end()
+	})
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
+
+
 tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', function(t) {
 	Promise.all([
 		null,
 		{ type: 1 },
 		{ type: 'NewState' },
 		{ type: 'NewState', balances: 'iamobject' },
-		{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' },
+		{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' }
 	].map(msg =>
 		fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
