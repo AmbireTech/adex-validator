@@ -1,4 +1,4 @@
-const dummyVals = {
+let dummyVals = {
 	ids: {
 		leader: 'awesomeLeader',
 		follower: 'awesomeFollower',
@@ -26,15 +26,16 @@ const dummyVals = {
 			]
 		}
 	},
-	sessions: [
-		{ _id: 'x8c9v1b2', uid: 'awesomeTestUser' },
-		{ _id: 'testing',  uid: 'myAwesomePublisher' },
-		{ _id: 'AUTH_awesomeLeader', uid: 'awesomeLeader' },
-		{ _id: 'AUTH_awesomeFollower', uid: 'awesomeFollower' }
-	]
 }
 
-if (typeof(module) !== 'undefined') module.exports = dummyVals
+dummyVals['sessions'] = [
+	{ _id: `${dummyVals.auth.user}`, uid: `${dummyVals.ids.user}` },
+	{ _id: `${dummyVals.auth.publisher}`,  uid: `${dummyVals.ids.publisher}` },
+	{ _id: `${dummyVals.auth.leader}`, uid: `${dummyVals.ids.leader}` },
+	{ _id: `${dummyVals.auth.follower}`, uid: `${dummyVals.ids.follower}`}
+]
+
+if (typeof(module) !== 'undefined') module.exports = Object.freeze(dummyVals)
 if (typeof(db) !== 'undefined') {
 	db.channels.insert(dummyVals.channel)
 	db.sessions.insertMany(dummyVals.sessions)
