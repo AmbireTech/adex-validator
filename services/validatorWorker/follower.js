@@ -43,23 +43,24 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { stateRoot, signature } = newMsg
 	// verify the signature of newMsg
 	return adapter.verify(stateRoot, signature)
-		.then(function(res){
-			if(!res) {
-				return Promise.reject("Invalid signature on NEWSTATE")
-			}
-		})
-		.then(function(){
-			const stateRootRaw = Buffer.from(stateRoot, 'hex')
-			return adapter.sign(stateRootRaw)
-			.then(function(signature) {
-				return persistAndPropagate(adapter, otherValidators, channel, {
-					type: 'ApproveState',
-					stateRoot: stateRoot,
-					isHealthy: isHealthy(balances, newBalances),
-					signature,
-				})
+	.then(function(res){
+		if(!res) {
+			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
+			return { nothingNew: true }
+		}
+	})
+	.then(function(){
+		const stateRootRaw = Buffer.from(stateRoot, 'hex')
+		return adapter.sign(stateRootRaw)
+		.then(function(signature) {
+			return persistAndPropagate(adapter, otherValidators, channel, {
+				type: 'ApproveState',
+				stateRoot: stateRoot,
+				isHealthy: isHealthy(balances, newBalances),
+				signature,
 			})
 		})
+	})
 }
 
 function toBNMap(raw) {
