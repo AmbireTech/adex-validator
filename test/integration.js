@@ -142,6 +142,27 @@ tape('submit events and ensure they are accounted for', function(t) {
 	.catch(err => t.fail(err))
 })
 
+tape('/channel/{id}/events-aggregates', function(t) {
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
+		method: 'GET',
+		headers: {
+			'authorization': `Bearer ${dummyVals.auth.publisher}`,
+			'content-type': 'application/json',
+		},
+	})
+	.then(res => {
+		return res.json()
+	})
+	.then(function(resp) {
+		t.ok(resp.channel, 'has resp.channel')
+		t.ok(resp.events, "has resp.events")
+		t.ok(resp.events.length >= 1, "should have events of min legnth 1")
+		t.end()
+	})
+	.catch(err => t.fail(err))
+})
+
+
 tape('health works correctly', function(t) {
 	const toFollower = 8
 	const toLeader = 1

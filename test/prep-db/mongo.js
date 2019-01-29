@@ -9,6 +9,7 @@ const dummyVals = {
 		leader: 'AUTH_awesomeLeader',
 		follower: 'AUTH_awesomeFollower',
 		user: 'x8c9v1b2',
+		publisher: 'testing',
 	},
 	channel: {
 		// @TODO: document schema
@@ -25,7 +26,6 @@ const dummyVals = {
 			]
 		}
 	}
-
 }
 
 if (typeof(module) !== 'undefined') module.exports = dummyVals
