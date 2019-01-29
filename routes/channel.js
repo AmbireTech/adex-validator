@@ -19,8 +19,8 @@ router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 router.get('/:id/validator-messages', getValidatorMessages)
 router.get('/:id/validator-messages/:uid/:type?', channelIfExists, channelLoad, getValidatorMessages)
 
-// event information
-router.get('/:id/events', authRequired, channelIfExists, channelLoad, getEvents)
+// event aggregates information
+router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad, getEventAggregates)
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
@@ -51,7 +51,7 @@ function getStatus(withTree, req, res) {
 	})
 }
 
-function getEvents(req, res, next){
+function getEventAggregates(req, res, next){
 	const { uid } = req.session
 	const resp = { channel: req.channel }
 

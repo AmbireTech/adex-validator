@@ -142,8 +142,8 @@ tape('submit events and ensure they are accounted for', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('/channel/{id}/events', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
+tape('/channel/{id}/events-aggregates', function(t) {
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
 		method: 'GET',
 		headers: {
 			'authorization': `Bearer ${dummyVals.auth.publisher}`,
@@ -154,7 +154,6 @@ tape('/channel/{id}/events', function(t) {
 		return res.json()
 	})
 	.then(function(resp) {
-		console.log({ resp })
 		t.ok(resp.channel, 'has resp.channel')
 		t.ok(resp.events, "has resp.events")
 		t.ok(resp.events.length >= 1, "should have events of min legnth 1")

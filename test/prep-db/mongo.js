@@ -1,4 +1,4 @@
-let dummyVals = {
+const dummyVals = {
 	ids: {
 		leader: 'awesomeLeader',
 		follower: 'awesomeFollower',
@@ -9,7 +9,7 @@ let dummyVals = {
 		leader: 'AUTH_awesomeLeader',
 		follower: 'AUTH_awesomeFollower',
 		user: 'x8c9v1b2',
-		publisher: 'testing'
+		publisher: 'testing',
 	},
 	channel: {
 		// @TODO: document schema
@@ -25,18 +25,10 @@ let dummyVals = {
 				{ id: 'awesomeFollower', url: 'http://localhost:8006' },
 			]
 		}
-	},
+	}
 }
 
-dummyVals['sessions'] = [
-	{ _id: `${dummyVals.auth.user}`, uid: `${dummyVals.ids.user}` },
-	{ _id: `${dummyVals.auth.publisher}`,  uid: `${dummyVals.ids.publisher}` },
-	{ _id: `${dummyVals.auth.leader}`, uid: `${dummyVals.ids.leader}` },
-	{ _id: `${dummyVals.auth.follower}`, uid: `${dummyVals.ids.follower}`}
-]
-
-if (typeof(module) !== 'undefined') module.exports = Object.freeze(dummyVals)
+if (typeof(module) !== 'undefined') module.exports = dummyVals
 if (typeof(db) !== 'undefined') {
 	db.channels.insert(dummyVals.channel)
-	db.sessions.insertMany(dummyVals.sessions)
 }
