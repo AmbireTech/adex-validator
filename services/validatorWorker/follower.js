@@ -40,28 +40,28 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 	const whoami = adapter.whoami()
 	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
-	const {stateRoot, signature } = newMsg
-
+	const { stateRoot, signature } = newMsg
+	console.log({ stateRoot })
+	console.log({ signature })
 	// verify the signature of newMsg
-	adapter.verify(stateRoot, signature)
+	return adapter.verify(stateRoot, signature)
 		.then(function(res){
-			assert.equal(
-				res,
-				true, 
-				"Invalid signature on NEWSTATE"
-			)
+			if(!res) {
+				return Promise.reject("Invalid signature on NEWSTATE")
+			}
 		})
-	
-	const stateRootRaw = Buffer.from(stateRoot, 'hex')
-	return adapter.sign(stateRootRaw)
-	.then(function(signature) {
-		return persistAndPropagate(adapter, otherValidators, channel, {
-			type: 'ApproveState',
-			stateRoot: stateRoot,
-			isHealthy: isHealthy(balances, newBalances),
-			signature,
+		.then(function(){
+			const stateRootRaw = Buffer.from(stateRoot, 'hex')
+			return adapter.sign(stateRootRaw)
+			.then(function(signature) {
+				return persistAndPropagate(adapter, otherValidators, channel, {
+					type: 'ApproveState',
+					stateRoot: stateRoot,
+					isHealthy: isHealthy(balances, newBalances),
+					signature,
+				})
+			})
 		})
-	})
 }
 
 function toBNMap(raw) {

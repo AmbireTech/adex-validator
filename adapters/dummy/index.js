@@ -39,7 +39,7 @@ function getAuthFor(validator) {
 }
 
 function verify(stateRoot, signature) {
-	return Promise.resolve(stateRoot.split(" ").length === 7)
+	return Promise.resolve(signature.split(" ").length === 7)
 }
 
 module.exports = { 

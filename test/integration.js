@@ -224,18 +224,22 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 })
 
 tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
+	const stateRoot = "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe"
+
 	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 		method: 'POST',
 		headers: {
 			'authorization': `Bearer ${dummyVals.auth.leader}`,
 			'content-type': 'application/json',
 		},
-		body: JSON.stringify({ 
-			"type": 'NewState', 
-			"stateRoot": "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe",
-			"balances": { "a1" : "1" },
-			"lastEvAggr": "2019-01-23T09:08:29.959Z",
-			"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe" 
+		body: JSON.stringify({
+			"messages": [{ 
+				"type": 'NewState', 
+				stateRoot,
+				"balances": { "myAwesomePublisher" : "9" },
+				"lastEvAggr": "2019-01-23T09:08:29.959Z",
+				"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe" 
+			}]
 		}),
 	})
 	.then(() => wait(waitTime))
@@ -244,12 +248,10 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		console.log({resp})
-		// const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
-		// t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
+		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
+		t.equal(lastApprove, undefined, 'follower should not sign state with invalid signature')
 		t.end()
 	})
-	.then(() => t.end())
 	.catch(err => t.fail(err))
 })
 

@@ -1,0 +1,144 @@
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ res: false }
+moving owrk
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ res: false }
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+validatorWorker: processed 1 channels
+{ stateRoot:
+   'ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8' }
+{ signature:
+   'Dummy adapter signature for ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8 by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ stateRoot:
+   '3a7956980d6b01e29dd5ec203fa40df3ae6f7b3673c5e7a500067bdbf3d9f28b' }
+{ signature:
+   'Dummy adapter signature for 3a7956980d6b01e29dd5ec203fa40df3ae6f7b3673c5e7a500067bdbf3d9f28b by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+validatorWorker: processed 1 channels
+{ stateRoot:
+   'ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8' }
+{ signature:
+   'Dummy adapter signature for ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8 by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+validatorWorker: processed 1 channels
+{ stateRoot:
+   'ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8' }
+{ signature:
+   'Dummy adapter signature for ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8 by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ stateRoot:
+   '3a7956980d6b01e29dd5ec203fa40df3ae6f7b3673c5e7a500067bdbf3d9f28b' }
+{ signature:
+   'Dummy adapter signature for 3a7956980d6b01e29dd5ec203fa40df3ae6f7b3673c5e7a500067bdbf3d9f28b by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+validatorWorker: processed 1 channels
+{ stateRoot:
+   'ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8' }
+{ signature:
+   'Dummy adapter signature for ccd9dbfefb259632d457beb58ec7ccef5d990d52b0ec4bae9a2197b4fda32ad8 by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ stateRoot:
+   '3a7956980d6b01e29dd5ec203fa40df3ae6f7b3673c5e7a500067bdbf3d9f28b' }
+{ signature:
+   'Dummy adapter signature for 3a7956980d6b01e29dd5ec203fa40df3ae6f7b3673c5e7a500067bdbf3d9f28b by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ stateRoot:
+   '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe' }
+{ signature:
+   'Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe' }
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+validatorWorker: processed 1 channels
+{ stateRoot:
+   '5a6b97e3f4f9040cf20e931addb3036f69a5cd6f4a83a6172f85b057f96b0415' }
+{ signature:
+   'Dummy adapter signature for 5a6b97e3f4f9040cf20e931addb3036f69a5cd6f4a83a6172f85b057f96b0415 by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+validatorWorker: processed 1 channels
+{ stateRoot:
+   '2dc3bc03bf79b7b3ec5282cae457a84d24e39ecb854e620ef065dc548b197c2f' }
+{ signature:
+   'Dummy adapter signature for 2dc3bc03bf79b7b3ec5282cae457a84d24e39ecb854e620ef065dc548b197c2f by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ stateRoot:
+   '805d10bae320fc699b3337eb33b8c79bd0aca15204f3be7a77caf4740913c1a6' }
+{ signature:
+   'Dummy adapter signature for 805d10bae320fc699b3337eb33b8c79bd0aca15204f3be7a77caf4740913c1a6 by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+validatorWorker: channel awesomeTestChannel: processing 1 event aggregates
+{ stateRoot:
+   'f01549a580715fb0c77033cf05585a17be33a7bc9a8754e270d03df04955f768' }
+{ signature:
+   'Dummy adapter signature for f01549a580715fb0c77033cf05585a17be33a7bc9a8754e270d03df04955f768 by awesomeLeader' }
+validatorWorker: channel awesomeTestChannel: propagating ApproveState to 1 validators
+validatorWorker: processed 1 channels
+{ stateRoot:
+   'cd82fa3b9a6a0c00f3649bba9b3d90c95f970b2f7cdad8c93e16571297f1a0f4' }
+{ signature:
+   'Dummy adapter signature for cd82fa3b9a6a0c00f3649bba9b3d90c95f970b2f7cdad8c93e16571297f1a0f4 by awesomeLeader' }
+validatorWorker: channel syl9st0jlb: propagating ApproveState to 1 validators
+validatorWorker: processed 3 channels
+validatorWorker: channel 2xer5sf4soe: processing 1 event aggregates
+validatorWorker: channel syl9st0jlb: processing 1 event aggregates
+{ stateRoot:
+   '3e5b970d855cee8e8e303dbb3568b4c5c519a20f45b6de4678f43fcc2d3b1dd6' }
+{ signature:
+   'Dummy adapter signature for 3e5b970d855cee8e8e303dbb3568b4c5c519a20f45b6de4678f43fcc2d3b1dd6 by awesomeLeader' }
+validatorWorker: channel 2xer5sf4soe: propagating ApproveState to 1 validators
+{ stateRoot:
+   '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe' }
+{ signature:
+   'Dummy adapter signature for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader' }
+validatorWorker: channel syl9st0jlb: propagating ApproveState to 1 validators
+validatorWorker: processed 3 channels
+validatorWorker: channel in79nz5zk3: processing 1 event aggregates
+{ stateRoot:
+   '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe' }
+{ signature:
+   'Dummy adapter signature for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader' }
+validatorWorker: channel in79nz5zk3: propagating ApproveState to 1 validators
+validatorWorker: processed 4 channels
+validatorWorker: channel kc3fhzo4li: processing 1 event aggregates
+{ stateRoot:
+   '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe' }
+{ signature:
+   'Dummy adapter signature for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader' }
+validatorWorker: channel kc3fhzo4li: propagating ApproveState to 1 validators
+validatorWorker: processed 5 channels
+validatorWorker: channel 7jv76sw85av: processing 1 event aggregates
+{ stateRoot:
+   '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe' }
+{ signature:
+   'Dummy adapter signature for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader' }
+validatorWorker: channel 7jv76sw85av: propagating ApproveState to 1 validators
+validatorWorker: processed 6 channels
+validatorWorker: channel 7jv76sw85av: processing 1 event aggregates
+{ stateRoot:
+   'fec5e7c01ee3e06a605d514339777e456402b7b07d7eefccf247333fa8ee72f6' }
+{ signature:
+   'Dummy adapter signature for fec5e7c01ee3e06a605d514339777e456402b7b07d7eefccf247333fa8ee72f6 by awesomeLeader' }
+validatorWorker: channel 7jv76sw85av: propagating ApproveState to 1 validators
+validatorWorker: processed 6 channels

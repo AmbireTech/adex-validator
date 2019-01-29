@@ -50,8 +50,8 @@ function verify(stateRoot, signature) {
 	assert.ok(stateRoot, "valid state root must be provided")
 	assert.ok(signature, "valid signature must be provided")
 	const address = Wallet.verifyMessage(stateRoot, signature)
-	
-	return address === whoami()
+
+	return Promise.resolve(address === whoami())
 }
 
 function getBalanceLeaf(acc, bal) {
