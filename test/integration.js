@@ -128,9 +128,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is HEALTHY')
 
 		// Check inclusion proofs of the balance
-		// this test case is wrong the stateRoot
-		// can't be equal to the balanceRoot
-		// since the stateRoot = keccak256(channelId, balanceRoot)
+		// stateRoot = keccak256(channelId, balanceRoot)
 		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
 		const mTree = new MerkleTree(allLeafs)
 		const stateRootRaw = new Buffer(
@@ -193,7 +191,6 @@ tape('health works correctly', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		console.log(JSON.stringify(resp))
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
 		// @TODO: Should we assert balances numbers?
 		t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
