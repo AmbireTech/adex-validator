@@ -59,9 +59,12 @@ function getEventAggregates(req, res, next){
 	const key = `events.IMPRESSION.${uid}`
 
 	return eventsCol
-	.find({
-		[ key ]:  { "$exists": true }
-	})
+	.find(
+		{
+			[key]: { $exists: true }
+		},
+		{ projection: { [key]: 1 }}
+	)
 	.limit(cfg.EVENTS_FIND_LIMIT)
 	.toArray()
 	.then(function(events) {
