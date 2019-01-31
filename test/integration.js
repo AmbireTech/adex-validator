@@ -14,7 +14,7 @@ const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 // Times to wait before being sure the sentry + validator workers have updated everything
 // 500ms is just to "make sure" we're giving it enough time
-const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME*2 + cfg.WAIT_TIME*2 + 1000
+const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME*2 + cfg.WAIT_TIME*2 + 500
 const waitAggrTime = cfg.AGGR_THROTTLE + 500
 
 tape('/channel/list', function(t) {
