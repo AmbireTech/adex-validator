@@ -1,7 +1,4 @@
 const { persistAndPropagate } = require('./lib/propagation')
-const keccak256 = require("js-sha3").keccak256
-const abi = require('ethereumjs-abi')
-
 const producer = require('./producer')
 
 function tick(adapter, channel) {
@@ -23,20 +20,17 @@ function afterProducer(adapter, {channel, newStateTree, balances}) {
 	const balanceRoot = tree.getRoot()
 
 	// keccak256(channelId, balanceRoot)
-	const stateRootRaw = new Buffer(
-		keccak256.arrayBuffer(
-			abi.rawEncode(['bytes', 'bytes'], channel['id'], balanceRoot)
-		)
-	)
-
-	return adapter.sign(stateRootRaw)
-	.then(function(signature) {
-		const stateRoot = stateRootRaw.toString('hex')
-		return persistAndPropagate(adapter, followers, channel, {
-			type: 'NewState',
-			...newStateTree,
-			stateRoot,
-			signature,
+	return adapter.getSignableStateRoot(channel.id, balanceRoot)
+	.then(function(stateRootRaw){
+		return adapter.sign(stateRootRaw)
+		.then(function(signature) {
+			const stateRoot = stateRootRaw.toString('hex')
+			return persistAndPropagate(adapter, followers, channel, {
+				type: 'NewState',
+				...newStateTree,
+				stateRoot,
+				signature,
+			})
 		})
 	})
 }

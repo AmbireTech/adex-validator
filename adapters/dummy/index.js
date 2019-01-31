@@ -1,4 +1,6 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
+const keccak256 = require('js-sha3').keccak256
+const abi = require('ethereumjs-abi')
 const assert = require('assert')
 const dummyVals = require('../../test/prep-db/mongo')
 
@@ -24,6 +26,16 @@ function sign(stateRoot) {
 
 function getBalanceLeaf(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
+}
+
+function getSignableStateRoot(channel, balanceRoot) {
+	return Promise.resolve(
+		new Buffer(
+			keccak256.arrayBuffer(
+				abi.rawEncode(['bytes', 'bytes'], channel, balanceRoot)
+			)
+		)
+	)
 }
 
 // Authentication tokens
@@ -59,5 +71,6 @@ module.exports = {
 	sessionFromToken, 
 	getAuthFor, 
 	MerkleTree,
-	verify
+	verify,
+	getSignableStateRoot,
 }

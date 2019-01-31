@@ -185,6 +185,7 @@ tape('health works correctly', function(t) {
 	//postEvents(followerUrl, dummyVals.channel.id, genImpressions(4))
 	// wait for the events to be aggregated and new states to be issued
 	.then(() => wait(waitTime))
+	.then(() => wait(waitTime))
 	.then(function() {
 		// get the latest state
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`)

@@ -4,6 +4,8 @@ const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
+const keccak256 = require('js-sha3').keccak256
+const abi = require('ethereumjs-abi')
 const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
 
@@ -82,6 +84,16 @@ function sessionFromToken(token) {
 	})
 }
 
+function getSignableStateRoot(channel, balanceRoot) {
+	return Promise.resolve(
+		new Buffer(
+			keccak256.arrayBuffer(
+				abi.rawEncode(['bytes', 'bytes'], channel, balanceRoot)
+			)
+		)
+	)
+}
+
 function getAuthFor(validator) {
 	// we will self-generate a challenge to contain whoever we're authenticating to, the validity period and the current time
 	// we will sign that challenge and use that, and build a complete token using the EWT (JWT subset) standard
@@ -119,4 +131,5 @@ module.exports = {
 	getAuthFor, 
 	MerkleTree,
 	verify,
+	getSignableStateRoot,
 }
