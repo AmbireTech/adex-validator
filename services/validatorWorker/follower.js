@@ -38,20 +38,28 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 		return { nothingNew: true }
 	}
 
-	// @TODO we should verify the signature of newMsg
-	// currently, in order to POST to /validator-messages, we require that you're a validator
-	// but this means that if a validator's auth token leaks, that can be used to trick followers into signing any new state that is a valid state transition
 	const whoami = adapter.whoami()
+	const leader = channel.spec.validators[0]
 	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
-	const stateRoot = newMsg.stateRoot
-	const stateRootRaw = Buffer.from(stateRoot, 'hex')
-	return adapter.sign(stateRootRaw)
-	.then(function(signature) {
-		return persistAndPropagate(adapter, otherValidators, channel, {
-			type: 'ApproveState',
-			stateRoot: stateRoot,
-			isHealthy: isHealthy(balances, newBalances),
-			signature,
+	const { stateRoot, signature } = newMsg
+	// verify the signature of newMsg
+	return adapter.verify(leader['id'], stateRoot, signature)
+	.then(function(res){
+		if(!res) {
+			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
+			return { nothingNew: true }
+		}
+	})
+	.then(function(){
+		const stateRootRaw = Buffer.from(stateRoot, 'hex')
+		return adapter.sign(stateRootRaw)
+		.then(function(signature) {
+			return persistAndPropagate(adapter, otherValidators, channel, {
+				type: 'ApproveState',
+				stateRoot: stateRoot,
+				isHealthy: isHealthy(balances, newBalances),
+				signature,
+			})
 		})
 	})
 }

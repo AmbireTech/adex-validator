@@ -46,6 +46,19 @@ function sign(stateRoot) {
 	return wallet.signMessage(stateRoot)
 }
 
+function verify(signer, stateRoot, signature) {
+	assert.ok(stateRoot, "valid state root must be provided")
+	assert.ok(signature, "valid signature must be provided")
+	assert.ok(signer, "valid signer is required")
+	
+	try {
+		const from = ethers.utils.verifyMessage(stateRoot, signature)
+		return Promise.resolve(signer === from)
+	} catch(e){
+		return Promise.resolve(false)
+	}
+}
+
 function getBalanceLeaf(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
@@ -96,4 +109,14 @@ function getAuthFor(validator) {
 //for (var i=0; i!=100000; i++) p = p.then(work)
 //p.then(() => console.log(Date.now()-start))
 
-module.exports = { init, unlock, whoami, sign, getBalanceLeaf, sessionFromToken, getAuthFor, MerkleTree }
+module.exports = { 
+	init, 
+	unlock, 
+	whoami, 
+	sign, 
+	getBalanceLeaf, 
+	sessionFromToken, 
+	getAuthFor, 
+	MerkleTree,
+	verify,
+}

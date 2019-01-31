@@ -63,7 +63,7 @@ function getEventAggregates(req, res, next){
 		{
 			[key]: { $exists: true }
 		},
-		{ projection: { [key]: 1 }}
+		{ projection: { [key]: 1, _id: 0, created: 1 }}
 	)
 	.limit(cfg.EVENTS_FIND_LIMIT)
 	.toArray()
