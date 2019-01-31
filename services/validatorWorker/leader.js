@@ -20,7 +20,7 @@ function afterProducer(adapter, {channel, newStateTree, balances}) {
 	const balanceRoot = tree.getRoot()
 
 	// keccak256(channelId, balanceRoot)
-	return adapter.getSignableStateRoot(channel.id, balanceRoot)
+	return adapter.getSignableStateRoot(Buffer.from(channel.id), balanceRoot)
 	.then(function(stateRootRaw){
 		return adapter.sign(stateRootRaw)
 		.then(function(signature) {

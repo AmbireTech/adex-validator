@@ -14,7 +14,7 @@ const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 // Times to wait before being sure the sentry + validator workers have updated everything
 // 500ms is just to "make sure" we're giving it enough time
-const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME*2 + cfg.WAIT_TIME*2 + 500
+const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME*2 + cfg.WAIT_TIME*2 + 1000
 const waitAggrTime = cfg.AGGR_THROTTLE + 500
 
 tape('/channel/list', function(t) {
@@ -133,7 +133,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		const mTree = new MerkleTree(allLeafs)
 		const stateRootRaw = new Buffer(
 			keccak256.arrayBuffer(
-				abi.rawEncode(['bytes', 'bytes'], channel['id'], mTree.getRoot())
+				abi.rawEncode(['bytes32', 'bytes32'], [Buffer.from(channel['id']), mTree.getRoot()])
 			)
 		).toString('hex')
 		const { stateRoot } = lastNew.msg
@@ -185,7 +185,6 @@ tape('health works correctly', function(t) {
 	//postEvents(followerUrl, dummyVals.channel.id, genImpressions(4))
 	// wait for the events to be aggregated and new states to be issued
 	.then(() => wait(waitTime))
-	.then(() => wait(waitTime))
 	.then(function() {
 		// get the latest state
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`)
@@ -206,6 +205,7 @@ tape('health works correctly', function(t) {
 	})
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
+
 		t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
 		t.end()
 	})

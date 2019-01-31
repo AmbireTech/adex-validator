@@ -45,9 +45,10 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	// verify the signature of newMsg: whether it was signed by the leader validator
 	return adapter.verify(leader.id, stateRoot, signature)
 	.then(function(res){
+
 		if(!res) {
 			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
-			return { nothingNew: true }
+			return Promise.reject({ nothingNew: true })
 		}
 	})
 	.then(function(){
