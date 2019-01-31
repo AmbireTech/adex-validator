@@ -42,8 +42,8 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const leader = channel.spec.validators[0]
 	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
 	const { stateRoot, signature } = newMsg
-	// verify the signature of newMsg
-	return adapter.verify(leader['id'], stateRoot, signature)
+	// verify the signature of newMsg: whether it was signed by the leader validator
+	return adapter.verify(leader.id, stateRoot, signature)
 	.then(function(res){
 		if(!res) {
 			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
