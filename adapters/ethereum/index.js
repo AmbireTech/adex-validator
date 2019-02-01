@@ -4,8 +4,6 @@ const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
-const keccak256 = require('js-sha3').keccak256
-const abi = require('ethereumjs-abi')
 const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
 

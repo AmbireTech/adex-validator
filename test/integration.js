@@ -2,8 +2,6 @@
 const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
-const keccak256 = require("js-sha3").keccak256
-const abi = require('ethereumjs-abi')
 
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -131,11 +129,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// stateRoot = keccak256(channelId, balanceRoot)
 		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
 		const mTree = new MerkleTree(allLeafs)
-		const stateRootRaw = new Buffer(
-			keccak256.arrayBuffer(
-				abi.rawEncode(['bytes32', 'bytes32'], [Buffer.from(channel['id']), mTree.getRoot()])
-			)
-		).toString('hex')
+		const stateRootRaw = Channel.getSignableStateRoot(Buffer.from(channel['id']), mTree.getRoot()).toString('hex')
 		const { stateRoot } = lastNew.msg
 		t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 

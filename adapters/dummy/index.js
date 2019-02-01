@@ -1,6 +1,4 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
-const keccak256 = require('js-sha3').keccak256
-const abi = require('ethereumjs-abi')
 const assert = require('assert')
 const dummyVals = require('../../test/prep-db/mongo')
 
