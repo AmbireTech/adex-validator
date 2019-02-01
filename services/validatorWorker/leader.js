@@ -18,19 +18,18 @@ function afterProducer(adapter, {channel, newStateTree, balances}) {
 	)
 	const tree = new adapter.MerkleTree(elems)
 	const balanceRoot = tree.getRoot()
-
+	
+	const stateRootRaw = adapter.getSignableStateRoot(Buffer.from(channel.id), balanceRoot)
+	
 	// keccak256(channelId, balanceRoot)
-	return adapter.getSignableStateRoot(Buffer.from(channel.id), balanceRoot)
-	.then(function(stateRootRaw){
-		return adapter.sign(stateRootRaw)
-		.then(function(signature) {
-			const stateRoot = stateRootRaw.toString('hex')
-			return persistAndPropagate(adapter, followers, channel, {
-				type: 'NewState',
-				...newStateTree,
-				stateRoot,
-				signature,
-			})
+	return adapter.sign(stateRootRaw)
+	.then(function(signature) {
+		const stateRoot = stateRootRaw.toString('hex')
+		return persistAndPropagate(adapter, followers, channel, {
+			type: 'NewState',
+			...newStateTree,
+			stateRoot,
+			signature,
 		})
 	})
 }

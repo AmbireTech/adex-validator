@@ -85,13 +85,7 @@ function sessionFromToken(token) {
 }
 
 function getSignableStateRoot(channel, balanceRoot) {
-	return Promise.resolve(
-		Buffer.from(
-			keccak256.arrayBuffer(
-				abi.rawEncode(['bytes32', 'bytes32'], [channel, balanceRoot])
-			)
-		)
-	)
+	return Channel.getSignableStateRoot(channel, balanceRoot)
 }
 
 function getAuthFor(validator) {
