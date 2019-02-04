@@ -6,7 +6,7 @@ function propagate(
 	receiver, 
 	channel, 
 	msg, 
-	path
+	path="validator-messages"
 ) {
 	return adapter.getAuthFor(receiver)
 	.then(function(authToken) {
