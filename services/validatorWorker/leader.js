@@ -2,6 +2,7 @@ const { persistAndPropagate } = require('./lib/propagation')
 const { getStateRootHash } = require('./lib/followerRules')
 
 const producer = require('./producer')
+const { heartbeat } = require('./heartbeat')
 
 function tick(adapter, channel) {
 	return producer.tick(channel)
@@ -9,6 +10,13 @@ function tick(adapter, channel) {
 			res => res.newStateTree ?
 				afterProducer(adapter, res)
 				: { nothingNew: true }
+		).then(
+			res => {
+				if(res.nothingNew){
+					// send heartbeat
+					heartbeat(adapter, channel);
+				}
+			}
 		)
 }
 

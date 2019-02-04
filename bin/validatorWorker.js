@@ -67,7 +67,6 @@ function validatorTick(channel) {
 	const tick = isLeader ? leader.tick : follower.tick
 	return tick(adapter, channel)
 }
-
 function wait(ms) {
 	return new Promise((resolve, _) => setTimeout(resolve, ms))
 }

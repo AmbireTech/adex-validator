@@ -4,6 +4,7 @@ const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
 const { isValidTransition, isHealthy, isValidRootHash } = require('./lib/followerRules')
 const producer = require('./producer')
+const { heartbeat } = require('./heartbeat')
 
 function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -26,6 +27,12 @@ function tick(adapter, channel) {
 		return producer.tick(channel, true)
 		.then(function(res) {
 			return onNewState(adapter, { ...res, newMsg, approveMsg })
+		})
+		.then(function(res){
+			// send heartbeat
+			if(res.nothingNew){
+				heartbeat(adapter, channel);
+			}
 		})
 	})
 }

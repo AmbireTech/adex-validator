@@ -79,7 +79,7 @@ tape('/channel/{id}/heartbeat', function(t) {
 			'authorization': `Bearer ${dummyVals.auth.leader}`,
 			'content-type': 'application/json',
 		},
-		body: JSON.stringify({message: {
+		body: JSON.stringify({messages: {
 			"timestamp": "2012-03-01",
 			"signature": getDummySig("2012-03-01", dummyVals.ids.leader)
 		}}),
