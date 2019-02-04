@@ -82,8 +82,8 @@ function sessionFromToken(token) {
 	})
 }
 
-function getSignableStateRoot(channel, balanceRoot) {
-	return Channel.getSignableStateRoot(channel, balanceRoot)
+function getSignableStateRoot(channelId, balanceRoot) {
+	return Channel.getSignableStateRoot(channelId, balanceRoot)
 }
 
 function getAuthFor(validator) {
