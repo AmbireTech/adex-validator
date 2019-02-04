@@ -42,6 +42,13 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const leader = channel.spec.validators[0]
 	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
 	const { stateRoot, signature } = newMsg
+
+	//  verify the stateRoot hash of newMsg:
+	if(!(getRootHash(channel, balances, adapter) === stateRoot)){
+		console.error(`validatatorWorker: ${channel.id}: invalid state root hash`)
+		return { nothingNew: true }
+	}
+
 	// verify the signature of newMsg: whether it was signed by the leader validator
 	return adapter.verify(leader.id, stateRoot, signature)
 	.then(function(res){
@@ -62,6 +69,16 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			})
 		})
 	})
+}
+
+function getRootHash(channel, balances, adapter) {
+	const elems = Object.keys(balances).map(
+		acc => adapter.getBalanceLeaf(acc, balances[acc])
+	)
+	const tree = new adapter.MerkleTree(elems)
+	const balanceRoot = tree.getRoot()
+	const stateRootRaw = adapter.getSignableStateRoot(Buffer.from(channel.id), balanceRoot)
+	return stateRootRaw.toString('hex')
 }
 
 function toBNMap(raw) {
