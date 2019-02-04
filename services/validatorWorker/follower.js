@@ -44,8 +44,9 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { stateRoot, signature } = newMsg
 
 	//  verify the stateRoot hash of newMsg:
-	if(!(getRootHash(channel, balances, adapter) === stateRoot)){
-		console.error(`validatatorWorker: ${channel.id}: invalid state root hash`)
+	const expectedRootHash = getRootHash(channel, balances, adapter)
+	if(!(expectedRootHash === stateRoot)){
+		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, expectedRootHash, stateRoot)
 		return { nothingNew: true }
 	}
 
