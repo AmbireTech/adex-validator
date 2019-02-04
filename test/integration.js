@@ -126,10 +126,12 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is HEALTHY')
 
 		// Check inclusion proofs of the balance
+		// stateRoot = keccak256(channelId, balanceRoot)
 		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
 		const mTree = new MerkleTree(allLeafs)
-		const stateRoot = lastNew.msg.stateRoot
-		t.equals(mTree.getRoot().toString('hex'), stateRoot, 'stateRoot matches merkle tree root')
+		const stateRootRaw = Channel.getSignableStateRoot(Buffer.from(channel['id']), mTree.getRoot()).toString('hex')
+		const { stateRoot } = lastNew.msg
+		t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 
 		// this is a bit out of scope, looks like a test of the MerkleTree lib, 
 		// but better be safe than sorry
@@ -197,6 +199,7 @@ tape('health works correctly', function(t) {
 	})
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
+
 		t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
 		t.end()
 	})

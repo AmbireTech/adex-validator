@@ -82,6 +82,10 @@ function sessionFromToken(token) {
 	})
 }
 
+function getSignableStateRoot(channelId, balanceRoot) {
+	return Channel.getSignableStateRoot(channelId, balanceRoot)
+}
+
 function getAuthFor(validator) {
 	// we will self-generate a challenge to contain whoever we're authenticating to, the validity period and the current time
 	// we will sign that challenge and use that, and build a complete token using the EWT (JWT subset) standard
@@ -119,4 +123,5 @@ module.exports = {
 	getAuthFor, 
 	MerkleTree,
 	verify,
+	getSignableStateRoot,
 }

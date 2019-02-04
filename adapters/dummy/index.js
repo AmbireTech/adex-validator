@@ -26,6 +26,10 @@ function getBalanceLeaf(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
+function getSignableStateRoot(channelId, balanceRoot) {
+	return Channel.getSignableStateRoot(channelId, balanceRoot)
+}
+
 // Authentication tokens
 function sessionFromToken(token) {
 	const who = Object.entries(dummyVals.auth).find(v => v[1] == token)
@@ -59,5 +63,6 @@ module.exports = {
 	sessionFromToken, 
 	getAuthFor, 
 	MerkleTree,
-	verify
+	verify,
+	getSignableStateRoot,
 }
