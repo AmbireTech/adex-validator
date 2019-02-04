@@ -1,3 +1,4 @@
+const assert = require('assert')
 const { persistAndPropagate } = require("./lib/propagation")
 
 function heartbeat(adapter, channel){
@@ -13,7 +14,7 @@ function heartbeat(adapter, channel){
 			type: 'HeartBeat',
 			timestamp,
 			signature
-		});
+		}, "heartbeat");
 	})
 }
 

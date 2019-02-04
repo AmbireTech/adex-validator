@@ -116,8 +116,10 @@ function postHeartBeat(req, res, next) {
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 
-	const msg = req.body.messages
+	const msg = req.body.messages[0]
 	if(!isHearbeatMsgValid(msg)){
+		console.log({ msg })
+		console.log("invalid heartbeat message")
 		res.sendStatus(400)
 		return 
 	}

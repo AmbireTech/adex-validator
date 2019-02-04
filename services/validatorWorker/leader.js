@@ -12,10 +12,12 @@ function tick(adapter, channel) {
 				: { nothingNew: true }
 		).then(
 			res => {
-				if(res.nothingNew){
+				if(res && res.nothingNew){
 					// send heartbeat
-					heartbeat(adapter, channel);
+					heartbeat(adapter, channel)
+					.then(function(){})
 				}
+				return res
 			}
 		)
 }

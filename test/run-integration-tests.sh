@@ -24,8 +24,8 @@ mongo $FOLLOW_MONGO ./scripts/db-indexes.js >$MONGO_OUT
 
 # @TODO separate logs
 # Start sentries
-PORT=$LEAD_PORT DB_MONGO_NAME=$LEAD_MONGO bin/sentry.js $LEAD_ARGS &
-PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS &
+PORT=$LEAD_PORT DB_MONGO_NAME=$LEAD_MONGO bin/sentry.js $LEAD_ARGS >> l.out &
+PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS >> s.out &
 # the sentries need time to start listening
 sleep 3
 

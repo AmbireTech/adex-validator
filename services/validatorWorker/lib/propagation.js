@@ -1,10 +1,16 @@
 const fetch = require('node-fetch')
 const db = require('../../../db')
 
-function propagate(adapter, receiver, channel, msg) {
+function propagate(
+	adapter, 
+	receiver, 
+	channel, 
+	msg, 
+	path
+) {
 	return adapter.getAuthFor(receiver)
 	.then(function(authToken) {
-		return fetch(`${receiver.url}/channel/${channel.id}/validator-messages`, {
+		return fetch(`${receiver.url}/channel/${channel.id}/${path}`, {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/json',
@@ -33,13 +39,13 @@ function persist(adapter, channel, msg) {
 }
 
 // receivers are the receiving validators
-function persistAndPropagate(adapter, receivers, channel, msg) {
+function persistAndPropagate(adapter, receivers, channel, msg, path="validator-messages") {
 	logPropagate(receivers, channel, msg)
 
 	persist(adapter, channel, msg)
 	.then(function() {
 		return Promise.all(receivers.map(function(receiver) {
-			return propagate(adapter, receiver, channel, msg)
+			return propagate(adapter, receiver, channel, msg, path)
 			.catch(function(e) {
 				console.error(`validatorWorker: Unable to propagate ${msg.type} to ${receiver.id}: ${e.message || e}`)
 			})
