@@ -116,8 +116,8 @@ function postHeartBeat(req, res, next) {
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 
-	const message = req.body.message
-	if(!isHearbeatMsgValid(message)){
+	const msg = req.body.message
+	if(!isHearbeatMsgValid(msg)){
 		res.sendStatus(400)
 		return 
 	}
@@ -126,8 +126,10 @@ function postHeartBeat(req, res, next) {
 		channelId: req.channel.id,
 		from: req.session.uid, // @TODO recover sig
 		submittedBy: req.session.uid,
-		message,
-		type: "HeartBeat"
+		msg: {
+			...msg,
+			type: "HeartBeat"
+		}
 	}).then(function(){
 		res.send({success: true})
 	})
