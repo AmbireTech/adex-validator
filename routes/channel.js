@@ -24,8 +24,8 @@ router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad,
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
+router.post('/:id/heartbeat', authRequired, channelLoad, postHeartBeat)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
-
 // Implementations
 function getStatus(withTree, req, res) {
 	const resp = { channel: req.channel }
@@ -108,6 +108,32 @@ function getValidatorMessages(req, res, next){
 	.catch(next)
 }
 
+function postHeartBeat(req, res, next) {
+	if (!req.channel.validators.includes(req.session.uid)) {
+		res.sendStatus(401)
+		return
+	}
+
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+
+	const message = req.body.message
+	if(!isHearbeatMsgValid(message)){
+		res.sendStatus(400)
+		return 
+	}
+
+	validatorMsgCol.insertOne({
+		channelId: req.channel.id,
+		from: req.session.uid, // @TODO recover sig
+		submittedBy: req.session.uid,
+		message,
+		type: "HeartBeat"
+	}).then(function(){
+		res.send({success: true})
+	})
+	.catch(next)
+}
+
 function postValidatorMessages(req, res, next) {
 	if (!req.channel.validators.includes(req.session.uid)) {
 		res.sendStatus(401)
@@ -162,6 +188,11 @@ function isValidatorMsgValid(msg) {
 			(msg.type === 'NewState' && typeof(msg.balances) === 'object')
 			|| msg.type === 'ApproveState'
 		)
+}
+
+function isHearbeatMsgValid(msg){
+	return msg && typeof(msg.signature) === 'string' &&
+		typeof(msg.timestamp) === 'string'
 }
 
 function isEventValid(ev) {

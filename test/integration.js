@@ -72,6 +72,26 @@ tape('/channel/{id}/tree', function(t) {
 	.catch(err => t.fail(err))
 })
 
+tape('/channel/{id}/heartbeat', function(t) {
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/heartbeat`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify({message: {
+			"timestamp": "2012-03-01",
+			"signature": getDummySig("2012-03-01", dummyVals.ids.leader)
+		}}),
+	})
+	.then(res => res.json())
+	.then(function(resp) {
+		t.equal(resp.success, true, 'heartbeat message success')
+		t.end()
+	})
+	.catch(err => t.fail(err))
+})
+
 // @TODO: validator-messages, and it's filters
 
 tape('submit events and ensure they are accounted for', function(t) {
@@ -207,7 +227,7 @@ tape('health works correctly', function(t) {
 
 tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', function(t) {
 	Promise.all(
-		['events', 'validator-messages'].map(path =>
+		['events', 'validator-messages', 'heartbeat'].map(path =>
 			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, {
 				method: 'POST',
 				headers: {
