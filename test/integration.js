@@ -199,7 +199,6 @@ tape('health works correctly', function(t) {
 	})
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
-
 		t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
 		t.end()
 	})
@@ -259,7 +258,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 })
 
 tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {
-	const stateRoot = "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1"
+	const stateRoot = '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1'
 
 	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 		method: 'POST',
@@ -271,9 +270,10 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 			"messages": [{ 
 				"type": 'NewState', 
 				stateRoot,
+				// the real tree is 11, 2
 				"balances": { "myAwesomePublisher" : "12", "anotherPublisher": "3" },
 				"lastEvAggr": "2019-01-23T09:10:29.959Z",
-				"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1 by awesomeLeader" 
+				"signature": `Dummy adapter for ${stateRoot} by awesomeLeader`
 			}]
 		}),
 	})
