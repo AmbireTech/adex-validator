@@ -258,6 +258,38 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.catch(err => t.fail(err))
 })
 
+tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {
+	const stateRoot = "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1"
+
+	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify({
+			"messages": [{ 
+				"type": 'NewState', 
+				stateRoot,
+				"balances": { "myAwesomePublisher" : "12", "anotherPublisher": "3" },
+				"lastEvAggr": "2019-01-23T09:10:29.959Z",
+				"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1 by awesomeLeader" 
+			}]
+		}),
+	})
+	.then(() => wait(waitTime))
+	.then(function() {
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/ApproveState`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
+		t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
+		t.end()
+	})
+	.catch(err => t.fail(err))
+})
+
 
 tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', function(t) {
 	Promise.all([
