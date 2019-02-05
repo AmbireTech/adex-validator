@@ -2,7 +2,7 @@ const BN = require('bn.js')
 const assert = require('assert')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidTransition, isHealthy, getRootHash } = require('./lib/followerRules')
+const { isValidTransition, isHealthy, isValidRootHash } = require('./lib/followerRules')
 const producer = require('./producer')
 
 function tick(adapter, channel) {
@@ -33,6 +33,7 @@ function tick(adapter, channel) {
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
+
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
 		return { nothingNew: true }
@@ -44,9 +45,8 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { stateRoot, signature } = newMsg
 
 	//  verify the stateRoot hash of newMsg:
-	const expectedRootHash = getRootHash(channel, newBalances, adapter)
-	if(!(expectedRootHash === stateRoot)){
-		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, expectedRootHash, stateRoot)
+	if(!isValidRootHash(stateRoot, { channel, balances: newBalances, adapter })){
+		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, stateRoot)
 		return { nothingNew: true }
 	}
 
