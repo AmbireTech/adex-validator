@@ -68,7 +68,9 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			return { nothingNew: true }
 		}
 	})
-	.then(function(){
+	.then(function(res){
+		if(res && res.nothingNew) return res
+		
 		const stateRootRaw = Buffer.from(stateRoot, 'hex')
 		return adapter.sign(stateRootRaw)
 		.then(function(signature) {

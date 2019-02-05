@@ -244,7 +244,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 			"messages": [{ 
 				"type": 'NewState', 
 				stateRoot,
-				"balances": { "myAwesomePublisher" : "9" },
+				"balances": { "myAwesomePublisher" : "12", "anotherPublisher": "3" },
 				"lastEvAggr": "2019-01-23T09:08:29.959Z",
 				"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader1" 
 			}]
