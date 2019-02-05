@@ -47,4 +47,15 @@ function sumMins(our, approved) {
 	)
 }
 
-module.exports = { isValidTransition, isHealthy }
+function getRootHash(channel, balances, adapter) {
+	const elems = Object.keys(balances).map(
+		acc => adapter.getBalanceLeaf(acc, balances[acc])
+	)
+	const tree = new adapter.MerkleTree(elems)
+	const balanceRoot = tree.getRoot()
+	const stateRootRaw = adapter.getSignableStateRoot(Buffer.from(channel.id), balanceRoot)
+	return stateRootRaw.toString('hex')
+}
+
+
+module.exports = { isValidTransition, isHealthy, getRootHash }

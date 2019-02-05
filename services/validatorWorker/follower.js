@@ -2,7 +2,7 @@ const BN = require('bn.js')
 const assert = require('assert')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidTransition, isHealthy } = require('./lib/followerRules')
+const { isValidTransition, isHealthy, getRootHash } = require('./lib/followerRules')
 const producer = require('./producer')
 
 function tick(adapter, channel) {
@@ -44,7 +44,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { stateRoot, signature } = newMsg
 
 	//  verify the stateRoot hash of newMsg:
-	const expectedRootHash = getRootHash(channel, balances, adapter)
+	const expectedRootHash = getRootHash(channel, newBalances, adapter)
 	if(!(expectedRootHash === stateRoot)){
 		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, expectedRootHash, stateRoot)
 		return { nothingNew: true }
@@ -70,16 +70,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			})
 		})
 	})
-}
-
-function getRootHash(channel, balances, adapter) {
-	const elems = Object.keys(balances).map(
-		acc => adapter.getBalanceLeaf(acc, balances[acc])
-	)
-	const tree = new adapter.MerkleTree(elems)
-	const balanceRoot = tree.getRoot()
-	const stateRootRaw = adapter.getSignableStateRoot(Buffer.from(channel.id), balanceRoot)
-	return stateRootRaw.toString('hex')
 }
 
 function toBNMap(raw) {
