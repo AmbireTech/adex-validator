@@ -14,7 +14,7 @@ function heartbeat(adapter, channel){
 			type: 'HeartBeat',
 			timestamp,
 			signature
-		}, "heartbeat");
+		});
 	})
 }
 

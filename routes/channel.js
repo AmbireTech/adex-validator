@@ -24,8 +24,8 @@ router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad,
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
-router.post('/:id/heartbeat', authRequired, channelLoad, postHeartBeat)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
+
 // Implementations
 function getStatus(withTree, req, res) {
 	const resp = { channel: req.channel }
@@ -108,34 +108,6 @@ function getValidatorMessages(req, res, next){
 	.catch(next)
 }
 
-function postHeartBeat(req, res, next) {
-	if (!req.channel.validators.includes(req.session.uid)) {
-		res.sendStatus(401)
-		return
-	}
-
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-
-	const msg = req.body.messages[0]
-	if(!isHearbeatMsgValid(msg)){
-		res.sendStatus(400)
-		return 
-	}
-
-	validatorMsgCol.insertOne({
-		channelId: req.channel.id,
-		from: req.session.uid, // @TODO recover sig
-		submittedBy: req.session.uid,
-		msg: {
-			...msg,
-			type: "HeartBeat"
-		}
-	}).then(function(){
-		res.send({success: true})
-	})
-	.catch(next)
-}
-
 function postValidatorMessages(req, res, next) {
 	if (!req.channel.validators.includes(req.session.uid)) {
 		res.sendStatus(401)
@@ -184,17 +156,15 @@ function isValidatorMsgValid(msg) {
 	// @TODO either make this more sophisticated, or rewrite this in a type-safe lang
 	// for example, we should validate if every value in balances is a positive integer
 	return msg
-		&& typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64
+		&& (
+			(msg.stateRoot && typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64)
+			|| typeof(msg.timestamp) === 'string' 
+		)
 		&& typeof(msg.signature) === 'string'
 		&& (
 			(msg.type === 'NewState' && typeof(msg.balances) === 'object')
-			|| msg.type === 'ApproveState'
+			|| msg.type === 'ApproveState' || msg.type === 'HeartBeat'
 		)
-}
-
-function isHearbeatMsgValid(msg){
-	return msg && typeof(msg.signature) === 'string' &&
-		typeof(msg.timestamp) === 'string'
 }
 
 function isEventValid(ev) {
