@@ -258,7 +258,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('POST /channel/{id}/{validator-messages}: wrong root hash', function(t) {
+tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {
 	const stateRoot = "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1"
 
 	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {

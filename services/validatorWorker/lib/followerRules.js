@@ -62,4 +62,4 @@ function isValidRootHash( leaderRootHash, { channel, balances, adapter }) {
 }
 
 
-module.exports = { isValidTransition, isHealthy, isValidRootHash }
+module.exports = { isValidTransition, isHealthy, isValidRootHash, getRootHash }
