@@ -129,7 +129,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// stateRoot = keccak256(channelId, balanceRoot)
 		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
 		const mTree = new MerkleTree(allLeafs)
-		const stateRootRaw = Channel.getSignableStateRoot(Buffer.from(channel['id']), mTree.getRoot()).toString('hex')
+		const stateRootRaw = Channel.getSignableStateRoot(Buffer.from(channel.id), mTree.getRoot()).toString('hex')
 		const { stateRoot } = lastNew.msg
 		t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 
