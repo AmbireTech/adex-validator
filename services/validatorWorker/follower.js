@@ -44,8 +44,8 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
 	const { stateRoot, signature } = newMsg
 
-	//  verify the stateRoot hash of newMsg:
-	if(!isValidRootHash(stateRoot, { channel, balances: newBalances, adapter })){
+	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
+	if (!isValidRootHash(stateRoot, { channel, balances: newBalances, adapter })){
 		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, stateRoot)
 		return { nothingNew: true }
 	}
