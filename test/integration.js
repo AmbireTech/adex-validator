@@ -189,6 +189,12 @@ tape('health works correctly', function(t) {
 		// @TODO: Should we assert balances numbers?
 		t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
 
+		// should propagate heartbeat notification
+		const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+		t.ok(health, 'should propagate heartbeat notification')
+		t.ok(health.msg.signature, 'heartbeat notification has signature')
+		t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
+
 		// send events to the leader so it catches up
 		return postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
 	})
