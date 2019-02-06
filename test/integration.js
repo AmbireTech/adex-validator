@@ -234,21 +234,30 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	const stateRoot = "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe"
 
-	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({
-			"messages": [{ 
-				"type": 'NewState', 
-				stateRoot,
-				"balances": { "myAwesomePublisher" : "12", "anotherPublisher": "3" },
-				"lastEvAggr": "2019-01-23T09:08:29.959Z",
-				"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader1" 
-			}]
-		}),
+	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
+	.then(res => res.json())
+	.then(function(res){
+		const { myAwesomePublisher, anotherPublisher } = res.validatorMessages[0].msg.balances
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+			method: 'POST',
+			headers: {
+				'authorization': `Bearer ${dummyVals.auth.leader}`,
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({
+				"messages": [{ 
+					"type": 'NewState', 
+					stateRoot,
+					// increase the state tree balance by 1
+					"balances": { 
+						"myAwesomePublisher" : `${ parseInt(myAwesomePublisher) + 1 }`, 
+						"anotherPublisher":  `${ parseInt(anotherPublisher) + 1 }`
+					},
+					"lastEvAggr": "2019-01-23T09:08:29.959Z",
+					"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader1" 
+				}]
+			}),
+		})
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
@@ -266,22 +275,31 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {
 	const stateRoot = '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1'
 
-	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({
-			"messages": [{ 
-				"type": 'NewState', 
-				stateRoot,
-				// the real tree is 11, 2
-				"balances": { "myAwesomePublisher" : "12", "anotherPublisher": "3" },
-				"lastEvAggr": "2019-01-23T09:10:29.959Z",
-				"signature": `Dummy adapter for ${stateRoot} by awesomeLeader`
-			}]
-		}),
+	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
+	.then(res => res.json())
+	.then(function(res) {
+		const { myAwesomePublisher, anotherPublisher } = res.validatorMessages[0].msg.balances
+
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+			method: 'POST',
+			headers: {
+				'authorization': `Bearer ${dummyVals.auth.leader}`,
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({
+				"messages": [{ 
+					"type": 'NewState', 
+					stateRoot,
+					// increase the state tree balance by 1
+					"balances": { 
+						"myAwesomePublisher" : `${ parseInt(myAwesomePublisher) + 1 }`, 
+						"anotherPublisher":  `${ parseInt(anotherPublisher) + 1 }`
+					},
+					"lastEvAggr": "2019-01-23T09:10:29.959Z",
+					"signature": `Dummy adapter for ${stateRoot} by awesomeLeader`
+				}]
+			}),
+		})
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
