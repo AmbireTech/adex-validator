@@ -1,8 +1,8 @@
-const BN = require('bn.js')
 const assert = require('assert')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidTransition, isHealthy, isValidRootHash } = require('./lib/followerRules')
+const { isValidTransition, isHealthy } = require('./lib/followerRules')
+const { isValidRootHash, toBNMap } = require('./lib')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
 
@@ -82,13 +82,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			})
 		})
 	})
-}
-
-function toBNMap(raw) {
-	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
-	const balances = {}
-	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = new BN(bal, 10))
-	return balances
 }
 
 // @TODO getLatestMsg should be a part of a DB abstraction so we can use it in other places too

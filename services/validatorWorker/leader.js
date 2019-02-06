@@ -1,6 +1,5 @@
 const { persistAndPropagate } = require('./lib/propagation')
-const { getStateRootHash } = require('./lib/followerRules')
-
+const { getStateRootHash } = require('./lib')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
 

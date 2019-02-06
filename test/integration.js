@@ -2,6 +2,8 @@
 const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
+const { getStateRootHash } = require('../services/validatorWorker/lib')
+const dummyAdapter = require('../adapters/dummy')
 
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -232,12 +234,19 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 })
 
 tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
-	const stateRoot = "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe"
+	let stateRoot = ""
 
 	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
 	.then(res => res.json())
 	.then(function(res){
-		const { myAwesomePublisher, anotherPublisher } = res.validatorMessages[0].msg.balances
+		const { balances } = res.validatorMessages[0].msg
+
+		let incBalances = {}
+		// increase the state tree balance by 1
+		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
+		
+		stateRoot = getStateRootHash({"id": dummyVals.channel.id}, incBalances, dummyAdapter)
+
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
 			headers: {
@@ -248,13 +257,9 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 				"messages": [{ 
 					"type": 'NewState', 
 					stateRoot,
-					// increase the state tree balance by 1
-					"balances": { 
-						"myAwesomePublisher" : `${ parseInt(myAwesomePublisher) + 1 }`, 
-						"anotherPublisher":  `${ parseInt(anotherPublisher) + 1 }`
-					},
+					"balances": incBalances,
 					"lastEvAggr": "2019-01-23T09:08:29.959Z",
-					"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader1" 
+					"signature": getDummySig(stateRoot, "awesomeLeader1")
 				}]
 			}),
 		})
@@ -272,13 +277,20 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {
-	const stateRoot = '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1'
+tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {	
+	let deceptiveRootHash = ""
 
 	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
 	.then(res => res.json())
 	.then(function(res) {
-		const { myAwesomePublisher, anotherPublisher } = res.validatorMessages[0].msg.balances
+
+		const { balances } = res.validatorMessages[0].msg
+		const fakeBalances = { "publisher": "3" }
+		// increase the state tree balance by 1
+		let incBalances = {}
+		Object.keys(balances).forEach((item) => (incBalances[item]= `${parseInt(balances[item])+1}`))
+
+		deceptiveRootHash = getStateRootHash(dummyVals.channel, fakeBalances, dummyAdapter)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -289,14 +301,10 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 			body: JSON.stringify({
 				"messages": [{ 
 					"type": 'NewState', 
-					stateRoot,
-					// increase the state tree balance by 1
-					"balances": { 
-						"myAwesomePublisher" : `${ parseInt(myAwesomePublisher) + 1 }`, 
-						"anotherPublisher":  `${ parseInt(anotherPublisher) + 1 }`
-					},
+					"stateRoot": deceptiveRootHash,
+					"balances": incBalances,
 					"lastEvAggr": "2019-01-23T09:10:29.959Z",
-					"signature": `Dummy adapter for ${stateRoot} by awesomeLeader`
+					"signature": `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
 				}]
 			}),
 		})
@@ -307,7 +315,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
+		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === deceptiveRootHash)
 		t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
 		t.end()
 	})
