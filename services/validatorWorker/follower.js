@@ -28,15 +28,15 @@ function tick(adapter, channel) {
 		.then(function(res) {
 			return onNewState(adapter, { ...res, newMsg, approveMsg })
 		})
-		.then(function(res){
-			// send heartbeat
-			if(res && res.nothingNew){
-				Promise.resolve(
-					heartbeat(adapter, channel)
-				)
-			}
-			return res
-		})
+	})
+	.then(function(res){
+		// send heartbeat
+		if(res && res.nothingNew){
+			Promise.resolve(
+				heartbeat(adapter, channel)
+			)
+		}
+		return res
 	})
 }
 

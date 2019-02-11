@@ -21,6 +21,8 @@ function heartbeat(adapter, channel){
 	return adapter.sign(stateRootRaw)
 	.then(function(signature) {
 		const stateRoot = stateRootRaw.toString('hex')
+		timestamp = timestamp.toString('hex')
+		
 		return persistAndPropagate(adapter, otherValidators, channel, {
 			type: 'HeartBeat',
 			timestamp,

@@ -213,6 +213,36 @@ tape('health works correctly', function(t) {
 	.catch(err => t.fail(err))
 })
 
+tape('heartbeat works correctly', function(t){
+	Promise.resolve()
+	.then(() => wait(waitTime)) // wait till a new state is schedule to be produced
+	.then(function() {
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+		console.log({ health })
+		t.ok(health, 'should propagate heartbeat notification')
+		t.ok(health.msg.signature, 'heartbeat notification has signature')
+		t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
+		t.ok(health.msg.stateRoot, 'heartbeat notification has stateRoot')
+	})
+	.then(function() {
+		return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`)
+		.then(res => res.json())
+	})
+	.then(function(resp) {
+		const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+		t.ok(health, 'should propagate heartbeat notification')
+		t.ok(health.msg.signature, 'heartbeat notification has signature')
+		t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
+		t.ok(health.msg.stateRoot, 'heartbeat notification has stateRoot')
+	})
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
+
 tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', function(t) {
 	Promise.all(
 		['events', 'validator-messages'].map(path =>
@@ -240,12 +270,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.then(res => res.json())
 	.then(function(res){
 		const { balances } = res.validatorMessages[0].msg
-
-		let incBalances = {}
-		// increase the state tree balance by 1
-		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
-		
-		stateRoot = getStateRootHash({"id": dummyVals.channel.id}, incBalances, dummyAdapter)
+		stateRoot = getStateRootHash({"id": dummyVals.channel.id}, balances, dummyAdapter)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -257,7 +282,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 				"messages": [{ 
 					"type": 'NewState', 
 					stateRoot,
-					"balances": incBalances,
+					balances,
 					"lastEvAggr": "2019-01-23T09:08:29.959Z",
 					"signature": getDummySig(stateRoot, "awesomeLeader1")
 				}]
@@ -286,9 +311,6 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 
 		const { balances } = res.validatorMessages[0].msg
 		const fakeBalances = { "publisher": "3" }
-		// increase the state tree balance by 1
-		let incBalances = {}
-		Object.keys(balances).forEach((item) => (incBalances[item]= `${parseInt(balances[item])+1}`))
 
 		deceptiveRootHash = getStateRootHash(dummyVals.channel, fakeBalances, dummyAdapter)
 
@@ -302,7 +324,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 				"messages": [{ 
 					"type": 'NewState', 
 					"stateRoot": deceptiveRootHash,
-					"balances": incBalances,
+					balances,
 					"lastEvAggr": "2019-01-23T09:10:29.959Z",
 					"signature": `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
 				}]
