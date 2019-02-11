@@ -32,4 +32,4 @@ function heartbeat(adapter, channel){
 	})
 }
 
-module.exports = { heartbeat }
+module.exports = heartbeat

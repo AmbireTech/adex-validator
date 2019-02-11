@@ -13,7 +13,8 @@ function tick(adapter, channel) {
 			res => {
 				if(res && res.nothingNew){
 					// send heartbeat
-					heartbeat.heartbeat(adapter, channel)
+					heartbeat(adapter, channel)
+					.then(function(){})
 				}
 				return res
 			}
