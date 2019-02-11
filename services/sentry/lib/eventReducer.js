@@ -20,6 +20,7 @@ function mergeImpressionEv(map, ev, channel) {
 	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = 0
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
 	map.eventCounts[ev.publisher]++
+	
 	map.eventPayouts[ev.publisher].add(new BN(channel.minPerImpression || 1, 10))
 	return map
 }
