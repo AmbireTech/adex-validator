@@ -4,7 +4,7 @@ const { persistAndPropagate } = require('./lib/propagation')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const { isValidRootHash, toBNMap } = require('./lib')
 const producer = require('./producer')
-const { heartbeat } = require('./heartbeat')
+const heartbeat = require('./heartbeat')
 
 function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -32,9 +32,7 @@ function tick(adapter, channel) {
 	.then(function(res){
 		// send heartbeat
 		if(res && res.nothingNew){
-			Promise.resolve(
-				heartbeat(adapter, channel)
-			)
+			heartbeat.heartbeat(adapter, channel)
 		}
 		return res
 	})
@@ -62,14 +60,11 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 	// verify the signature of newMsg: whether it was signed by the leader validator
 	return adapter.verify(leader.id, stateRoot, signature)
-	.then(function(res){
-		if(!res) {
+	.then(function(isValid){
+		if(!isValid) {
 			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
 			return { nothingNew: true }
 		}
-	})
-	.then(function(res){
-		if(res && res.nothingNew) return res
 		
 		const stateRootRaw = Buffer.from(stateRoot, 'hex')
 		return adapter.sign(stateRootRaw)

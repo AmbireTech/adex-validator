@@ -1,7 +1,7 @@
 const { persistAndPropagate } = require('./lib/propagation')
 const { getStateRootHash } = require('./lib')
 const producer = require('./producer')
-const { heartbeat } = require('./heartbeat')
+const heartbeat = require('./heartbeat')
 
 function tick(adapter, channel) {
 	return producer.tick(channel)
@@ -13,9 +13,7 @@ function tick(adapter, channel) {
 			res => {
 				if(res && res.nothingNew){
 					// send heartbeat
-					Promise.resolve(
-						heartbeat(adapter, channel)
-					)
+					heartbeat.heartbeat(adapter, channel)
 				}
 				return res
 			}

@@ -157,7 +157,7 @@ function isValidatorMsgValid(msg) {
 	// for example, we should validate if every value in balances is a positive integer
 	return msg
 		&& (
-			(msg.stateRoot && typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64)
+			(typeof(msg.stateRoot) === 'string' && msg.stateRoot.length == 64)
 			|| typeof(msg.timestamp) === 'string' 
 		)
 		&& typeof(msg.signature) === 'string'

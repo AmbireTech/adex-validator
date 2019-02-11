@@ -1,5 +1,5 @@
 const assert = require('assert')
-const { persistAndPropagate } = require("./lib/propagation")
+const { persistAndPropagate } = require('./lib/propagation')
 
 function heartbeat(adapter, channel){
 	const whoami = adapter.whoami()
@@ -22,7 +22,7 @@ function heartbeat(adapter, channel){
 	.then(function(signature) {
 		const stateRoot = stateRootRaw.toString('hex')
 		timestamp = timestamp.toString('hex')
-		
+
 		return persistAndPropagate(adapter, otherValidators, channel, {
 			type: 'HeartBeat',
 			timestamp,

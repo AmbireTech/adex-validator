@@ -100,17 +100,24 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// the NewState was generated, sent to the follower,
 		// who generated ApproveState and sent back to the leader
 		// first wait though, as we need the follower to discover they have an event to approve
-		return wait(waitAggrTime).then(function() {
-			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`)
+		return wait(waitTime).then(function() {
+			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
 			.then(res => res.json())
+		}).then(function(resp){
+			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/ApproveState?limit=1`)
+			.then(res => res.json())
+			.then(res => {
+				resp.validatorMessages = resp.validatorMessages.concat(res.validatorMessages)
+				return resp
+			})
 		})
 	})
 	.then(function(resp) {
 		const msgs = resp.validatorMessages
 		t.ok(Array.isArray(msgs), 'has validatorMessages')
-
 		// ensure NewState is in order
 		const lastNew = msgs.find(x => x.msg.type === 'NewState')
+
 		t.ok(lastNew, 'has NewState')
 		t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
 		t.equal(lastNew.msg.balances[defaultPubName], expectedBal, 'NewState: balances is right')
@@ -217,27 +224,25 @@ tape('heartbeat works correctly', function(t){
 	Promise.resolve()
 	.then(() => wait(waitTime)) // wait till a new state is schedule to be produced
 	.then(function() {
+		[
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`,
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`
+		].forEach((url)=> {
+			fetch(url)
+			.then(res => res.json())
+			.then(function(resp){
+				const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+				t.ok(health, 'should propagate heartbeat notification')
+				t.ok(health.msg.signature, 'heartbeat notification has signature')
+				t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
+				t.ok(health.msg.stateRoot, 'heartbeat notification has stateRoot')
+			})
+		})
+	
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`)
 		.then(res => res.json())
-	})
-	.then(function(resp) {
-		const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
-		console.log({ health })
-		t.ok(health, 'should propagate heartbeat notification')
-		t.ok(health.msg.signature, 'heartbeat notification has signature')
-		t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
-		t.ok(health.msg.stateRoot, 'heartbeat notification has stateRoot')
-	})
-	.then(function() {
-		return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`)
-		.then(res => res.json())
-	})
-	.then(function(resp) {
-		const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
-		t.ok(health, 'should propagate heartbeat notification')
-		t.ok(health.msg.signature, 'heartbeat notification has signature')
-		t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
-		t.ok(health.msg.stateRoot, 'heartbeat notification has stateRoot')
 	})
 	.then(() => t.end())
 	.catch(err => t.fail(err))
@@ -270,7 +275,12 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.then(res => res.json())
 	.then(function(res){
 		const { balances } = res.validatorMessages[0].msg
-		stateRoot = getStateRootHash({"id": dummyVals.channel.id}, balances, dummyAdapter)
+
+		let incBalances = {}
+		// increase the state tree balance by 1
+		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
+
+		stateRoot = getStateRootHash({"id": dummyVals.channel.id}, incBalances, dummyAdapter)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -283,7 +293,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 					"type": 'NewState', 
 					stateRoot,
 					balances,
-					"lastEvAggr": "2019-01-23T09:08:29.959Z",
+					"lastEvAggr": "2019-01-23T09:09:29.959Z",
 					"signature": getDummySig(stateRoot, "awesomeLeader1")
 				}]
 			}),
