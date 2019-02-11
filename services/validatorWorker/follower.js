@@ -57,8 +57,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
 			return { nothingNew: true }
 		}
-	})
-	.then(function(){
+
 		const stateRootRaw = Buffer.from(stateRoot, 'hex')
 		return adapter.sign(stateRootRaw)
 		.then(function(signature) {
