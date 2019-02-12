@@ -28,12 +28,15 @@ function tick(channel, force) {
 				return { channel }
 			}
 
-			const { balances, newStateTree } = mergeAggrs(
-				stateTree,
-				aggrs,
-				// @TODO obtain channel payment info
-				{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
-			)
+			// balances should be addition of eventPayouts
+			// 
+
+			// const { balances, newStateTree } = mergeAggrs(
+			// 	stateTree,
+			// 	aggrs,
+			// 	// @TODO obtain channel payment info
+			// 	{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
+			// )
 
 			return stateTreeCol
 			.updateOne(
@@ -86,14 +89,21 @@ function mergePayableIntoBalances(balances, events, paymentInfo) {
 	// @TODO use BN for the events
 	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
 	let remaining = paymentInfo.depositAmount.sub(total)
+
+	// check validator fees
+
+	
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
+
 	Object.keys(events).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		const eventCount = new BN(events[acc])
-		const toAdd = BN.min(remaining, eventCount.mul(paymentInfo.amount))
-		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
-		balances[acc] = balances[acc].add(toAdd)
-		remaining = remaining.sub(toAdd)
+		const eventPayout = new BN(events.eventPayouts[acc])
+
+		// const toAdd = BN.min(remaining, eventCount.mul(paymentInfo.amount))
+
+		assert.ok(!eventPayout.isNeg(), 'toAdd must never be negative')
+		balances[acc] = balances[acc].add(eventPayout)
+		remaining = remaining.sub(eventPayout)
 
 		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
 	})

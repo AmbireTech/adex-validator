@@ -19,14 +19,14 @@ function mergeImpressionEv(map, ev, channel) {
 	if (!map) map = { eventCounts: {}, eventPayouts: {} }
 	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = 0
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
-	
+
 	// increase the event count
 	map.eventCounts[ev.publisher]++
 
 	// calculate the amount payout	
 	const currentAmount = map.eventPayouts[ev.publisher]
 	const newAmount = (new BN(currentAmount, 10)).add(new BN(channel.minPerImpression || 1, 10))
-	map.eventCounts[ev.publisher] = newAmount.toString()
+	map.eventPayouts[ev.publisher] = newAmount.toString()
 	return map
 }
 
