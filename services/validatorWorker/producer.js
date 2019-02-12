@@ -31,12 +31,12 @@ function tick(channel, force) {
 			// balances should be addition of eventPayouts
 			// 
 
-			// const { balances, newStateTree } = mergeAggrs(
-			// 	stateTree,
-			// 	aggrs,
-			// 	// @TODO obtain channel payment info
-			// 	{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
-			// )
+			const { balances, newStateTree } = mergeAggrs(
+				stateTree,
+				aggrs,
+				// @TODO obtain channel payment info
+				{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
+			)
 
 			return stateTreeCol
 			.updateOne(
@@ -54,7 +54,11 @@ function tick(channel, force) {
 // Pure, should not mutate inputs
 // @TODO isolate those pure functions into a separate file
 function mergeAggrs(stateTree, aggrs, paymentInfo) {
-	const newStateTree = { balances: {}, lastEvAggr: stateTree.lastEvAggr }
+	const newStateTree = { 
+		balances: {}, 
+		balancesAfterFees: {}, 
+		lastEvAggr: stateTree.lastEvAggr 
+	}
 
 	// Build an intermediary balances representation
 	const balances = {}
@@ -71,7 +75,7 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		))
 
 		// @TODO do something about this hardcoded event type assumption
-		mergePayableIntoBalances(balances, evAggr.events.IMPRESSION, paymentInfo)
+		mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, paymentInfo)
 	})
 
 	// Rewrite into the newStateTree
@@ -79,35 +83,74 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		newStateTree.balances[acc] = balances[acc].toString(10)
 	})
 
+	const balancesAfterFees = getBalancesAfterFeesTree()
+	// Rewrite into the newStateTree
+	Object.keys(balancesAfterFees).forEach(function(acc) {
+		newStateTree.balancesAfterFees[acc] = balancesAfterFees[acc].toString(10)
+	})
+
+
+
 	return { balances, newStateTree }
 }
 
 // Mutates the balances input
 // For now, this just disregards anything that goes over the depositAmount
-function mergePayableIntoBalances(balances, events, paymentInfo) {
+function mergePayoutsIntoBalances(balances, events, paymentInfo) {
 	if (!events) return
-	// @TODO use BN for the events
+
+	// total of state tree balance
 	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
+	// remaining of depositAmount
 	let remaining = paymentInfo.depositAmount.sub(total)
 
-	// check validator fees
-
-	
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
 
-	Object.keys(events).forEach(function(acc) {
+	const { eventPayouts } = events
+	// take the eventPayouts key
+	Object.keys(eventPayouts).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		const eventPayout = new BN(events.eventPayouts[acc])
-
-		// const toAdd = BN.min(remaining, eventCount.mul(paymentInfo.amount))
-
-		assert.ok(!eventPayout.isNeg(), 'toAdd must never be negative')
+		const eventPayout = new BN(eventPayouts[acc])
 		balances[acc] = balances[acc].add(eventPayout)
+
 		remaining = remaining.sub(eventPayout)
 
 		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
 	})
 }
+
+function getBalancesAfterFeesTree(balances, paymentInfo) {
+	const leaderFee = new BN(1)
+	const followerFee = new BN(1)
+
+	const totalValidatorFee = leaderFee.add(followerFee)
+
+	let currentValidatorFee = new BN(0)
+	
+	let balancesAfterFees = {}
+
+	Object.keys(balances).forEach((publisher) => {
+		let publisherBalance = new BN(balances[publisher], 10);
+		const validatorFee = getValidatorFee(publisherBalance, totalValidatorFee, new BN(depositAmount, 10))
+		publisherBalance = publisherBalance.sub(validatorFee)
+		assert.ok(!publisherBalance.isNeg(), 'publisher balance should not be negative')
+
+		currentValidatorFee.add(validatorFee)
+		balancesAfterFees[publisher] = publisherBalance
+	})
+
+	return { ...balancesAfterFees, validator: currentValidatorFee }
+}
+
+
+// returns BN
+function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
+	const numerator = depositAmount.sub(totalValidatorFee)
+	const fee = (publisherBalance.mul(numerator)).div(depositAmount)
+	return fee
+}
+
+
 
 function logMerge(channel, eventAggrs) {
 	if (eventAggrs.length === 0) return
