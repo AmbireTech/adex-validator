@@ -32,10 +32,11 @@ function tick(adapter, channel) {
 	.then(function(res){
 		if(res && res.nothingNew){
 			// send heartbeat
-			heartbeat(adapter, channel)
-			.then(function(){})
+			return heartbeat(adapter, channel)
+			.then(() => res)
+		} else {
+			return res
 		}
-		return res
 	})
 }
 
