@@ -56,7 +56,7 @@ function getEventAggregates(req, res, next){
 	const resp = { channel: req.channel }
 
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const key = `events.IMPRESSION.${uid}`
+	const key = `events.IMPRESSION.eventCounts.${uid}`
 
 	return eventsCol
 	.find(

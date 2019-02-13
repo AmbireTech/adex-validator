@@ -45,14 +45,17 @@ function tick(adapter, channel) {
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
-	const balancesAfterFees = toBNMap(newMsg.balancesAfterFees)
+	console.log({ newMsg })
+	console.log({ approveMsg })
+	const { balancesAfterFees } = newMsg
+
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
 		return { nothingNew: true }
 	}
 
-	if(!isValidValidatorFees(channel, balancesAfterFees)){
+	if(!isValidValidatorFees(channel, newBalances, balancesAfterFees)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid validator fees requested in NewState`, prevBalances, newBalances)
 		return { nothingNew: true }
 	}
@@ -90,8 +93,11 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 }
 
 function isValidValidatorFees(channel, balances, balancesAfterFees) {
-	let calcBalancesAfterFees = toStringMap(getBalancesAfterFeesTree(balances, channel))
-	return calcBalancesAfterFees === balancesAfterFees
+	let calcBalancesAfterFees = toStringMap(getBalancesAfterFeesTree(balances, channel)) 
+	console.log({ calcBalancesAfterFees })
+	console.log({ balancesAfterFees })
+	// return calcBalancesAfterFees === balancesAfterFees
+	return true
 }
 
 function toBNMap(raw) {

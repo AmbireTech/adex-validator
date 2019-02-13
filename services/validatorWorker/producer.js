@@ -2,6 +2,7 @@ const assert = require('assert')
 const BN = require('bn.js')
 const db = require('../../db')
 const cfg = require('../../cfg')
+const { getBalancesAfterFeesTree } = require("./lib")
 
 function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
@@ -35,7 +36,7 @@ function tick(channel, force) {
 				stateTree,
 				aggrs,
 				// @TODO obtain channel payment info
-				{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
+				{ ...channel, amount: new BN(1), depositAmount: new BN(channel.depositAmount)  }
 			)
 
 			return stateTreeCol
@@ -116,39 +117,6 @@ function mergePayoutsIntoBalances(balances, events, paymentInfo) {
 		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
 	})
 }
-
-function getBalancesAfterFeesTree(balances, paymentInfo) {
-	const leaderFee = new BN(1)
-	const followerFee = new BN(1)
-
-	const totalValidatorFee = leaderFee.add(followerFee)
-
-	let currentValidatorFee = new BN(0)
-	
-	let balancesAfterFees = {}
-
-	Object.keys(balances).forEach((publisher) => {
-		let publisherBalance = new BN(balances[publisher], 10);
-		const validatorFee = getValidatorFee(publisherBalance, totalValidatorFee, new BN(depositAmount, 10))
-		publisherBalance = publisherBalance.sub(validatorFee)
-		assert.ok(!publisherBalance.isNeg(), 'publisher balance should not be negative')
-
-		currentValidatorFee.add(validatorFee)
-		balancesAfterFees[publisher] = publisherBalance
-	})
-
-	return { ...balancesAfterFees, validator: currentValidatorFee }
-}
-
-
-// returns BN
-function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
-	const numerator = depositAmount.sub(totalValidatorFee)
-	const fee = (publisherBalance.mul(numerator)).div(depositAmount)
-	return fee
-}
-
-
 
 function logMerge(channel, eventAggrs) {
 	if (eventAggrs.length === 0) return

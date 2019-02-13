@@ -24,14 +24,14 @@ mongo $FOLLOW_MONGO ./scripts/db-indexes.js >$MONGO_OUT
 
 # @TODO separate logs
 # Start sentries
-PORT=$LEAD_PORT DB_MONGO_NAME=$LEAD_MONGO bin/sentry.js $LEAD_ARGS &
-PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS &
+PORT=$LEAD_PORT DB_MONGO_NAME=$LEAD_MONGO bin/sentry.js $LEAD_ARGS  >> test.log&
+PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS >> test1.log &
 # the sentries need time to start listening
 sleep 3
 
 # Start workers
-DB_MONGO_NAME=$LEAD_MONGO bin/validatorWorker.js $LEAD_ARGS &
-DB_MONGO_NAME=$FOLLOW_MONGO bin/validatorWorker.js $FOLLOW_ARGS &
+DB_MONGO_NAME=$LEAD_MONGO bin/validatorWorker.js $LEAD_ARGS >> test2.log &
+DB_MONGO_NAME=$FOLLOW_MONGO bin/validatorWorker.js $FOLLOW_ARGS >> test3.log &
 
 # Run the integration tests
 if [ -n "$RUN_EXTERNAL" ]; then
@@ -47,18 +47,18 @@ exitCode=$?
 # end all jobs (sentries, workers)
 pkill -P $$
 
-if [ $exitCode -eq 0 ]; then
-	echo "cleaning up DB"
-	mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
-	mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
-else
-	echo -e "\033[0;31mTests failed: waiting 20s before cleaning the database (press ctrl-C to avoid cleanup)\033[0m"
-	echo "MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
-	(
-		sleep 20 &&
-		mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT &&
-		mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
-	)
-fi
+# if [ $exitCode -eq 0 ]; then
+# 	echo "cleaning up DB"
+# 	mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
+# 	mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
+# else
+# 	echo -e "\033[0;31mTests failed: waiting 20s before cleaning the database (press ctrl-C to avoid cleanup)\033[0m"
+# 	echo "MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
+# 	(
+# 		sleep 20 &&
+# 		mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT &&
+# 		mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
+# 	)
+# fi
 
 exit $exitCode
