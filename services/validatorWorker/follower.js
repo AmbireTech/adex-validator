@@ -3,6 +3,8 @@ const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const { isValidRootHash, toBNMap } = require('./lib')
+const { getBalancesAfterFeesTree, toStringMap } = require('./lib')
+const { isValidTransition, isHealthy, isValidRootHash } = require('./lib/followerRules')
 const producer = require('./producer')
 const heartbeat = require('./heartbeat')
 
@@ -43,9 +45,15 @@ function tick(adapter, channel) {
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
+	const balancesAfterFees = toBNMap(newMsg.balancesAfterFees)
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
+		return { nothingNew: true }
+	}
+
+	if(!isValidValidatorFees(channel, balancesAfterFees)){
+		console.error(`validatatorWorker: ${channel.id}: invalid validator fees requested in NewState`, prevBalances, newBalances)
 		return { nothingNew: true }
 	}
 
@@ -79,6 +87,18 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			})
 		})
 	})
+}
+
+function isValidValidatorFees(channel, balances, balancesAfterFees) {
+	let calcBalancesAfterFees = toStringMap(getBalancesAfterFeesTree(balances, channel))
+	return calcBalancesAfterFees === balancesAfterFees
+}
+
+function toBNMap(raw) {
+	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
+	const balances = {}
+	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = new BN(bal, 10))
+	return balances
 }
 
 // @TODO getLatestMsg should be a part of a DB abstraction so we can use it in other places too

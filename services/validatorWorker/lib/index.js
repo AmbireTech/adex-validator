@@ -25,4 +25,35 @@ function toBNMap(raw) {
 }
 
 
-module.exports = { getStateRootHash, isValidRootHash, toBNMap }
+function getBalancesAfterFeesTree(balances, channel) {
+	const { depositAmount } = channel
+	const leaderFee = new BN(channel.spec.validators[0].fee || 1)
+	const followerFee = new BN(channel.spec.validators[1].fee || 1)
+
+	const totalValidatorFee = leaderFee.add(followerFee)
+
+	let currentValidatorFee = new BN(0)
+	
+	let balancesAfterFees = {}
+
+	Object.keys(balances).forEach((publisher) => {
+		let publisherBalance = new BN(balances[publisher], 10);
+		const validatorFee = getValidatorFee(publisherBalance, totalValidatorFee, new BN(depositAmount, 10))
+		publisherBalance = publisherBalance.sub(validatorFee)
+		assert.ok(!publisherBalance.isNeg(), 'publisher balance should not be negative')
+
+		currentValidatorFee.add(validatorFee)
+		balancesAfterFees[publisher] = publisherBalance
+	})
+
+	return { ...balancesAfterFees, validator: currentValidatorFee }
+}
+
+function toStringMap(balances){
+	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
+	const balances = {}
+	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = balances[acc].toString(10))
+	return balances
+}
+
+module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toStringMap }

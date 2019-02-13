@@ -83,13 +83,11 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		newStateTree.balances[acc] = balances[acc].toString(10)
 	})
 
-	const balancesAfterFees = getBalancesAfterFeesTree()
+	const balancesAfterFees = getBalancesAfterFeesTree(balances, paymentInfo)
 	// Rewrite into the newStateTree
 	Object.keys(balancesAfterFees).forEach(function(acc) {
 		newStateTree.balancesAfterFees[acc] = balancesAfterFees[acc].toString(10)
 	})
-
-
 
 	return { balances, newStateTree }
 }
