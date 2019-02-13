@@ -280,7 +280,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 		// increase the state tree balance by 1
 		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
 
-		stateRoot = getStateRootHash({"id": dummyVals.channel.id}, incBalances, dummyAdapter)
+		stateRoot = getStateRootHash({id: dummyVals.channel.id}, incBalances, dummyAdapter)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -292,7 +292,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 				"messages": [{ 
 					"type": 'NewState', 
 					stateRoot,
-					balances,
+					incBalances,
 					"lastEvAggr": "2019-01-23T09:09:29.959Z",
 					"signature": getDummySig(stateRoot, "awesomeLeader1")
 				}]
