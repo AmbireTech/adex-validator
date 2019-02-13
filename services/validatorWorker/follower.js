@@ -28,7 +28,7 @@ function tick(adapter, channel) {
 		return producer.tick(channel, true)
 		.then(function(res) {
 			return onNewState(adapter, { ...res, newMsg, approveMsg })
-		})
+		}) 
 	})
 	.then(res => heartbeatIfNothingNew(adapter, channel, res))
 }
@@ -36,7 +36,7 @@ function tick(adapter, channel) {
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
-	const { balancesAfterFees } = newMsg
+	const balancesAfterFees = toBNMap(newMsg.balancesAfterFees)
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
