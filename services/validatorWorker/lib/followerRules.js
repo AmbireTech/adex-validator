@@ -47,21 +47,6 @@ function sumMins(our, approved) {
 	)
 }
 
-function getStateRootHash(channel, balances, adapter){
-	// Note: MerkleTree takes care of deduplicating and sorting
-	const elems = Object.keys(balances).map(
-		acc => adapter.getBalanceLeaf(acc, balances[acc])
-	)
-	const tree = new adapter.MerkleTree(elems)
-	const balanceRoot = tree.getRoot()
-	// keccak256(channelId, balanceRoot)
-	const stateRoot = adapter.getSignableStateRoot(Buffer.from(channel.id), balanceRoot).toString('hex')
-	return stateRoot
-}
-
-function isValidRootHash(leaderRootHash, { channel, balances, adapter }) {
-	return getStateRootHash(channel, balances, adapter) === leaderRootHash
-}
 
 
-module.exports = { isValidTransition, isHealthy, isValidRootHash, getStateRootHash }
+module.exports = { isValidTransition, isHealthy }

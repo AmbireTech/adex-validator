@@ -1,9 +1,10 @@
-const BN = require('bn.js')
 const assert = require('assert')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidTransition, isHealthy, isValidRootHash } = require('./lib/followerRules')
+const { isValidTransition, isHealthy } = require('./lib/followerRules')
+const { isValidRootHash, toBNMap } = require('./lib')
 const producer = require('./producer')
+const heartbeat = require('./heartbeat')
 
 function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -27,6 +28,15 @@ function tick(adapter, channel) {
 		.then(function(res) {
 			return onNewState(adapter, { ...res, newMsg, approveMsg })
 		})
+	})
+	.then(function(res){
+		if(res && res.nothingNew){
+			// send heartbeat
+			return heartbeat(adapter, channel)
+			.then(() => res)
+		} else {
+			return res
+		}
 	})
 }
 
@@ -57,7 +67,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
 			return { nothingNew: true }
 		}
-
+    
 		const stateRootRaw = Buffer.from(stateRoot, 'hex')
 		return adapter.sign(stateRootRaw)
 		.then(function(signature) {
@@ -69,13 +79,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			})
 		})
 	})
-}
-
-function toBNMap(raw) {
-	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
-	const balances = {}
-	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = new BN(bal, 10))
-	return balances
 }
 
 // @TODO getLatestMsg should be a part of a DB abstraction so we can use it in other places too

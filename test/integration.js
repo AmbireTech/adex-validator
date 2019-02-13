@@ -2,6 +2,8 @@
 const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
+const { getStateRootHash } = require('../services/validatorWorker/lib')
+const dummyAdapter = require('../adapters/dummy')
 
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -98,17 +100,24 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// the NewState was generated, sent to the follower,
 		// who generated ApproveState and sent back to the leader
 		// first wait though, as we need the follower to discover they have an event to approve
-		return wait(waitAggrTime).then(function() {
-			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`)
+		return wait(waitTime).then(function() {
+			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
 			.then(res => res.json())
+		}).then(function(resp){
+			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/ApproveState?limit=1`)
+			.then(res => res.json())
+			.then(res => {
+				resp.validatorMessages = resp.validatorMessages.concat(res.validatorMessages)
+				return resp
+			})
 		})
 	})
 	.then(function(resp) {
 		const msgs = resp.validatorMessages
 		t.ok(Array.isArray(msgs), 'has validatorMessages')
-
 		// ensure NewState is in order
 		const lastNew = msgs.find(x => x.msg.type === 'NewState')
+
 		t.ok(lastNew, 'has NewState')
 		t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
 		t.equal(lastNew.msg.balances[defaultPubName], expectedBal, 'NewState: balances is right')
@@ -189,6 +198,12 @@ tape('health works correctly', function(t) {
 		// @TODO: Should we assert balances numbers?
 		t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
 
+		// should propagate heartbeat notification
+		const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+		t.ok(health, 'should propagate heartbeat notification')
+		t.ok(health.msg.signature, 'heartbeat notification has signature')
+		t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
+
 		// send events to the leader so it catches up
 		return postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
 	})
@@ -202,6 +217,34 @@ tape('health works correctly', function(t) {
 		t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
 		t.end()
 	})
+	.catch(err => t.fail(err))
+})
+
+tape('heartbeat works correctly', function(t){
+	Promise.resolve()
+	.then(() => wait(waitTime)) // wait till a new state is schedule to be produced
+	.then(function() {
+		[
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`,
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`
+		].forEach((url)=> {
+			fetch(url)
+			.then(res => res.json())
+			.then(function(resp){
+				const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+				t.ok(health, 'should propagate heartbeat notification')
+				t.ok(health.msg.signature, 'heartbeat notification has signature')
+				t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
+				t.ok(health.msg.stateRoot, 'heartbeat notification has stateRoot')
+			})
+		})
+	
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`)
+		.then(res => res.json())
+	})
+	.then(() => t.end())
 	.catch(err => t.fail(err))
 })
 
@@ -226,23 +269,35 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 })
 
 tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
-	const stateRoot = "6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe"
+	let stateRoot = ""
 
-	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({
-			"messages": [{ 
-				"type": 'NewState', 
-				stateRoot,
-				"balances": { "myAwesomePublisher" : "9" },
-				"lastEvAggr": "2019-01-23T09:08:29.959Z",
-				"signature": "Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader1" 
-			}]
-		}),
+	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
+	.then(res => res.json())
+	.then(function(res){
+		const { balances } = res.validatorMessages[0].msg
+
+		let incBalances = {}
+		// increase the state tree balance by 1
+		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
+
+		stateRoot = getStateRootHash({"id": dummyVals.channel.id}, incBalances, dummyAdapter)
+
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+			method: 'POST',
+			headers: {
+				'authorization': `Bearer ${dummyVals.auth.leader}`,
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({
+				"messages": [{ 
+					"type": 'NewState', 
+					stateRoot,
+					balances,
+					"lastEvAggr": "2019-01-23T09:09:29.959Z",
+					"signature": getDummySig(stateRoot, "awesomeLeader1")
+				}]
+			}),
+		})
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
@@ -257,25 +312,34 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {
-	const stateRoot = '6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16f1'
+tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {	
+	let deceptiveRootHash = ""
 
-	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({
-			"messages": [{ 
-				"type": 'NewState', 
-				stateRoot,
-				// the real tree is 11, 2
-				"balances": { "myAwesomePublisher" : "12", "anotherPublisher": "3" },
-				"lastEvAggr": "2019-01-23T09:10:29.959Z",
-				"signature": `Dummy adapter for ${stateRoot} by awesomeLeader`
-			}]
-		}),
+	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
+	.then(res => res.json())
+	.then(function(res) {
+
+		const { balances } = res.validatorMessages[0].msg
+		const fakeBalances = { "publisher": "3" }
+
+		deceptiveRootHash = getStateRootHash(dummyVals.channel, fakeBalances, dummyAdapter)
+
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+			method: 'POST',
+			headers: {
+				'authorization': `Bearer ${dummyVals.auth.leader}`,
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({
+				"messages": [{ 
+					"type": 'NewState', 
+					"stateRoot": deceptiveRootHash,
+					balances,
+					"lastEvAggr": "2019-01-23T09:10:29.959Z",
+					"signature": `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
+				}]
+			}),
+		})
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
@@ -283,7 +347,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 		.then(res => res.json())
 	})
 	.then(function(resp) {
-		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
+		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === deceptiveRootHash)
 		t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
 		t.end()
 	})

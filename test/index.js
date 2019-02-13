@@ -3,7 +3,8 @@ const tape = require('tape')
 
 const BN = require('bn.js')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
-
+const { getStateRootHash } = require('../services/validatorWorker/lib')
+const dummyAdapter = require('../adapters/dummy')
 const channel = { depositAmount: new BN(100) }
 
 tape('isValidTransition: empty to empty', function(t) {
@@ -77,6 +78,38 @@ tape('isHealthy: they have the same sum, but different entities are earning', fu
 	t.equal(isHealthy({ a: new BN(80) }, { b: new BN(20), a: new BN(60) }), false)
 	t.equal(isHealthy({ a: new BN(80) }, { b: new BN(2), a: new BN(78) }), true)
 	t.equal(isHealthy({ a: new BN(100), b: new BN(1) }, { a: new BN(100) }), true)
+	t.end()
+})
+
+//
+// State Root Hash
+//
+tape('getStateRootHash: returns correct result', function(t) {
+	[
+		{
+			channel: {
+				id: "testing"
+			},
+			balances: {
+				"publisher": 1,
+				"tester": 2
+			},
+			expectedHash: "da9b42bb60da9622404cade0aec4cda0a10104c6ec5f07ad67de081abb58c803"
+		},
+		{
+			channel: {
+				id: "fake"
+			},
+			balances: {
+				"publisher": 0,
+			},
+			expectedHash: "0b64767e909e9f36ab9574e6b93921390c40a0d899c3587db3b2df077b8e87d7"
+		}
+	].forEach(({ expectedHash, channel, balances }) => {
+		const actualHash = getStateRootHash(channel, balances, dummyAdapter)
+		t.equal(actualHash, expectedHash, "correct root hash")
+	});
+	
 	t.end()
 })
 
