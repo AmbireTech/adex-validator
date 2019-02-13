@@ -199,7 +199,7 @@ tape('health works correctly', function(t) {
 		t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
 
 		// should propagate heartbeat notification
-		const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+		const health = resp.validatorMessages.find(x => x.msg.type === 'Heartbeat')
 		t.ok(health, 'should propagate heartbeat notification')
 		t.ok(health.msg.signature, 'heartbeat notification has signature')
 		t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
@@ -225,15 +225,15 @@ tape('heartbeat works correctly', function(t){
 	.then(() => wait(waitTime)) // wait till a new state is schedule to be produced
 	.then(function() {
 		[
-			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`,
-			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`,
-			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/HeartBeat?limit=1`,
-			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/Heartbeat?limit=1`,
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/Heartbeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/Heartbeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/Heartbeat?limit=1`
 		].forEach((url)=> {
 			fetch(url)
 			.then(res => res.json())
 			.then(function(resp){
-				const health = resp.validatorMessages.find(x => x.msg.type === 'HeartBeat')
+				const health = resp.validatorMessages.find(x => x.msg.type === 'Heartbeat')
 				t.ok(health, 'should propagate heartbeat notification')
 				t.ok(health.msg.signature, 'heartbeat notification has signature')
 				t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
@@ -241,7 +241,7 @@ tape('heartbeat works correctly', function(t){
 			})
 		})
 	
-		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/HeartBeat?limit=1`)
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/Heartbeat?limit=1`)
 		.then(res => res.json())
 	})
 	.then(() => t.end())

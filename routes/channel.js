@@ -163,7 +163,7 @@ function isValidatorMsgValid(msg) {
 		&& typeof(msg.signature) === 'string'
 		&& (
 			(msg.type === 'NewState' && typeof(msg.balances) === 'object')
-			|| msg.type === 'ApproveState' || msg.type === 'HeartBeat'
+			|| msg.type === 'ApproveState' || msg.type === 'Heartbeat'
 		)
 }
 

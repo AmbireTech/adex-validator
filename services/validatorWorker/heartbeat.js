@@ -24,7 +24,7 @@ function heartbeat(adapter, channel){
 		timestamp = timestamp.toString('hex')
 
 		return persistAndPropagate(adapter, otherValidators, channel, {
-			type: 'HeartBeat',
+			type: 'Heartbeat',
 			timestamp,
 			signature,
 			stateRoot,
