@@ -273,7 +273,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 
 	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
 	.then(res => res.json())
-	.then(function(res){
+	.then(function(res) {
 		const { balances } = res.validatorMessages[0].msg
 
 		let incBalances = {}
@@ -289,15 +289,17 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 				'content-type': 'application/json',
 			},
 			body: JSON.stringify({
-				"messages": [{ 
-					"type": 'NewState', 
+				messages: [{
+					type: 'NewState',
 					stateRoot,
-					incBalances,
-					"lastEvAggr": "2019-01-23T09:09:29.959Z",
-					"signature": getDummySig(stateRoot, "awesomeLeader1")
+					balances: incBalances,
+					lastEvAggr: "2019-01-23T09:09:29.959Z",
+					// sign by awesomeLeader1 rather than awesomeLeader
+					signature: getDummySig(stateRoot, "awesomeLeader1")
 				}]
 			}),
 		})
+		.then(r => t.equal(r.status, 200, 'response status is right'))
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
@@ -340,6 +342,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 				}]
 			}),
 		})
+		.then(r => t.equal(r.status, 200, 'response status is right'))
 	})
 	.then(() => wait(waitTime))
 	.then(function() {
