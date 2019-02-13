@@ -1,4 +1,5 @@
 const assert = require('assert')
+const isEqual = require('lodash.isequal');
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
@@ -45,8 +46,6 @@ function tick(adapter, channel) {
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
-	console.log({ newMsg })
-	console.log({ approveMsg })
 	const { balancesAfterFees } = newMsg
 
 
@@ -94,10 +93,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 function isValidValidatorFees(channel, balances, balancesAfterFees) {
 	let calcBalancesAfterFees = toStringMap(getBalancesAfterFeesTree(balances, channel)) 
-	console.log({ calcBalancesAfterFees })
-	console.log({ balancesAfterFees })
-	// return calcBalancesAfterFees === balancesAfterFees
-	return true
+	return isEqual(calcBalancesAfterFees, balancesAfterFees)
 }
 
 function toBNMap(raw) {
