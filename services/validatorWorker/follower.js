@@ -2,7 +2,7 @@ const assert = require('assert')
 const isEqual = require('lodash.isequal');
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toStringMap  } = require('./lib')
+const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap  } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 const heartbeat = require('./heartbeat')
@@ -53,7 +53,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 	if(!isValidValidatorFees(channel, newBalances, balancesAfterFees)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid validator fees requested in NewState`, 
-						toStringMap(newBalances), toStringMap(balancesAfterFees))
+			toBNStringMap(newBalances), toBNStringMap(balancesAfterFees))
 		return { nothingNew: true }
 	}
 
@@ -90,9 +90,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 }
 
 function isValidValidatorFees(channel, balances, balancesAfterFees) {
-	let calcBalancesAfterFees = toStringMap(getBalancesAfterFeesTree(balances, channel))
-	console.log(toStringMap(calcBalancesAfterFees))
-	console.log(toStringMap(balancesAfterFees))
+	let calcBalancesAfterFees = toBNStringMap(getBalancesAfterFeesTree(balances, channel))
 	return isEqual(calcBalancesAfterFees, balancesAfterFees)
 }
 

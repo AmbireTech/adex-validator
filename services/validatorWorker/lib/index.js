@@ -33,8 +33,8 @@ function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
 
 function getBalancesAfterFeesTree(balances, channel) {
 	const { depositAmount } = channel
-	const leaderFee = new BN(channel.spec.validators[0].fee || 100)
-	const followerFee = new BN(channel.spec.validators[1].fee || 100)
+	const leaderFee = new BN(channel.spec.validators[0].fee)
+	const followerFee = new BN(channel.spec.validators[1].fee)
 
 	const totalValidatorFee = leaderFee.add(followerFee)
 
@@ -55,11 +55,11 @@ function getBalancesAfterFeesTree(balances, channel) {
 	return { ...balancesAfterFees, validator: currentValidatorFee }
 }
 
-function toStringMap(raw){
+function toBNStringMap(raw){
 	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
 	const balances = {}
 	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = bal.toString(10))
 	return balances
 }
 
-module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toStringMap }
+module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap }

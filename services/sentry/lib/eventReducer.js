@@ -17,17 +17,21 @@ function reduce(userId, aggr, ev, channel) {
 function mergeImpressionEv(map, ev, channel) {
 	if (typeof(ev.publisher)!=='string') return map
 	if (!map) map = { eventCounts: {}, eventPayouts: {} }
-	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = 0
+	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
 
 	// increase the event count
-	map.eventCounts[ev.publisher]++
+	let eventCounts = new BN(map.eventCounts[ev.publisher], 10)
+	map.eventCounts[ev.publisher] = addAndToString(eventCounts, new BN(1, 10))
 
 	// calculate the amount payout	
-	const currentAmount = map.eventPayouts[ev.publisher]
-	const newAmount = (new BN(currentAmount, 10)).add(new BN(channel.minPerImpression || 1, 10))
-	map.eventPayouts[ev.publisher] = newAmount.toString()
+	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
+	map.eventPayouts[ev.publisher] = addAndToString(currentAmount, new BN(channel.minPerImpression || 1, 10))
 	return map
+}
+
+function addAndToString(first, second) {
+	return (first.add(second)).toString(10)
 }
 
 module.exports = { newAggr, reduce }
