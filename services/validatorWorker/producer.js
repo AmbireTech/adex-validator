@@ -32,7 +32,7 @@ function tick(channel, force) {
 			// balances should be addition of eventPayouts
 			// 
 
-			const { balances, newStateTree } = mergeAggrs(
+			const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
 				stateTree,
 				aggrs,
 				// @TODO obtain channel payment info
@@ -46,7 +46,7 @@ function tick(channel, force) {
 				{ upsert: true }
 			)
 			.then(function() {
-				return { channel, balances, newStateTree }
+				return { channel, balances, balancesAfterFees, newStateTree }
 			})
 		})
 	})
@@ -90,7 +90,7 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		newStateTree.balancesAfterFees[acc] = balancesAfterFees[acc].toString(10)
 	})
 
-	return { balances, newStateTree }
+	return { balances, balancesAfterFees, newStateTree }
 }
 
 // Mutates the balances input

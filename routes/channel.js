@@ -38,6 +38,7 @@ function getStatus(withTree, req, res) {
 			.then(function(tree) {
 				if (tree) {
 					resp.balances = tree.balances
+					resp.balancesAfterFees = tree.balancesAfterFees
 					resp.lastEvAggr = tree.lastEvAggr
 				} else {
 					resp.balances = {}

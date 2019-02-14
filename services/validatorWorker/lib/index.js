@@ -13,8 +13,8 @@ function getStateRootHash(channel, balances, adapter){
 	return stateRoot
 }
 
-function isValidRootHash(leaderRootHash, { channel, balances, adapter }) {
-	return getStateRootHash(channel, balances, adapter) === leaderRootHash
+function isValidRootHash(leaderRootHash, { channel, balancesAfterFees, adapter }) {
+	return getStateRootHash(channel, balancesAfterFees, adapter) === leaderRootHash
 }
 
 function toBNMap(raw) {

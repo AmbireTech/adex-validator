@@ -2,7 +2,7 @@
 const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
-const { getStateRootHash } = require('../services/validatorWorker/lib')
+const { getStateRootHash, getBalancesAfterFeesTree, toStringMap } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')
 
 const cfg = require('../cfg')
@@ -82,6 +82,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 
 	let channel
 	let tree
+	let balancesAfterFeesTree
 
 	Promise.all(
 		// @TODO maybe we should assert that the status is 200 here?
@@ -93,8 +94,10 @@ tape('submit events and ensure they are accounted for', function(t) {
 		.then(res => res.json())
 	})
 	.then(function(resp) {
+		console.log({ resp })
 		channel = resp.channel
 		tree = resp.balances
+		balancesAfterFeesTree = resp.balancesAfterFees
 		t.equal(resp.balances[defaultPubName], expectedBal, 'balances is right')
 		// We will check the leader, cause this means this happened:
 		// the NewState was generated, sent to the follower,
@@ -124,6 +127,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 		t.ok(typeof(lastNew.msg.stateRoot) === 'string' && lastNew.msg.stateRoot.length === 64, 'NewState: stateRoot is sane')
 		t.equal(lastNew.msg.signature, getDummySig(lastNew.msg.stateRoot, lastNew.from), 'NewState: signature is sane')
 		t.deepEqual(lastNew.msg.balances, tree, 'NewState: balances is the same as the one in /tree')
+		t.deepEqual(lastNew.msg.balancesAfterFees, balancesAfterFeesTree, 'NewState: balancesAfterFeesTree is the same as the one in /tree')
 
 		// Ensure ApproveState is in order
 		const lastApprove = msgs.find(x => x.msg.type === 'ApproveState')
@@ -136,7 +140,9 @@ tape('submit events and ensure they are accounted for', function(t) {
 
 		// Check inclusion proofs of the balance
 		// stateRoot = keccak256(channelId, balanceRoot)
-		const allLeafs = Object.keys(tree).map(k => Channel.getBalanceLeaf(k, tree[k]))
+		console.log({ balancesAfterFeesTree })
+		const allLeafs = Object.keys(balancesAfterFeesTree).map(k => Channel.getBalanceLeaf(k, balancesAfterFeesTree[k]))
+		console.log({ allLeafs })
 		const mTree = new MerkleTree(allLeafs)
 		const stateRootRaw = Channel.getSignableStateRoot(Buffer.from(channel.id), mTree.getRoot()).toString('hex')
 		const { stateRoot } = lastNew.msg
@@ -144,7 +150,8 @@ tape('submit events and ensure they are accounted for', function(t) {
 
 		// this is a bit out of scope, looks like a test of the MerkleTree lib, 
 		// but better be safe than sorry
-		const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBal)
+		const expectedBalanceAfterFees = '1'
+		const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBalanceAfterFees)
 		const proof = mTree.proof(leaf)
 		t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
 
@@ -280,7 +287,8 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 		// increase the state tree balance by 1
 		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
 
-		stateRoot = getStateRootHash({id: dummyVals.channel.id}, incBalances, dummyAdapter)
+		const balancesAfterFees = getBalancesAfterFeesTree(incBalances, dummyVals.channel)
+		stateRoot = getStateRootHash({id: dummyVals.channel.id}, balancesAfterFees, dummyAdapter)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -293,6 +301,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 					type: 'NewState',
 					stateRoot,
 					balances: incBalances,
+					balancesAfterFees: toStringMap(balancesAfterFees),
 					lastEvAggr: "2019-01-23T09:09:29.959Z",
 					// sign by awesomeLeader1 rather than awesomeLeader
 					signature: getDummySig(stateRoot, "awesomeLeader1")
@@ -321,7 +330,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 	.then(res => res.json())
 	.then(function(res) {
 
-		const { balances } = res.validatorMessages[0].msg
+		const { balances, balancesAfterFees } = res.validatorMessages[0].msg
 		const fakeBalances = { "publisher": "3" }
 
 		deceptiveRootHash = getStateRootHash(dummyVals.channel, fakeBalances, dummyAdapter)
@@ -337,6 +346,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 					"type": 'NewState', 
 					"stateRoot": deceptiveRootHash,
 					balances,
+					balancesAfterFees,
 					"lastEvAggr": "2019-01-23T09:10:29.959Z",
 					"signature": `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
 				}]
