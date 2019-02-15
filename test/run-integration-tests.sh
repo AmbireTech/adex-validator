@@ -24,14 +24,14 @@ mongo $FOLLOW_MONGO ./scripts/db-indexes.js >$MONGO_OUT
 
 # @TODO separate logs
 # Start sentries
-PORT=$LEAD_PORT DB_MONGO_NAME=$LEAD_MONGO bin/sentry.js $LEAD_ARGS  >> test.log&
-PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS >> test1.log &
+PORT=$LEAD_PORT DB_MONGO_NAME=$LEAD_MONGO bin/sentry.js $LEAD_ARGS &
+PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS &
 # the sentries need time to start listening
 sleep 3
 
 # Start workers
-DB_MONGO_NAME=$LEAD_MONGO bin/validatorWorker.js $LEAD_ARGS >> test2.log &
-DB_MONGO_NAME=$FOLLOW_MONGO bin/validatorWorker.js $FOLLOW_ARGS >> test3.log &
+DB_MONGO_NAME=$LEAD_MONGO bin/validatorWorker.js $LEAD_ARGS &
+DB_MONGO_NAME=$FOLLOW_MONGO bin/validatorWorker.js $FOLLOW_ARGS &
 
 # Run the integration tests
 if [ -n "$RUN_EXTERNAL" ]; then

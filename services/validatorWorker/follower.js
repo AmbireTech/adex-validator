@@ -91,7 +91,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 function isValidValidatorFees(channel, balances, balancesAfterFees) {
 	let calcBalancesAfterFees = toBNStringMap(getBalancesAfterFeesTree(balances, channel))
-	return isEqual(calcBalancesAfterFees, balancesAfterFees)
+	return isEqual(calcBalancesAfterFees, toBNStringMap(balancesAfterFees))
 }
 
 // @TODO getLatestMsg should be a part of a DB abstraction so we can use it in other places too
