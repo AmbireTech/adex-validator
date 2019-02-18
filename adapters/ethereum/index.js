@@ -27,6 +27,27 @@ function init(opts) {
 	})
 }
 
+function getChannelHash(contractAddr,
+	{
+		creator,
+		tokenAddr,
+		tokenAmount,
+		validUntil,
+		validators,
+		spec
+	} ) {
+
+	const channel = new Channel({
+		creator,
+		tokenAddr,
+		tokenAmount,
+		validUntil,
+		validators,
+		spec
+	})
+	return channel.hashHex(contractAddr)
+}
+
 function unlock(opts) {
 	assert.ok(keystoreJson != null, 'init() needs to be called before unlock()')
 	assert.ok(typeof opts.keystorePwd === 'string', 'keystorePwd required')
@@ -122,5 +143,6 @@ module.exports = {
 	getAuthFor,
 	MerkleTree,
 	verify,
-	getSignableStateRoot
+	getSignableStateRoot,
+	getChannelHash,
 }

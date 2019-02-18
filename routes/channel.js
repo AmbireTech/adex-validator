@@ -3,6 +3,8 @@ const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
+const { campaign, campaignValidate } = require('./schema')
+const { celebrate } = require('celebrate');
 
 const router = express.Router()
 
@@ -30,6 +32,10 @@ router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad,
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
+
+// campaign 
+router.post('/campaign', authRequired, celebrate({ body: campaign }), createChannel)
+router.post('/campaign/campaign-validate-query', authRequired, celebrate({ body: campaignValidate }), validateCampaign)
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -113,6 +119,32 @@ function getValidatorMessages(req, res, next) {
 			res.send({ validatorMessages, channel: req.channel })
 		})
 		.catch(next)
+}
+
+function createChannel(req, res, next) {
+	const { id, depositAmount, depositAsset, validators, spec, watcher } = req.body
+	const channelCol = db.getMongo().collection('channel')
+	const channel = {
+		'_id': id,
+		depositAmount,
+		depositAsset,
+		validators,
+		spec,
+		watcher,
+		"status": "pending"
+	}
+
+	channelCol.insertOne(channel)
+	.then(function() {
+		res.send({ success: true })
+		return;
+	})
+	.catch(next)
+}
+
+function validateCampaign(req, res, next) {
+	res.send({success: true})
+	return;
 }
 
 function postValidatorMessages(req, res, next) {
