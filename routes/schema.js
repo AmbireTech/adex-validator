@@ -1,12 +1,10 @@
 
-const cfg = require('../cfg')
 const { Joi } = require('celebrate');
 
-
-function _depositAsset({ TOKEN_ADDRESS_WHITE_LIST }){
+function _depositAsset({ TOKEN_ADDRESS_WHITELIST }){
     let schema = Joi.string().required()
-    if( TOKEN_ADDRESS_WHITE_LIST.length > 0 ){
-        schema = schema.valid(TOKEN_ADDRESS_WHITE_LIST)
+    if( TOKEN_ADDRESS_WHITELIST && TOKEN_ADDRESS_WHITELIST.length > 0 ){
+        schema = schema.valid(TOKEN_ADDRESS_WHITELIST)
     }
     return schema
 }
@@ -19,25 +17,22 @@ function _depositAmount({ MINIMAL_DEPOSIT  }){
     return schema
 }
 
-function _creator({ CREATORS_WHITE_LIST }){
-    let schema = Joi.array().items(Joi.string().required(), Joi.string().required()).min(2).max(2)
-    if( CREATORS_WHITE_LIST.length > 0 ){
-        schema = schema.valid(CREATORS_WHITE_LIST)
+function _creator({ CREATORS_WHITELIST }){
+    let schema = Joi.array().items(Joi.string().required(), Joi.string().required()).length(2)
+    if(CREATORS_WHITELIST && CREATORS_WHITELIST.length > 0 ){
+        // schema = schema.valid(CREATORS_WHITELIST)
+        schema = schema.has(CREATORS_WHITELIST)
     }
     return schema
 
 }
 
-const depositAmount = _depositAmount(cfg)
-const depositAsset = _depositAsset(cfg)
-const creator = _creator(cfg)
-
 module.exports = {
-    campaign: {
-        "id" : Joi.string().required(),
-        depositAsset,
-        depositAmount,
-        "validators" : creator, 
+    createCampaign: (cfg) => ({
+        "id": Joi.string().required(),
+        "depositAsset":  _depositAsset(cfg),
+        "depositAmount": _depositAmount(cfg),
+        "validators":   _creator(cfg), 
         "spec" : Joi.object({ 
             "validators" : Joi.array().items(
                 Joi.object({
@@ -54,12 +49,12 @@ module.exports = {
                 "contract": Joi.string().required()
             })
         })
-    },
-    campaignValidate: {
+    }),
+    validateCampaign: (cfg) => ({
         "id" : Joi.string().required(),
-        depositAsset,
-        depositAmount,
-        "role": Joi.string().required(),
+        "depositAsset":  _depositAsset(cfg),
+        "depositAmount": _depositAmount(cfg),
+        "role": Joi.string().required().valid(["leader", "follower"]),
         "validators": Joi.array().items(Joi.string()),
         "spec" : Joi.object({ 
             "validators" : Joi.array().items(
@@ -70,7 +65,7 @@ module.exports = {
                     }).required(),
                     "fee": Joi.number().required()
                 })
-            ).min(2).max(2)
+            ).length(2)
         })
-    }
+    })
 }

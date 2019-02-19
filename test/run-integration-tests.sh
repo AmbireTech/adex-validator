@@ -57,7 +57,7 @@ else
 	echo -e "\033[0;31mTests failed: waiting 20s before cleaning the database (press ctrl-C to avoid cleanup)\033[0m"
 	echo "MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
 	(
-		sleep 20 &&
+		# sleep 20 &&
 		mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT &&
 		mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
 	)

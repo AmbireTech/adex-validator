@@ -8,6 +8,8 @@ const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
 
 const { argv } = yargs
+const { errors } = require('celebrate')
+const argv = yargs
 	.usage('Usage $0 [options]')
 	.describe('adapter', 'the adapter for authentication and signing')
 	.choices('adapter', Object.keys(adapters))
@@ -23,6 +25,7 @@ const port = process.env.PORT || 8005
 app.use(bodyParser.json())
 app.use(authMiddleware.forAdapter(adapter))
 app.use('/channel', channelRoutes)
+app.use(errors())
 
 db.connect()
 	.then(function() {

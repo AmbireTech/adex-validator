@@ -11,7 +11,7 @@ module.exports = {
 	// but it's way more, in order to allow for the possibility of the validator worker crashing
 	PRODUCER_MAX_AGGR_PER_TICK: 100,
 
-	CREATORS_WHITELIST: [''],
-	MINIMAL_DEPOSIT: 1000,
-	TOKEN_ADDRESS_WHITELIST: ['']
+	CREATORS_WHITELIST: [],
+	MINIMAL_DEPOSIT: 0,
+	TOKEN_ADDRESS_WHITELIST: []
 }

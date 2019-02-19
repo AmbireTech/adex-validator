@@ -443,6 +443,101 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) balanceAfterFee
 					dummyVals.ids.follower
 				}/ApproveState`
 			).then(res => res.json())
+tape('POST /channel/{id}/campaign: create campaign', function(t){
+	const body = {
+		id: 'awesomeTestChannel',
+		depositAsset: 'DAI',
+		depositAmount: 1000,
+		validators: ['awesomeLeader', 'awesomeFollower'],
+		spec: {
+			validators: [
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+			]
+		}
+	}
+
+	fetch(`${followerUrl}/channel/campaign`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify(body),
+	})
+	.then(res => res.json())
+	.then(function(resp) {
+		console.log(resp)
+		// t.equal(resp.status, 400, 'status must be BadRequest')
+	})
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
+
+tape('POST /channel/{id}/campaign: should not create campaign', function(t){
+	Promise.all([
+		{
+			depositAsset: 'DAI',
+			depositAmount: 1000,
+			validators: ['awesomeLeader', 'awesomeFollower'],
+			spec: {
+				validators: [
+					{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+					{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+				]
+			}
+		},
+		{
+			id: 'awesomeTestChannel'
+		},
+		{
+			depositAsset: 'DAI',
+			depositAmount: 1000,
+			validators: ['awesomeFollower'],
+			spec: {
+				validators: [
+					{ id: 'awesomeLeader', url: 'http://localhost:8005'},
+					{ id: 'awesomeFollower', url: 'http://localhost:8006'},
+				]
+			}
+		}
+	].map(function(body){
+			fetch(`${followerUrl}/channel/campaign`, {
+				method: 'POST',
+				headers: {
+					'authorization': `Bearer ${dummyVals.auth.leader}`,
+					'content-type': 'application/json',
+				},
+				body: JSON.stringify(body),
+			})
+			.then(res => res.json())
+			.then(function(resp) {
+				// console.log(resp)
+				t.equal(resp.status, 400, 'status must be BadRequest')
+			})
+		})
+	)
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
+
+tape.only('POST /channel/{id}/campaign: should not create campaign', function(t){
+
+})
+
+tape('POST /channel/{id}/events: malformed events', function(t) {
+	Promise.all([
+		null,
+		{ type: 1 },
+		{ type: null },
+	].map(ev =>
+		fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
+			method: 'POST',
+			headers: {
+				'authorization': `Bearer ${dummyVals.auth.user}`,
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({ events: [ev] }),
 		})
 		.then(function(resp) {
 			const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)

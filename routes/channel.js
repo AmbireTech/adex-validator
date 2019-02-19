@@ -3,7 +3,7 @@ const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
-const { campaign, campaignValidate } = require('./schema')
+const { createCampaign, campaignValidate } = require('./schema')
 const { celebrate } = require('celebrate');
 
 const router = express.Router()
@@ -34,8 +34,8 @@ router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorM
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
 // campaign 
-router.post('/campaign', authRequired, celebrate({ body: campaign }), createChannel)
-router.post('/campaign/campaign-validate-query', authRequired, celebrate({ body: campaignValidate }), validateCampaign)
+router.post('/campaign', authRequired, celebrate({ body: createCampaign(cfg) }), createChannel)
+router.post('/campaign/campaign-validate-query', authRequired, celebrate({ body: validateCampaign(cfg) }), validateCampaign)
 
 // Implementations
 function getStatus(withTree, req, res) {
