@@ -467,15 +467,100 @@ tape('POST /channel/{id}/campaign: create campaign', function(t){
 	})
 	.then(res => res.json())
 	.then(function(resp) {
-		console.log(resp)
-		// t.equal(resp.status, 400, 'status must be BadRequest')
+		console.log({ resp })
+		t.equal(resp.status, 200, 'status must be 200')
+		t.equal(resp.success, true, 'Successfully created campaign')
 	})
 	.then(() => t.end())
 	.catch(err => t.fail(err))
 })
 
+tape.only('POST /channel/campaign-validate-query: validate campaign', function(t){
+	const body = {
+		id: 'awesomeTestChannel',
+		depositAsset: 'DAI',
+		depositAmount: 1000,
+		validators: ['awesomeLeader', 'awesomeFollower'],
+		role: 'leader',
+		spec: {
+			validators: [
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+			]
+		}
+	}
+
+	fetch(`${followerUrl}/channel/campaign-validate-query`, {
+		method: 'POST',
+		headers: {
+			'authorization': `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify(body),
+	})
+	.then(res => {
+		t.equal(res.status, 200, 'status must be 200')
+		return res.json()
+	})
+	.then(function(resp) {
+		t.equal(resp.success, true, 'Should validate campaign successfully')
+	})
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
+
+tape('POST /channel/campaign-validate-query: should not validate campaign', function(t){
+	Promise.all(
+		[
+			{
+				depositAsset: 'DAI',
+				depositAmount: 1000,
+				validators: ['awesomeLeader', 'awesomeFollower'],
+				spec: {
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+					]
+				}
+			},
+			{
+				id: 'awesomeTestChannel'
+			},
+			{
+				depositAsset: 'DAI',
+				depositAmount: 1000,
+				validators: ['awesomeFollower'],
+				spec: {
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005'},
+						{ id: 'awesomeFollower', url: 'http://localhost:8006'},
+					]
+				}
+			}
+		].map(function(body){
+			fetch(`${followerUrl}/channel/campaign`, {
+				method: 'POST',
+				headers: {
+					'authorization': `Bearer ${dummyVals.auth.leader}`,
+					'content-type': 'application/json',
+				},
+				body: JSON.stringify(body),
+			})
+			.then(function(resp) {
+				// console.log(resp)
+				t.equal(resp.status, 400, 'status must be BadRequest')
+			})
+
+		})
+	)
+	.then(() => t.end())
+	.catch(err => t.fail(err))
+})
+
+
 tape('POST /channel/{id}/campaign: should not create campaign', function(t){
-	Promise.all([
+	Promise.all(
+	[
 		{
 			depositAsset: 'DAI',
 			depositAmount: 1000,
@@ -519,10 +604,6 @@ tape('POST /channel/{id}/campaign: should not create campaign', function(t){
 	)
 	.then(() => t.end())
 	.catch(err => t.fail(err))
-})
-
-tape.only('POST /channel/{id}/campaign: should not create campaign', function(t){
-
 })
 
 tape('POST /channel/{id}/events: malformed events', function(t) {

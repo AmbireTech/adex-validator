@@ -3,7 +3,7 @@ const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
-const { createCampaign, campaignValidate } = require('./schema')
+const schema = require('./schema')
 const { celebrate } = require('celebrate');
 
 const router = express.Router()
@@ -34,8 +34,8 @@ router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorM
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
 // campaign 
-router.post('/campaign', authRequired, celebrate({ body: createCampaign(cfg) }), createChannel)
-router.post('/campaign/campaign-validate-query', authRequired, celebrate({ body: validateCampaign(cfg) }), validateCampaign)
+router.post('/campaign', authRequired, celebrate({ body: schema.createCampaign(cfg) }), createCampaign)
+router.post('/campaign-validate-query', authRequired, celebrate({ body: schema.validateCampaign(cfg) }), validateCampaign)
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -121,7 +121,7 @@ function getValidatorMessages(req, res, next) {
 		.catch(next)
 }
 
-function createChannel(req, res, next) {
+function createCampaign(req, res, next) {
 	const { id, depositAmount, depositAsset, validators, spec, watcher } = req.body
 	const channelCol = db.getMongo().collection('channel')
 	const channel = {

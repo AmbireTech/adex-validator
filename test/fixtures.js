@@ -88,7 +88,28 @@ module.exports = {
 			{
 				...cfg,
 			},
-			`ValidationError: child "role" fails because ["role" must be one of [leader, follower]]`
+            `ValidationError: child "role" fails because ["role" must be one of [leader, follower]]`,
+            `Should throw role missing error`
+        ],
+        [
+            {
+                id: 'awesomeChannelTest',
+                depositAsset: '0x0e6BFF21862858a289AB214009d572b4079C8515',
+                depositAmount: 900,
+                validators: [],
+                role: "leader",
+                spec: {
+                    validators: [
+                        { id: '0x33E5DE6DBABA764d888b8aec7cf368606cde8353', url: 'http://localhost:8005', 'fee': 100 },
+                        { id: '0x8A63b2a4AE1A8c3768d020E464B5a83461C260f2', url: 'http://localhost:8006', 'fee': 100 },
+                    ]
+                }
+            },
+			{
+				...cfg,
+			},
+            `ValidationError: child "role" fails because ["role" must be one of [leader, follower]]`,
+            `Should throw depositAmount less than required error`
         ],
         [
             {
@@ -107,7 +128,8 @@ module.exports = {
             {
                 ...cfg
             },
-            null
+            null,
+            `Should validate successfully`
         ]
     ]
 }

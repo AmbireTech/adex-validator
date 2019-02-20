@@ -187,7 +187,7 @@ tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 })
 
 // schema;
-tape('create campaign validation schema', function(t) {
+tape('create campaign schema', function(t) {
 	fixtures.createCampaign.forEach(function([data, conf, expected]){
 		Joi.validate(data, schema.createCampaign(conf), function (err, value) {
 			if(err) err = err.toString()	

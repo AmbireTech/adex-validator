@@ -20,13 +20,31 @@ function _depositAmount({ MINIMAL_DEPOSIT  }){
 function _creator({ CREATORS_WHITELIST }){
     let schema = Joi.array().items(Joi.string().required(), Joi.string().required()).length(2)
     if(CREATORS_WHITELIST && CREATORS_WHITELIST.length > 0 ){
-        // schema = schema.valid(CREATORS_WHITELIST)
         schema = schema.has(CREATORS_WHITELIST)
     }
     return schema
 
 }
 
+function _validators({ CREATORS_WHITELIST }) {
+    let schema = Joi.array().items(
+        Joi.object({
+            "id": Joi.string().required(),
+            "url": Joi.string().uri({
+                scheme: ['http', 'https']
+            }).required(),
+            "fee": Joi.number().required()
+        })
+    ).length(2)
+    
+    if(CREATORS_WHITELIST && CREATORS_WHITELIST.length > 0 ){
+        schema = schema.has(Joi.object().keys({
+            "id": Joi.string().valid(CREATORS_WHITELIST)
+        }))
+    }
+
+    return schema
+}
 module.exports = {
     createCampaign: (cfg) => ({
         "id": Joi.string().required(),
@@ -34,15 +52,7 @@ module.exports = {
         "depositAmount": _depositAmount(cfg),
         "validators":   _creator(cfg), 
         "spec" : Joi.object({ 
-            "validators" : Joi.array().items(
-                Joi.object({
-                    "id": Joi.string().required(),
-                    "url": Joi.string().uri({
-                        scheme: ['http', 'https']
-                    }).required(),
-                    "fee": Joi.number().required()
-                })
-            ).min(2).max(2)
+            "validators" : _validators(cfg)
         }),
         "watcher": Joi.object({
             "ethereum": Joi.object({
