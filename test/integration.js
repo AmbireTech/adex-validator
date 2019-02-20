@@ -443,7 +443,46 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) balanceAfterFee
 					dummyVals.ids.follower
 				}/ApproveState`
 			).then(res => res.json())
-tape('POST /channel/{id}/campaign: create campaign', function(t){
+		})
+		.then(function(resp) {
+			const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
+			t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
+			t.end()
+		})
+		.catch(err => t.fail(err))
+})
+
+tape('cannot exceed channel deposit', function(t) {
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
+		.then(res => res.json())
+		.then(function(resp) {
+			// 1 event pays 1 token for now
+			// @TODO make this work with a more complex model
+			const evCount = resp.channel.depositAmount + 1
+
+			return Promise.all(
+				[leaderUrl, followerUrl].map(url =>
+					postEvents(url, dummyVals.channel.id, genImpressions(evCount))
+				)
+			)
+		})
+		.then(() => wait(waitTime))
+		.then(function() {
+			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
+		})
+		.then(function(resp) {
+			const sum = Object.keys(resp.balances)
+				.map(k => parseInt(resp.balances[k]))
+				.reduce((a, b) => a + b, 0)
+
+			t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
+			// @TODO state changed to exhausted, unable to take any more events
+			t.end()
+		})
+		.catch(err => t.fail(err))
+})
+
+tape('POST /channel/{id}/campaign: create campaign', function(t) {
 	const body = {
 		id: 'awesomeTestChannel',
 		depositAsset: 'DAI',
@@ -452,64 +491,33 @@ tape('POST /channel/{id}/campaign: create campaign', function(t){
 		spec: {
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
 			]
+		},
+		watcher: {
+			ethereum: {
+				contract: '0x8A63b2a4AE1A8c3768d020E464B5a83461C260f2'
+			}
 		}
 	}
 
 	fetch(`${followerUrl}/channel/campaign`, {
 		method: 'POST',
 		headers: {
-			'authorization': `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json',
+			authorization: `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json'
 		},
-		body: JSON.stringify(body),
+		body: JSON.stringify(body)
 	})
-	.then(res => res.json())
-	.then(function(resp) {
-		console.log({ resp })
-		t.equal(resp.status, 200, 'status must be 200')
-		t.equal(resp.success, true, 'Successfully created campaign')
-	})
-	.then(() => t.end())
-	.catch(err => t.fail(err))
+		.then(res => res.json())
+		.then(function(resp) {
+			t.equal(resp.success, true, 'Successfully created campaign')
+		})
+		.then(() => t.end())
+		.catch(err => t.fail(err))
 })
 
-tape.only('POST /channel/campaign-validate-query: validate campaign', function(t){
-	const body = {
-		id: 'awesomeTestChannel',
-		depositAsset: 'DAI',
-		depositAmount: 1000,
-		validators: ['awesomeLeader', 'awesomeFollower'],
-		role: 'leader',
-		spec: {
-			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
-			]
-		}
-	}
-
-	fetch(`${followerUrl}/channel/campaign-validate-query`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify(body),
-	})
-	.then(res => {
-		t.equal(res.status, 200, 'status must be 200')
-		return res.json()
-	})
-	.then(function(resp) {
-		t.equal(resp.success, true, 'Should validate campaign successfully')
-	})
-	.then(() => t.end())
-	.catch(err => t.fail(err))
-})
-
-tape('POST /channel/campaign-validate-query: should not validate campaign', function(t){
+tape('POST /channel/{id}/campaign: should not create campaign', function(t) {
 	Promise.all(
 		[
 			{
@@ -519,7 +527,7 @@ tape('POST /channel/campaign-validate-query: should not validate campaign', func
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
 					]
 				}
 			},
@@ -532,72 +540,20 @@ tape('POST /channel/campaign-validate-query: should not validate campaign', func
 				validators: ['awesomeFollower'],
 				spec: {
 					validators: [
-						{ id: 'awesomeLeader', url: 'http://localhost:8005'},
-						{ id: 'awesomeFollower', url: 'http://localhost:8006'},
+						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006' }
 					]
 				}
 			}
-		].map(function(body){
-			fetch(`${followerUrl}/channel/campaign`, {
+		].map(function(body) {
+			return fetch(`${followerUrl}/channel/campaign`, {
 				method: 'POST',
 				headers: {
-					'authorization': `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json',
+					authorization: `Bearer ${dummyVals.auth.leader}`,
+					'content-type': 'application/json'
 				},
-				body: JSON.stringify(body),
-			})
-			.then(function(resp) {
-				// console.log(resp)
-				t.equal(resp.status, 400, 'status must be BadRequest')
-			})
-
-		})
-	)
-	.then(() => t.end())
-	.catch(err => t.fail(err))
-})
-
-
-tape('POST /channel/{id}/campaign: should not create campaign', function(t){
-	Promise.all(
-	[
-		{
-			depositAsset: 'DAI',
-			depositAmount: 1000,
-			validators: ['awesomeLeader', 'awesomeFollower'],
-			spec: {
-				validators: [
-					{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-					{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
-				]
-			}
-		},
-		{
-			id: 'awesomeTestChannel'
-		},
-		{
-			depositAsset: 'DAI',
-			depositAmount: 1000,
-			validators: ['awesomeFollower'],
-			spec: {
-				validators: [
-					{ id: 'awesomeLeader', url: 'http://localhost:8005'},
-					{ id: 'awesomeFollower', url: 'http://localhost:8006'},
-				]
-			}
-		}
-	].map(function(body){
-			fetch(`${followerUrl}/channel/campaign`, {
-				method: 'POST',
-				headers: {
-					'authorization': `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json',
-				},
-				body: JSON.stringify(body),
-			})
-			.then(res => res.json())
-			.then(function(resp) {
-				// console.log(resp)
+				body: JSON.stringify(body)
+			}).then(function(resp) {
 				t.equal(resp.status, 400, 'status must be BadRequest')
 			})
 		})
@@ -655,6 +611,7 @@ tape('cannot exceed channel deposit', function(t) {
 			// @TODO state changed to exhausted, unable to take any more events
 			t.end()
 		})
+		.then(() => t.end())
 		.catch(err => t.fail(err))
 })
 

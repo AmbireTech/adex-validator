@@ -2,11 +2,12 @@
 const tape = require('tape')
 
 const BN = require('bn.js')
-const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
-const { getStateRootHash } = require('../services/validatorWorker/lib')
-const schema = require('../routes/schema');
-const dummyAdapter = require('../adapters/dummy')
 const { Joi } = require('celebrate')
+const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
+const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
+const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
+const schema = require('../routes/schema')
+const dummyAdapter = require('../adapters/dummy')
 const fixtures = require('./fixtures')
 
 const dummyChannel = { depositAmount: new BN(100) }
@@ -186,30 +187,20 @@ tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 	t.end()
 })
 
-// schema;
+//
+// campaign schema;
+//
+
 tape('create campaign schema', function(t) {
-	fixtures.createCampaign.forEach(function([data, conf, expected]){
-		Joi.validate(data, schema.createCampaign(conf), function (err, value) {
-			if(err) err = err.toString()	
-			t.equal(err, expected, "Should validate object properly")
-		}); 
+	fixtures.createCampaign.forEach(function([data, conf, expected]) {
+		Joi.validate(data, schema.createCampaign(conf), function(err) {
+			if (err) err = err.toString()
+			t.equal(err, expected, 'Should validate object properly')
+		})
 	})
 
 	t.end()
 })
-
-
-tape('campaign validation schema', function(t) {
-	fixtures.validateCampaign.forEach(function([data, conf, expected]){
-		Joi.validate(data, schema.validateCampaign(conf), function (err, value) {
-			if(err) err = err.toString()	
-			t.equal(err, expected, "Should validate object properly")
-		}); 
-	})
-
-	t.end()
-})
-
 
 // @TODO: event aggregator
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances

@@ -1,10 +1,10 @@
 const express = require('express')
+const { celebrate } = require('celebrate')
 const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 const schema = require('./schema')
-const { celebrate } = require('celebrate');
 
 const router = express.Router()
 
@@ -33,9 +33,13 @@ router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad,
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
-// campaign 
-router.post('/campaign', authRequired, celebrate({ body: schema.createCampaign(cfg) }), createCampaign)
-router.post('/campaign-validate-query', authRequired, celebrate({ body: schema.validateCampaign(cfg) }), validateCampaign)
+// campaign
+router.post(
+	'/campaign',
+	authRequired,
+	celebrate({ body: schema.createCampaign(cfg) }),
+	createCampaign
+)
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -125,26 +129,22 @@ function createCampaign(req, res, next) {
 	const { id, depositAmount, depositAsset, validators, spec, watcher } = req.body
 	const channelCol = db.getMongo().collection('channel')
 	const channel = {
-		'_id': id,
+		_id: id,
 		depositAmount,
 		depositAsset,
 		validators,
 		spec,
 		watcher,
-		"status": "pending"
+		status: 'pending',
+		created: new Date().getTime()
 	}
 
-	channelCol.insertOne(channel)
-	.then(function() {
-		res.send({ success: true })
-		return;
-	})
-	.catch(next)
-}
-
-function validateCampaign(req, res, next) {
-	res.send({success: true})
-	return;
+	channelCol
+		.insertOne(channel)
+		.then(function() {
+			res.send({ success: true })
+		})
+		.catch(next)
 }
 
 function postValidatorMessages(req, res, next) {

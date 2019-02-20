@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const express = require('express')
 const bodyParser = require('body-parser')
+const { errors } = require('celebrate')
 const yargs = require('yargs')
 const db = require('../db')
 const adapters = require('../adapters')
@@ -8,8 +9,6 @@ const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
 
 const { argv } = yargs
-const { errors } = require('celebrate')
-const argv = yargs
 	.usage('Usage $0 [options]')
 	.describe('adapter', 'the adapter for authentication and signing')
 	.choices('adapter', Object.keys(adapters))
