@@ -4,7 +4,7 @@ const { persistAndPropagate } = require('./lib/propagation')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const { isValidRootHash, toBNMap } = require('./lib')
 const producer = require('./producer')
-const heartbeat = require('./heartbeat')
+const { heartbeatIfNothingNew } = require('./heartbeat')
 
 function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -29,15 +29,7 @@ function tick(adapter, channel) {
 			return onNewState(adapter, { ...res, newMsg, approveMsg })
 		})
 	})
-	.then(function(res){
-		if(res && res.nothingNew){
-			// send heartbeat
-			return heartbeat(adapter, channel)
-			.then(() => res)
-		} else {
-			return res
-		}
-	})
+	.then(res => heartbeatIfNothingNew(adapter, channel, res))
 }
 
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
