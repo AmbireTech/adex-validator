@@ -1,0 +1,19 @@
+{
+  "name": "ethereum-watcher",
+  "version": "1.0.0",
+  "description": "ethereum watcher",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ethers": "^4.0.26",
+    "web3": "^1.0.0-beta.46"
+  }
+}
