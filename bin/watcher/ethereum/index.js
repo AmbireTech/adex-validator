@@ -2,17 +2,16 @@
 // const provider = new Web3.providers.HttpProvider("http://localhost:8545")
 // const web3 = new Web3 (provider)
 
-const yargs = require('yargs')
 const { providers, Contract, Wallet } = require('ethers')
 const cfg = require('./cfg')
 // const web3Provider = new providers.Web3Provider(web3.currentProvider)
 const provider = providers.getDefaultProvider('mainnet');
-const abi = require("./abi.json");
+const abi = require("adex-protocol-eth/abi/AdExCore.abi");
 
 const db = require('../../../db')
 
 const listeningContracts = new Array()
-let lastestTime = new Date()
+let lastestTime = 0
 
 db.connect()
 .then(function(){
@@ -25,8 +24,10 @@ db.connect()
     
         return channelsCol.find({
             status: 'pending',
-            [key]: { $exists: true }
+            [key]: { $exists: true },
+            created: { $gt: lastestTime }
         })
+        .toArray()
         .then(function(data) {
             return Promise.all([
 				Promise.all(data.map(campaignTick)),
@@ -41,6 +42,10 @@ db.connect()
     }
 
     loop()
+})
+.catch(function(err) {
+	console.error('Fatal error while connecting to the database', err)
+	process.exit(1)
 })
 
 function eventListener(channelId, eventObj){
