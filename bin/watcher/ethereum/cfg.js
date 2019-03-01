@@ -1,3 +1,3 @@
 module.exports = {
-    SNOOZE_TIME: 1000,
+    SNOOZE_TIME: 0,
 }
