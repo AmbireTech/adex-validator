@@ -16,4 +16,8 @@ function getMongo() {
 	throw new Error('db.connect() needs to be invoked before using getMongo()')
 }
 
-module.exports = { connect, getMongo }
+function close(){
+	mongoClient.close()
+}
+
+module.exports = { connect, getMongo, close }

@@ -51,8 +51,6 @@ echo "-------- Seeding database --------"
 # cause we need the deployed contract
 # address hence why seeding after migration
 node ./test/prep-db/mongo.js && mongo $DATABASE ./test/prep-db/seed.js
-# remove seed file
-rm ./test/prep-db/seed.js
 
 
 echo "-------- Open Channel --------"
@@ -64,9 +62,15 @@ sleep 10
 
 echo "-------- Running Tests --------"
 # run tests to confirm it worked as scheduled
-
 DB_MONGO_NAME=$DATABASE ./test/index.js
+
+exitCode=$?
 
 pkill -P $$
 
-mongo $DATABASE --eval 'db.dropDatabase()' >/dev/null
+# cleanup
+rm ./test/mocks/*.json
+rm ./test/prep-db/seed.js  # remove seed file
+mongo $DATABASE --eval 'db.dropDatabase()' >/dev/null # drop database
+
+exit $exitCode

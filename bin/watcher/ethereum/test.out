@@ -1,42 +1,18 @@
 in campaign tick
-{ contract: '0xa6421A7f48498cee3aEb6428a8A2DD5fAA3AcE2f' }
+{ contract: '0x58BDE085fd9759cC29447390cFAc670987642F7b' }
 added event listener
 processing events
-processing events with channelId 0x1a4fe7f25f3f039dacb2cc0decbf49052b78eb603cb24bddc59a74e09a0e2a2c
-Status of campaign 0x1a4fe7f25f3f039dacb2cc0decbf49052b78eb603cb24bddc59a74e09a0e2a2c updated to active
+processing events with channelId 0x2a4c899905eca3e07a3abfe29ca8e46340f08e5c9d605be94c604693510e3034
+Status of campaign 0x2a4c899905eca3e07a3abfe29ca8e46340f08e5c9d605be94c604693510e3034 updated to active
 in campaign tick
-{ contract: '0x52FF2aA36438a796dba3029150802f4CC5FED96C' }
+{ contract: '0x8d4E678Ce575969E6C88dd451Ce0C2b264C8926A' }
 added event listener
 processing events
-processing events with channelId 0x5594307a76a6e1b6a125ddaad7c20370ae7cc00ebf156c12d6df640bf4ade569
-Status of campaign 0x5594307a76a6e1b6a125ddaad7c20370ae7cc00ebf156c12d6df640bf4ade569 updated to active
+processing events with channelId 0x51099d97cf7fcaf3d109aba35fd8d9990aed69a56201d03a0460647b195b04fa
+Status of campaign 0x51099d97cf7fcaf3d109aba35fd8d9990aed69a56201d03a0460647b195b04fa updated to active
 in campaign tick
-{ contract: '0xB12d6112D64B213880Fa53F815aF1F29c91CaCe9' }
+{ contract: '0x24262943AC67A12ED3A44f2fA5F2a11bB4805495' }
 added event listener
 processing events
-processing events with channelId 0xdf768266bd32e2073e4fde01ec8337156de1a2053e75a9665f2967b8a462dce2
-Status of campaign 0xdf768266bd32e2073e4fde01ec8337156de1a2053e75a9665f2967b8a462dce2 updated to active
-in campaign tick
-{ contract: '0x254C1eAE847823B664D1Acb1BdfE5e19172D8336' }
-added event listener
-processing events
-processing events with channelId 0xe6ce733cd01773ce386ada6dc3a21fba0fb584ccafd80bf8d17515bf438a5b9d
-Status of campaign 0xe6ce733cd01773ce386ada6dc3a21fba0fb584ccafd80bf8d17515bf438a5b9d updated to active
-in campaign tick
-{ contract: '0x5d093A0e0328Ad17469b948De7f2DfD4b5eE5544' }
-added event listener
-processing events
-processing events with channelId 0xf4f004d95d750fb26d36f8dd6e4626cf40391df11c6ff337778bc49737987017
-Status of campaign 0xf4f004d95d750fb26d36f8dd6e4626cf40391df11c6ff337778bc49737987017 updated to active
-in campaign tick
-{ contract: '0x0E3c11dc1CfE82F8748363De7C58Bdd4eBA39A42' }
-added event listener
-processing events
-processing events with channelId 0x9258093a85b63082f1643e1cb5bb951072f88fc190bb67cb3e6d851e2b21c87b
-Status of campaign 0x9258093a85b63082f1643e1cb5bb951072f88fc190bb67cb3e6d851e2b21c87b updated to active
-in campaign tick
-{ contract: '0x05EBcDfaA3537C9B6b6c1eF501eE609601A98574' }
-added event listener
-processing events
-processing events with channelId 0x17308274a3559eade51131dfed0965ea04ab0876f8ce5332397ddffbef279fc8
-Status of campaign 0x17308274a3559eade51131dfed0965ea04ab0876f8ce5332397ddffbef279fc8 updated to active
+processing events with channelId 0xc6ea3e895ed0be864325a0a617fb75a04f656e16655050b54dd346e10d6fd6b7
+Status of campaign 0xc6ea3e895ed0be864325a0a617fb75a04f656e16655050b54dd346e10d6fd6b7 updated to active

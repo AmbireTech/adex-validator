@@ -50,6 +50,7 @@
     "eslint-plugin-import": "^2.16.0",
     "eslint-plugin-prettier": "^3.0.1",
     "prettier": "^1.16.4",
+    "solc": "^0.5.3",
     "tape": "^4.9.1"
   }
 }

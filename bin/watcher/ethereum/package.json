@@ -4,7 +4,7 @@
   "description": "ethereum watcher",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./test/run.sh"
   },
   "repository": {
     "type": "git",
