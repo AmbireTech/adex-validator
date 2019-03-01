@@ -1,23 +1,7 @@
-// parse ADexCore json file from truffle build
-const AdexCore = require('adex-protocol-eth/build/contracts/AdExCore.json')
-const { bytecode } = AdexCore
-const abi = require('adex-protocol-eth/abi/AdExCore.json')
+const data = require('../mocks/deploy.json');
 const fs = require('fs')
-const web3 = require('web3');
 
 let dummyVals = {
-	ids: {
-		leader: 'awesomeLeader',
-		follower: 'awesomeFollower',
-		user: 'awesomeTestUser',
-		publisher: 'myAwesomePublisher',
-	},
-	auth: {
-		leader: 'AUTH_awesomeLeader',
-		follower: 'AUTH_awesomeFollower',
-		user: 'x8c9v1b2',
-		publisher: 'testing',
-	},
 	channel: {
 		// @TODO: document schema
 		_id: 'awesomeTestChannel',
@@ -34,63 +18,26 @@ let dummyVals = {
         },
         watcher: {
             ethereum : {
-                contract: '0x'
+                contract: ''
             }
         },
-        created: new Date().getTime(),
+        created: Date.now(),
 	}
 }
 
-const keys = Object.keys(AdexCore.networks)
-const { address, transactionHash } = AdexCore.networks[keys[0]]
+dummyVals.channel._id = data['channelId']
+dummyVals.channel.id = data['channelId']
+dummyVals.channel.watcher.ethereum.contract = data['adexcore']
 
-const { providers, Contract, Wallet, ContractFactory } = require('ethers')
+const file = `
+const data = ${JSON.stringify(dummyVals.channel)}
 
-// const contract = require('truffle-contract')
-// const Token = contract(AdexCore)
-// Token.setProvider(new web3.providers.HttpProvider('http://localhost:8545'))
+if (typeof(db) !== 'undefined') {
+db.channels.insert(data)
+}
+`
 
-// Token.deployed().then(function(instance){
-// 	console.log(instance.address)
-// })
-
-const provider = new providers.JsonRpcProvider('http://localhost:8545');
-
-console.log({ transactionHash })
-console.log({ address })
-
-const privateKey = `0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200`
-const wallet = new Wallet(privateKey, provider);
-
-// console.log({ receipt })
-// const { contractAddress } = receipt
-// console.log({ contractAddress })
-// dummyVals.channel.watcher.ethereum.contract = contractAddress;
-// db.channels.insert(dummyVals.channel)
-// write json to file and  use it to seed database
-const seed = JSON.stringify(dummyVals.channel)
-
-const core = new ContractFactory(abi, bytecode, wallet);
-
-core.deploy().then(function(contract){
-
-	contract.deployed().then(function(instance){
-
-		console.log(`instance address `, instance.address)
-
-			const file = `
-		const data = ${seed}
-
-		if (typeof(db) !== 'undefined') {
-			db.channels.insert(data)
-		}
-		`
-
-		fs.writeFileSync('./test/prep-db/seed.js', file);
-
-
-	})
-})
+fs.writeFileSync('./test/prep-db/seed.js', file);
 
 
 if (typeof(module) !== 'undefined') module.exports = Object.freeze(dummyVals)

@@ -39,26 +39,34 @@ DATABASE="testing${TIMESTAMP}"
 # run the bin work
 DB_MONGO_NAME=$DATABASE ./watcher.js >> test.out &
 
+# allow startup 
 sleep 3
 
-# migrate contracts to the network
-cd ./node_modules/adex-protocol-eth && ../../node_modules/.bin/truffle migrate --reset --network development
+echo "-------- Setting up contracts --------"
+# setup the contracts
+node ./test/setup/setup.js
 
-# change directory
-cd ../../
-
+echo "-------- Seeding database --------"
 # seed mongo database
 # cause we need the deployed contract
 # address hence why seeding after migration
 node ./test/prep-db/mongo.js && mongo $DATABASE ./test/prep-db/seed.js
-
 # remove seed file
 rm ./test/prep-db/seed.js
 
-# run tests to create LogChannelOpen event
-cd ./node_modules/adex-protocol-eth && ../../node_modules/.bin/truffle test --network development
 
+echo "-------- Open Channel --------"
+# create channel to create LogChanelOpen event
+node ./test/setup/channelOpen.js
+
+# allow watcher to pick up and process the event
+sleep 10
+
+echo "-------- Running Tests --------"
 # run tests to confirm it worked as scheduled
 
-# sleep 3
+DB_MONGO_NAME=$DATABASE ./test/index.js
+
 pkill -P $$
+
+mongo $DATABASE --eval 'db.dropDatabase()' >/dev/null

@@ -27,7 +27,7 @@ db.connect()
         })
         .toArray()
         .then(function(data) {
-            console.log(`watcher: processing ${data.length} campaigns`)
+            // console.log(`watcher: processing ${data.length} campaigns`)
 
             return Promise.all([
 				Promise.all(data.map(campaignTick)),
@@ -85,6 +85,7 @@ function campaignTick(data) {
     const eventName = 'LogChannelOpen'
     
     adexCore.on(eventName, updateStatus)
+    console.log('added event listener')
     lastestTime = Date.now()
 }
 
