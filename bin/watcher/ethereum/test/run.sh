@@ -37,7 +37,7 @@ TIMESTAMP=`date +%s`
 DATABASE="testing${TIMESTAMP}"
 
 # run the bin work
-DB_MONGO_NAME=$DATABASE ./watcher.js >> test.out &
+DB_MONGO_NAME=$DATABASE ./watcher.js >> /dev/null &
 
 # allow startup 
 sleep 3

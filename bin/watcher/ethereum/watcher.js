@@ -4,7 +4,7 @@ const { providers, Contract } = require('ethers')
 const cfg = require('./cfg')
 
 const provider = new providers.JsonRpcProvider('http://localhost:8545');
-const abi = require("./abi.json");
+const abi = require('adex-protocol-eth/abi/AdExCore.json')
 
 const db = require('../../../db')
 
@@ -27,7 +27,7 @@ db.connect()
         })
         .toArray()
         .then(function(data) {
-            // console.log(`watcher: processing ${data.length} campaigns`)
+            console.log(`watcher: processing ${data.length} campaigns`)
 
             return Promise.all([
 				Promise.all(data.map(campaignTick)),
@@ -48,13 +48,9 @@ db.connect()
 	process.exit(1)
 })
 
-function updateStatus(channelId, eventObj){
-    
-    console.log("processing events")
-    
+function updateStatus(channelId, eventObj){    
     channelId = channelId.toString()
 
-    console.log(`processing events with channelId ${channelId}`)
     // move the status of the channel to active
     const channelsCol = db.getMongo().collection('channels')
 
@@ -72,10 +68,7 @@ function updateStatus(channelId, eventObj){
 }
 
 function campaignTick(data) {
-    console.log("in campaign tick")
     const { watcher: { ethereum: { contract }}} = data
-    console.log({ contract })
-
     if(listeningContracts.includes(contract)){
         return;
     }
@@ -85,7 +78,6 @@ function campaignTick(data) {
     const eventName = 'LogChannelOpen'
     
     adexCore.on(eventName, updateStatus)
-    console.log('added event listener')
     lastestTime = Date.now()
 }
 
