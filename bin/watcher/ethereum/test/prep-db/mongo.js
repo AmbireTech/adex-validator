@@ -25,9 +25,9 @@ let dummyVals = {
 	}
 }
 
-dummyVals.channel._id = data['channelId']
-dummyVals.channel.id = data['channelId']
-dummyVals.channel.watcher.ethereum.contract = data['adexcore']
+dummyVals.channel._id = data.channelId
+dummyVals.channel.id = data.channelId
+dummyVals.channel.watcher.ethereum.contract = data.adexcore
 
 const file = `
 const data = ${JSON.stringify(dummyVals.channel)}

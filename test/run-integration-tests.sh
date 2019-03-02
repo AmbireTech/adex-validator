@@ -45,6 +45,14 @@ fi
 
 exitCode=$?
 
+# Run ethereum watcher tests
+if [ $exitCode -eq 0 ]; then
+	cd ./bin/watcher/ethereum/ && npm install
+	./test/run.sh
+	exitCode=$?
+fi
+
+   
 # end all jobs (sentries, workers)
 pkill -P $$
 

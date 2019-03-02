@@ -49,12 +49,12 @@ node ./test/setup/setup.js
 echo "-------- Seeding database --------"
 # seed mongo database
 # cause we need the deployed contract
-# address hence why seeding after migration
+# address hence seeding after setting up contracts
 node ./test/prep-db/mongo.js && mongo $DATABASE ./test/prep-db/seed.js
 
 
 echo "-------- Open Channel --------"
-# create channel to create LogChanelOpen event
+# create channel to emit LogChanelOpen event
 node ./test/setup/channelOpen.js
 
 # allow watcher to pick up and process the event

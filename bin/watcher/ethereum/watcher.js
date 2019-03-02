@@ -3,7 +3,7 @@
 const { providers, Contract } = require('ethers')
 const cfg = require('./cfg')
 
-const provider = new providers.JsonRpcProvider('http://localhost:8545');
+const provider = new providers.JsonRpcProvider(cfg.HTTP_PROVIDER);
 const abi = require('adex-protocol-eth/abi/AdExCore.json')
 
 const db = require('../../../db')
