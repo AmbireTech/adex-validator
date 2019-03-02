@@ -21,8 +21,8 @@ const dummyVals = {
 		validators: ['awesomeLeader', 'awesomeFollower'],
 		spec: {
 			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006' },
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee:  100 },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
 			]
 		}
 	}

@@ -2,6 +2,7 @@ const assert = require('assert')
 const BN = require('bn.js')
 const db = require('../../db')
 const cfg = require('../../cfg')
+const { getBalancesAfterFeesTree } = require("./lib")
 
 function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
@@ -28,11 +29,14 @@ function tick(channel, force) {
 				return { channel }
 			}
 
-			const { balances, newStateTree } = mergeAggrs(
+			// balances should be addition of eventPayouts
+			// 
+
+			const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
 				stateTree,
 				aggrs,
 				// @TODO obtain channel payment info
-				{ amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
+				{ ...channel, amount: new BN(1), depositAmount: new BN(channel.depositAmount)  }
 			)
 
 			return stateTreeCol
@@ -42,7 +46,7 @@ function tick(channel, force) {
 				{ upsert: true }
 			)
 			.then(function() {
-				return { channel, balances, newStateTree }
+				return { channel, balances, balancesAfterFees, newStateTree }
 			})
 		})
 	})
@@ -51,7 +55,11 @@ function tick(channel, force) {
 // Pure, should not mutate inputs
 // @TODO isolate those pure functions into a separate file
 function mergeAggrs(stateTree, aggrs, paymentInfo) {
-	const newStateTree = { balances: {}, lastEvAggr: stateTree.lastEvAggr }
+	const newStateTree = { 
+		balances: {}, 
+		balancesAfterFees: {}, 
+		lastEvAggr: stateTree.lastEvAggr 
+	}
 
 	// Build an intermediary balances representation
 	const balances = {}
@@ -68,7 +76,7 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		))
 
 		// @TODO do something about this hardcoded event type assumption
-		mergePayableIntoBalances(balances, evAggr.events.IMPRESSION, paymentInfo)
+		mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, paymentInfo)
 	})
 
 	// Rewrite into the newStateTree
@@ -76,24 +84,35 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		newStateTree.balances[acc] = balances[acc].toString(10)
 	})
 
-	return { balances, newStateTree }
+	const balancesAfterFees = getBalancesAfterFeesTree(balances, paymentInfo)
+	// Rewrite into the newStateTree
+	Object.keys(balancesAfterFees).forEach(function(acc) {
+		newStateTree.balancesAfterFees[acc] = balancesAfterFees[acc].toString(10)
+	})
+
+	return { balances, balancesAfterFees, newStateTree }
 }
 
 // Mutates the balances input
 // For now, this just disregards anything that goes over the depositAmount
-function mergePayableIntoBalances(balances, events, paymentInfo) {
+function mergePayoutsIntoBalances(balances, events, paymentInfo) {
 	if (!events) return
-	// @TODO use BN for the events
+
+	// total of state tree balance
 	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
+	// remaining of depositAmount
 	let remaining = paymentInfo.depositAmount.sub(total)
+
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
-	Object.keys(events).forEach(function(acc) {
+
+	const { eventPayouts } = events
+	// take the eventPayouts key
+	Object.keys(eventPayouts).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		const eventCount = new BN(events[acc])
-		const toAdd = BN.min(remaining, eventCount.mul(paymentInfo.amount))
-		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
-		balances[acc] = balances[acc].add(toAdd)
-		remaining = remaining.sub(toAdd)
+		const eventPayout = new BN(eventPayouts[acc])
+		balances[acc] = balances[acc].add(eventPayout)
+
+		remaining = remaining.sub(eventPayout)
 
 		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
 	})

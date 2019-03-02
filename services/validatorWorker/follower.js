@@ -1,8 +1,9 @@
 const assert = require('assert')
+const isEqual = require('lodash.isequal');
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
+const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap  } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
-const { isValidRootHash, toBNMap } = require('./lib')
 const producer = require('./producer')
 const { heartbeatIfNothingNew } = require('./heartbeat')
 
@@ -27,7 +28,7 @@ function tick(adapter, channel) {
 		return producer.tick(channel, true)
 		.then(function(res) {
 			return onNewState(adapter, { ...res, newMsg, approveMsg })
-		})
+		}) 
 	})
 	.then(res => heartbeatIfNothingNew(adapter, channel, res))
 }
@@ -35,9 +36,16 @@ function tick(adapter, channel) {
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
+	const { balancesAfterFees } = newMsg
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
+		return { nothingNew: true }
+	}
+
+	if(!isValidValidatorFees(channel, newBalances, balancesAfterFees)) {
+		console.error(`validatatorWorker: ${channel.id}: invalid validator fees requested in NewState`, 
+			toBNStringMap(newBalances), toBNStringMap(balancesAfterFees))
 		return { nothingNew: true }
 	}
 
@@ -47,7 +55,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { stateRoot, signature } = newMsg
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (!isValidRootHash(stateRoot, { channel, balances: newBalances, adapter })){
+	if (!isValidRootHash(stateRoot, { channel, balancesAfterFees, adapter })){
 		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, stateRoot)
 		return { nothingNew: true }
 	}
@@ -71,6 +79,11 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			})
 		})
 	})
+}
+
+function isValidValidatorFees(channel, balances, balancesAfterFees) {
+	let calcBalancesAfterFees = toBNStringMap(getBalancesAfterFeesTree(balances, channel))
+	return isEqual(calcBalancesAfterFees, toBNStringMap(balancesAfterFees))
 }
 
 // @TODO getLatestMsg should be a part of a DB abstraction so we can use it in other places too

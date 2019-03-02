@@ -13,9 +13,9 @@ function tick(adapter, channel) {
 		.then(res => heartbeatIfNothingNew(adapter, channel, res))
 }
 
-function afterProducer(adapter, {channel, newStateTree, balances}) {
+function afterProducer(adapter, {channel, newStateTree, balancesAfterFees}) {
 	const followers = channel.spec.validators.slice(1)
-	const stateRootRaw = getStateRootHash(channel, balances, adapter)
+	const stateRootRaw = getStateRootHash(channel, balancesAfterFees, adapter)
 	
 	return adapter.sign(stateRootRaw)
 	.then(function(signature) {
