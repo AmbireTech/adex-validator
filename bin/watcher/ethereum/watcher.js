@@ -36,8 +36,30 @@ db.connect()
         })
     }
 
+    function removeOldPendingChannels(){
+        let currentDate = new Date()
+        currentDate = currentDate.setDate(currentDate.getDate() - cfg.EVICT_THRESHOLD)
+        console.log({ currentDate })
+        const channelsCol = db.getMongo().collection('channels')
+        return channelsCol
+        .deleteOne(
+            {
+                created: { $lte: currentDate}
+            }
+        )
+    }
+
     function loop(){
         allPendingCampaignsTick()
+        .then(function(){
+            // delete odl pending channels
+            return removeOldPendingChannels()
+            .then(function(data){
+                if(data.result.n){
+                    console.log(`watcher: removed ${data.result.n} old campaigns`)
+                }
+            })
+        })
 		.then(function() { loop() })
     }
 
@@ -80,6 +102,7 @@ function campaignTick(data) {
     adexCore.on(eventName, updateStatus)
     lastestTime = Date.now()
 }
+
 
 function wait(ms) {
 	return new Promise((resolve, _) => setTimeout(resolve, ms))
