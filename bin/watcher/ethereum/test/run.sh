@@ -63,7 +63,7 @@ sleep 10
 echo "-------- Running Tests --------"
 # run tests to confirm it worked as scheduled
 DB_MONGO_NAME=$DATABASE ./test/index.js
-
+# set exitcode to status of previous command
 exitCode=$?
 
 pkill -P $$
