@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 # launch test rpc instance
 testrpc_port=8545
@@ -31,13 +31,17 @@ else
   start_testrpc
 fi
 
-sleep 3
+# let ganache start
+sleep 3 
+
+# build contracts
+cd ./node_modules/adex-protocol-eth/ &&  ../.bin/truffle build && cd ../../
 
 TIMESTAMP=`date +%s`
 DATABASE="testing${TIMESTAMP}"
 
 # run the bin work
-DB_MONGO_NAME=$DATABASE ./watcher.js >> test.out &
+DB_MONGO_NAME=$DATABASE ./watcher.js >> /dev/null &
 
 # allow startup 
 sleep 3

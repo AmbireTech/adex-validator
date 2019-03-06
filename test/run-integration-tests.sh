@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 MONGO_OUT=/dev/null # could be &1
 
@@ -44,14 +44,6 @@ else
 fi
 
 exitCode=$?
-
-# Run ethereum watcher tests
-if [ $exitCode -eq 0 ]; then
-	cd ./bin/watcher/ethereum/ && npm install
-	./test/run.sh
-	exitCode=$?
-fi
-
    
 # end all jobs (sentries, workers)
 pkill -P $$

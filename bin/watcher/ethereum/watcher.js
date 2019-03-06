@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { providers, Contract } = require('ethers')
+const fs = require('fs')
 const cfg = require('./cfg')
 
 const provider = new providers.JsonRpcProvider(cfg.HTTP_PROVIDER);
@@ -39,7 +40,7 @@ db.connect()
     function removeOldPendingChannels(){
         let currentDate = new Date()
         currentDate = currentDate.setDate(currentDate.getDate() - cfg.EVICT_THRESHOLD)
-        console.log({ currentDate })
+
         const channelsCol = db.getMongo().collection('channels')
         return channelsCol
         .deleteOne(
@@ -52,7 +53,7 @@ db.connect()
     function loop(){
         allPendingCampaignsTick()
         .then(function(){
-            // delete odl pending channels
+            // delete old pending channels
             return removeOldPendingChannels()
             .then(function(data){
                 if(data.result.n){

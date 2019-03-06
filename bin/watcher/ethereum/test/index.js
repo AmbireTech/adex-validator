@@ -22,6 +22,8 @@ tape('Should remove old pending channel', function(t){
                const diff = Math.floor((currentTime - elementTime) / 86400000)
                t.equal(diff < cfg.EVICT_THRESHOLD, true, "Should remove all old pending channels")
             });
+            
+            t.equal(data.length, 1, 'Should have a single valid channel')
 
             t.end()
             // close connection
