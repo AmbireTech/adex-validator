@@ -8,5 +8,5 @@ script:
         - npm test
         - npm run test-integration
         - npm run test-integration-external
-        - cd ./bin/watcher/ethereum/ && npm install && ./test/run.sh
+        - cd ./bin/watcher/ethereum/ && npm install && ls ./node_modules/ && ls -R ./node_modules/adex-protocol-eth/ && ./test/run.sh
 
