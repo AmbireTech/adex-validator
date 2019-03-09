@@ -1,6 +1,6 @@
 const assert = require('assert')
 const BN = require('bn.js')
-
+const { persist } = require('./propagation')
 function getStateRootHash(channel, balances, adapter){
 	// Note: MerkleTree takes care of deduplicating and sorting
 	const elems = Object.keys(balances).map(
@@ -24,6 +24,7 @@ function toBNMap(raw) {
 	return balances
 }
 
+<<<<<<< HEAD
 // returns BN
 function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
 	const numerator = depositAmount.sub(totalValidatorFee)
@@ -63,3 +64,36 @@ function toBNStringMap(raw){
 }
 
 module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap }
+=======
+function toStringBN(raw) {
+	let result = ``
+	Object.entries(raw).forEach(([acc, bal]) => result = `${result} ${acc}: ${bal.toString()}`)
+	return result
+}
+
+function invalidNewState(channel, adapter, { reason, newMsg}) {
+	// quirk: type is overiding type in newMsg
+	return persist(adapter, channel, {
+		...newMsg,
+		type: 'InvalidNewState',
+		reason,
+	})
+}
+
+function onError(channel, adapter, { reason, newMsg, prevBalancesString, newBalancesString }) {
+	const errMsg = getErrorMsg(reason, channel, prevBalancesString, newBalancesString)
+
+	return invalidNewState(channel, adapter, { reason, newMsg})
+	.then(function(){
+		console.error(errMsg)
+		return { nothingNew: true }
+	})
+}
+
+function getErrorMsg(type, channel, prevBalancesString, newBalancesString ){
+	return `validatatorWorker: ${channel.id}: ${type} requested in NewState 
+			 prevBalances: ${prevBalancesString}, \n newBalances: ${newBalancesString}`
+}
+
+module.exports = { getStateRootHash, isValidRootHash, toBNMap, invalidNewState, onError, toStringBN, getErrorMsg }
+>>>>>>> ed5fe23... added invalidNewState, refactor tests

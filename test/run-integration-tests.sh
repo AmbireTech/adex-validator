@@ -40,6 +40,7 @@ if [ -n "$RUN_EXTERNAL" ]; then
 	LEADER_DATABASE=$LEAD_MONGO FOLLOWER_DATABASE=$FOLLOW_MONGO npm run test-local
 else 
 	./test/integration.js
+	./test/routes.js
 fi
 
 exitCode=$?
@@ -47,18 +48,18 @@ exitCode=$?
 # end all jobs (sentries, workers)
 pkill -P $$
 
-if [ $exitCode -eq 0 ]; then
-	echo "cleaning up DB"
-	mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
-	mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
-else
-	echo -e "\033[0;31mTests failed: waiting 20s before cleaning the database (press ctrl-C to avoid cleanup)\033[0m"
-	echo "MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
-	(
-		sleep 20 &&
-		mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT &&
-		mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
-	)
-fi
+# if [ $exitCode -eq 0 ]; then
+# 	echo "cleaning up DB"
+# 	mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
+# 	mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
+# else
+# 	echo -e "\033[0;31mTests failed: waiting 20s before cleaning the database (press ctrl-C to avoid cleanup)\033[0m"
+# 	echo "MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
+# 	(
+# 		sleep 20 &&
+# 		mongo $LEAD_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT &&
+# 		mongo $FOLLOW_MONGO --eval 'db.dropDatabase()' >$MONGO_OUT
+# 	)
+# fi
 
 exit $exitCode

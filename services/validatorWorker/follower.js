@@ -4,6 +4,7 @@ const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
 const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap  } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
+const { isValidRootHash, toBNMap, onError, toStringBN } = require('./lib')
 const producer = require('./producer')
 const { heartbeatIfNothingNew } = require('./heartbeat')
 
@@ -38,9 +39,21 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const newBalances = toBNMap(newMsg.balances)
 	const { balancesAfterFees } = newMsg
 
+	const prevBalancesString = toStringBN(prevBalances)
+	const newBalancesString = toStringBN(newBalances)
+
+
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
-		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
-		return { nothingNew: true }
+		return onError(
+			channel,
+			adapter,
+			{
+				reason: 'InvalidTransition',
+				newMsg,
+				prevBalancesString, 
+				newBalancesString 
+			}
+		)
 	}
 
 	if(!isValidValidatorFees(channel, newBalances, balancesAfterFees)) {
@@ -55,17 +68,32 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { stateRoot, signature } = newMsg
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (!isValidRootHash(stateRoot, { channel, balancesAfterFees, adapter })){
-		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, stateRoot)
-		return { nothingNew: true }
+	if (!isValidRootHash(stateRoot, { channel, balances: newBalances, adapter })){
+		return onError(
+			channel,
+			adapter,
+			{
+				reason: `InvalidRootHash`,
+				newMsg,
+				prevBalancesString, 
+				newBalancesString 
+			}
+		)
 	}
-
 	// verify the signature of newMsg: whether it was signed by the leader validator
 	return adapter.verify(leader.id, stateRoot, signature)
 	.then(function(isValidSig) {
 		if (!isValidSig) {
-			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
-			return { nothingNew: true }
+			return onError(
+				channel,
+				adapter,
+				{
+					reason: `InvalidSignature`,
+					newMsg,
+					prevBalancesString, 
+					newBalancesString 
+				}
+			)
 		}
     
 		const stateRootRaw = Buffer.from(stateRoot, 'hex')
