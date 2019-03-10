@@ -42,10 +42,17 @@ function filterInvalidNewStateMSg(messages, properties){
     return messages
 }
 
+function incrementKeys(raw){	
+	let incBalances = {}	
+	Object.keys(raw).forEach((item) => ( incBalances[item] = (new BN(raw[item], 10).add(new BN(1))).toString(10) ))	
+	return incBalances	
+}
+
 module.exports = {
     postEvents,
     genImpressions,
     getDummySig,
     wait,
-    filterInvalidNewStateMSg
+	filterInvalidNewStateMSg,
+	incrementKeys,
 }

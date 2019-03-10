@@ -10,7 +10,8 @@ const {
     genImpressions,
     getDummySig,
 	wait,
-	filterInvalidNewStateMSg
+	filterInvalidNewStateMSg,
+	incrementKeys,
 } = require('./lib')
 
 const cfg = require('../cfg')
@@ -195,8 +196,8 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 		// increase the state tree balance by 1
 		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
 
-
-		stateRoot = getStateRootHash({id: dummyVals.channel.id}, incBalances, dummyAdapter)
+		const balancesAfterFees = getBalancesAfterFeesTree(incBalances, dummyVals.channel)
+		stateRoot = getStateRootHash({id: dummyVals.channel.id}, balancesAfterFees, dummyAdapter)
 		signature = getDummySig(stateRoot, "awesomeLeader12")
 		
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
