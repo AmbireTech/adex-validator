@@ -2,9 +2,8 @@ const assert = require('assert')
 const isEqual = require('lodash.isequal');
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap  } = require('./lib')
+const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap, onError, toStringBN  } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
-const { isValidRootHash, toBNMap, onError, toStringBN } = require('./lib')
 const producer = require('./producer')
 const { heartbeatIfNothingNew } = require('./heartbeat')
 
@@ -57,9 +56,16 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	}
 
 	if(!isValidValidatorFees(channel, newBalances, balancesAfterFees)) {
-		console.error(`validatatorWorker: ${channel.id}: invalid validator fees requested in NewState`, 
-			toBNStringMap(newBalances), toBNStringMap(balancesAfterFees))
-		return { nothingNew: true }
+		return onError(
+			channel,
+			adapter,
+			{
+				reason: `InvalidValidatorFees`,
+				newMsg,
+				prevBalancesString, 
+				newBalancesString 
+			}
+		)
 	}
 
 	const whoami = adapter.whoami()
@@ -68,7 +74,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { stateRoot, signature } = newMsg
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (!isValidRootHash(stateRoot, { channel, balances: newBalances, adapter })){
+	if (!isValidRootHash(stateRoot, { channel, balancesAfterFees, adapter })){
 		return onError(
 			channel,
 			adapter,
