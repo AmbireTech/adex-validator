@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const tape = require('tape')
 const fetch = require('node-fetch')
-const BN = require('bn.js')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash, getBalancesAfterFeesTree, toBNStringMap } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')

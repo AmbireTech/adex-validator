@@ -3,6 +3,7 @@ const assert = require('assert')
 const dummyVals = require('./prep-db/mongo')
 const defaultPubName = dummyVals.ids.publisher
 const fetch = require('node-fetch')
+const BN = require('bn.js')
 
 function postEvents(url, channelId, events) {
 	return fetch(`${url}/channel/${channelId}/events`, {
