@@ -24,7 +24,6 @@ function toBNMap(raw) {
 	return balances
 }
 
-<<<<<<< HEAD
 // returns BN
 function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
 	const numerator = depositAmount.sub(totalValidatorFee)
@@ -63,8 +62,6 @@ function toBNStringMap(raw){
 	return balances
 }
 
-module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap }
-=======
 function toStringBN(raw) {
 	let result = ``
 	Object.entries(raw).forEach(([acc, bal]) => result = `${result} ${acc}: ${bal.toString()}`)
@@ -96,5 +93,14 @@ function getErrorMsg(type, channel, prevBalancesString, newBalancesString ){
 			 prevBalances: ${prevBalancesString}, \n newBalances: ${newBalancesString}`
 }
 
-module.exports = { getStateRootHash, isValidRootHash, toBNMap, invalidNewState, onError, toStringBN, getErrorMsg }
->>>>>>> ed5fe23... added invalidNewState, refactor tests
+module.exports = { 
+	getStateRootHash, 
+	isValidRootHash, 
+	toBNMap,
+	invalidNewState, 
+	onError, 
+	toStringBN, 
+	getErrorMsg, 
+	toBNStringMap, 
+	getBalancesAfterFeesTree,
+}
