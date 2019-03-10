@@ -81,10 +81,14 @@ function invalidNewState(channel, adapter, { reason, newMsg}) {
 }
 
 function onError(channel, adapter, { reason, newMsg, prevBalancesString, newBalancesString }) {
+	console.log(`invalid ${reason}`)
+
 	const errMsg = getErrorMsg(reason, channel, prevBalancesString, newBalancesString)
 
 	return invalidNewState(channel, adapter, { reason, newMsg})
 	.then(function(){
+		console.log(`invalid ${reason} 2`)
+
 		console.error(errMsg)
 		return { nothingNew: true }
 	})

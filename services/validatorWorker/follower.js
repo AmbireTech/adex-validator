@@ -44,6 +44,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
+		console.log("invalid transition error")
 		return onError(
 			channel,
 			adapter,
@@ -84,6 +85,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	return adapter.verify(leader.id, stateRoot, signature)
 	.then(function(isValidSig) {
 		if (!isValidSig) {
+			console.log("invalid signature")
 			return onError(
 				channel,
 				adapter,
@@ -104,6 +106,7 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 				stateRoot: stateRoot,
 				isHealthy: isHealthy(balances, newBalances),
 				signature,
+				created: Date.now()
 			})
 		})
 	})
@@ -125,7 +128,7 @@ function getLatestMsg(channelId, from, type) {
 		from: from,
 		'msg.type': type,
 	})
-	.sort({ _id: -1 })
+	.sort({ 'msg.created': -1 })
 	.limit(1)
 	.toArray()
 	.then(function([o]) {
