@@ -44,7 +44,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
-		console.log("invalid transition error")
 		return onError(
 			channel,
 			adapter,
@@ -85,7 +84,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	return adapter.verify(leader.id, stateRoot, signature)
 	.then(function(isValidSig) {
 		if (!isValidSig) {
-			console.log("invalid signature")
 			return onError(
 				channel,
 				adapter,
