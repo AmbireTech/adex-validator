@@ -475,7 +475,8 @@ tape('cannot exceed channel deposit', function(t) {
 		const sum = Object.keys(resp.balances)
 			.map(k => parseInt(resp.balances[k]))
 			.reduce((a, b) => a+b, 0)
-		t.ok(sum <= expectedDepositAmnt, 'balance does not exceed the deposit')
+			
+		t.ok(sum == expectedDepositAmnt, 'balance does not exceed the deposit')
 		// @TODO state changed to exhausted, unable to take any more events
 		t.end()
 	})
