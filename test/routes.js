@@ -4,11 +4,18 @@ const tape = require('tape')
 const fetch = require('node-fetch')
 const {
 	postEvents,
+	genImpressions,
+	wait
 } = require('./lib')
 
+const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 const leaderUrl = dummyVals.channel.spec.validators[0].url
+const followerUrl = dummyVals.channel.spec.validators[1].url
+const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
+
+const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME*2 + cfg.WAIT_TIME*2 + 500
 
 tape('/channel/list', function(t) {
 	fetch(`${leaderUrl}/channel/list`)
@@ -62,26 +69,6 @@ tape('/channel/{id}/tree', function(t) {
 		t.equal(resp.channel.status, 'live', 'channel has right status')
 		t.deepEqual(resp.balances, {}, 'channel has balances')
 		t.equal(new Date(resp.lastEvAggr).getTime(0), 0, 'lastEvAggr is 0')
-		t.end()
-	})
-	.catch(err => t.fail(err))
-})
-
-tape('/channel/{id}/events-aggregates', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
-		method: 'GET',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.publisher}`,
-			'content-type': 'application/json',
-		},
-	})
-	.then(res => {
-		return res.json()
-	})
-	.then(function(resp) {
-		t.ok(resp.channel, 'has resp.channel')
-		t.ok(resp.events, 'has resp.events')
-		t.ok(resp.events.length >= 1, "should have events of min legnth 1")
 		t.end()
 	})
 	.catch(err => t.fail(err))
