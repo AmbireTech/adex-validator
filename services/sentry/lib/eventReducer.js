@@ -4,7 +4,7 @@ function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
 }
 
-function reduce(userId, aggr, ev, channel) {
+function reduce(userId, channel, aggr, ev) {
 	// for now, we don't use userId
 	// @TODO: this is one of the places to add other ev types
 	if (ev.type === 'IMPRESSION') {

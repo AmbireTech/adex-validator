@@ -5,12 +5,14 @@ const eventReducer = require('./lib/eventReducer')
 
 const recorders = new Map()
 
-function record(channelId, userId, events) {
-	if (!recorders.has(channelId)) {
-		recorders.set(channelId, makeRecorder(channelId))
+function record(channel, userId, events) {
+	const { id } = channel
+	
+	if (!recorders.has(id)) {
+		recorders.set(id, makeRecorder(id))
 	}
 
-	recorders.get(channelId)(userId, events)
+	recorders.get(id)(userId, events, channel)
 	return Promise.resolve()
 }
 
@@ -46,8 +48,8 @@ function makeRecorder(channelId) {
 	}
 	const throttledPersistAndReset = throttle(persistAndReset, cfg.AGGR_THROTTLE, { leading: false, trailing: true })
 
-	return function(userId, events) {
-		aggr = events.reduce(eventReducer.reduce.bind(null, userId), aggr)
+	return function(userId, events, channel) {
+		aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
 		throttledPersistAndReset()
 	}
 }

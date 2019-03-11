@@ -24,7 +24,7 @@ router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad,
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
-router.post('/:id/events', authRequired, channelIfActive, postEvents)
+router.post('/:id/events', authRequired, channelIfActive, channelLoad, postEvents)
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -140,12 +140,14 @@ function postValidatorMessages(req, res, next) {
 
 function postEvents(req, res, next) {
 	const events = req.body.events
+	const { channel } = req
+	
 	const isValid = Array.isArray(events) && events.every(isEventValid)
 	if (!isValid) {
 		res.sendStatus(400)
 		return
 	}
-	eventAggrService.record(req.params.id, req.session.uid, events)
+	eventAggrService.record(channel, req.session.uid, events)
 	.then(function() {
 		res.send({ success: true })
 	})
