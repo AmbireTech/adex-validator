@@ -25,8 +25,7 @@ function makeRecorder(channelId) {
 	let saveQueue = Promise.resolve()
 	const persist = function(toSave) {
 		saveQueue = saveQueue.then(function() {
-			return eventAggrCol.insertOne(toSave)
-			.catch(function(err) {
+			return eventAggrCol.insertOne(toSave).catch(function(err) {
 				console.error('sentry: eventAggregator fatal error; will re-try', err)
 				persist(toSave)
 			})
@@ -46,7 +45,10 @@ function makeRecorder(channelId) {
 		// to ensure we always persist toSave's, we have a separate queue
 		persist(toSave)
 	}
-	const throttledPersistAndReset = throttle(persistAndReset, cfg.AGGR_THROTTLE, { leading: false, trailing: true })
+	const throttledPersistAndReset = throttle(persistAndReset, cfg.AGGR_THROTTLE, {
+		leading: false,
+		trailing: true
+	})
 
 	return function(userId, events, channel) {
 		aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)

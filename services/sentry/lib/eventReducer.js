@@ -15,7 +15,7 @@ function reduce(userId, channel, aggr, ev) {
 }
 
 function mergeImpressionEv(map, ev, channel) {
-	if (typeof(ev.publisher)!=='string') return map
+	if (typeof ev.publisher !== 'string') return map
 	if (!map) map = { eventCounts: {}, eventPayouts: {} }
 	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
@@ -33,7 +33,7 @@ function mergeImpressionEv(map, ev, channel) {
 }
 
 function addAndToString(first, second) {
-	return (first.add(second)).toString(10)
+	return first.add(second).toString(10)
 }
 
 module.exports = { newAggr, reduce }

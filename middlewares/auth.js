@@ -1,5 +1,3 @@
-const db = require('../db')
-
 const BEARER_PREFIX = 'Bearer '
 
 function forAdapter(adapter) {
@@ -14,12 +12,13 @@ function forAdapter(adapter) {
 
 		const token = authorization.slice(BEARER_PREFIX.length)
 
-		adapter.sessionFromToken(token)
-		.then(function(session) {
-			req.session = session
-			next()
-		})
-		.catch(next)
+		adapter
+			.sessionFromToken(token)
+			.then(function(session) {
+				req.session = session
+				next()
+			})
+			.catch(next)
 	}
 }
 

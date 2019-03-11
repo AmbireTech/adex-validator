@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 db.channels.createIndex({ validators: 1 })
 db.eventAggregates.createIndex({ channelId: 1 })
 db.eventAggregates.createIndex({ channelId: 1, created: 1 })

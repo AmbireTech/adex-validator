@@ -5,7 +5,7 @@ const dummyVals = require('../../test/prep-db/mongo')
 let identity = null
 
 function init(opts) {
-	assert.ok(typeof(opts.dummyIdentity) == 'string', 'dummyIdentity required')
+	assert.ok(typeof opts.dummyIdentity === 'string', 'dummyIdentity required')
 	identity = opts.dummyIdentity
 	return Promise.resolve()
 }
@@ -32,37 +32,40 @@ function getSignableStateRoot(channelId, balanceRoot) {
 
 // Authentication tokens
 function sessionFromToken(token) {
-	const who = Object.entries(dummyVals.auth).find(v => v[1] == token)
+	const who = Object.entries(dummyVals.auth).find(v => v[1] === token)
 	if (who) return Promise.resolve({ uid: dummyVals.ids[who[0]] })
-	else return Promise.resolve(null)
+	return Promise.resolve(null)
 }
+
+// eslint-disable-next-line no-unused-vars
 function getAuthFor(validator) {
-	const who = Object.entries(dummyVals.ids).find(v => v[1] == identity)
+	const who = Object.entries(dummyVals.ids).find(v => v[1] === identity)
 	if (who) return Promise.resolve(dummyVals.auth[who[0]])
-	else return Promise.reject(`no auth token for this identity: ${identity}`)
+	// eslint-disable-next-line prefer-promise-reject-errors
+	return Promise.reject(`no auth token for this identity: ${identity}`)
 }
 
 function verify(signer, stateRoot, signature) {
 	/**
 	 * Sample signature
 	 * Dummy adapter for 6def5a300acb6fcaa0dab3a41e9d6457b5147a641e641380f8cc4bf5308b16fe by awesomeLeader
-	 * 
+	 *
 	 */
-	const splitSig = signature.split(" ")
+	const splitSig = signature.split(' ')
 	const from = splitSig[splitSig.length - 1]
 
-	return Promise.resolve(signer == from)
+	return Promise.resolve(signer === from)
 }
 
-module.exports = { 
-	init, 
-	unlock, 
-	whoami, 
-	sign, 
-	getBalanceLeaf, 
-	sessionFromToken, 
-	getAuthFor, 
+module.exports = {
+	init,
+	unlock,
+	whoami,
+	sign,
+	getBalanceLeaf,
+	sessionFromToken,
+	getAuthFor,
 	MerkleTree,
 	verify,
-	getSignableStateRoot,
+	getSignableStateRoot
 }

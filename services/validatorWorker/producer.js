@@ -2,63 +2,61 @@ const assert = require('assert')
 const BN = require('bn.js')
 const db = require('../../db')
 const cfg = require('../../cfg')
-const { getBalancesAfterFeesTree } = require("./lib")
+const { getBalancesAfterFeesTree } = require('./lib')
 
 function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const stateTreeCol = db.getMongo().collection('channelStateTrees')
 
-	return stateTreeCol.findOne({ _id: channel.id })
-	.then(function(stateTree) {
-		return stateTree || { balances: {}, lastEvAggr: new Date(0) }
-	})
-	.then(function(stateTree) {
-		// Process eventAggregates, from old to new, newer than the lastEvAggr time
-		return eventAggrCol.find({
-			channelId: channel.id,
-			created: { $gt: stateTree.lastEvAggr }
+	return stateTreeCol
+		.findOne({ _id: channel.id })
+		.then(function(stateTree) {
+			return stateTree || { balances: {}, lastEvAggr: new Date(0) }
 		})
-		.sort({ created: 1 })
-		.limit(cfg.PRODUCER_MAX_AGGR_PER_TICK)
-		.toArray()
-		.then(function(aggrs) {
-			logMerge(channel, aggrs)
+		.then(function(stateTree) {
+			// Process eventAggregates, from old to new, newer than the lastEvAggr time
+			return eventAggrCol
+				.find({
+					channelId: channel.id,
+					created: { $gt: stateTree.lastEvAggr }
+				})
+				.sort({ created: 1 })
+				.limit(cfg.PRODUCER_MAX_AGGR_PER_TICK)
+				.toArray()
+				.then(function(aggrs) {
+					logMerge(channel, aggrs)
 
-			const shouldUpdate = force || aggrs.length
-			if (!shouldUpdate) {
-				return { channel }
-			}
+					const shouldUpdate = force || aggrs.length
+					if (!shouldUpdate) {
+						return { channel }
+					}
 
-			// balances should be addition of eventPayouts
-			// 
+					// balances should be addition of eventPayouts
+					//
 
-			const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
-				stateTree,
-				aggrs,
-				// @TODO obtain channel payment info
-				{ ...channel, amount: new BN(1), depositAmount: new BN(channel.depositAmount)  }
-			)
+					const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
+						stateTree,
+						aggrs,
+						// @TODO obtain channel payment info
+						{ ...channel, amount: new BN(1), depositAmount: new BN(channel.depositAmount) }
+					)
 
-			return stateTreeCol
-			.updateOne(
-				{ _id: channel.id },
-				{ $set: newStateTree },
-				{ upsert: true }
-			)
-			.then(function() {
-				return { channel, balances, balancesAfterFees, newStateTree }
-			})
+					return stateTreeCol
+						.updateOne({ _id: channel.id }, { $set: newStateTree }, { upsert: true })
+						.then(function() {
+							return { channel, balances, balancesAfterFees, newStateTree }
+						})
+				})
 		})
-	})
 }
 
 // Pure, should not mutate inputs
 // @TODO isolate those pure functions into a separate file
 function mergeAggrs(stateTree, aggrs, paymentInfo) {
-	const newStateTree = { 
-		balances: {}, 
-		balancesAfterFees: {}, 
-		lastEvAggr: stateTree.lastEvAggr 
+	const newStateTree = {
+		balances: {},
+		balancesAfterFees: {},
+		lastEvAggr: stateTree.lastEvAggr
 	}
 
 	// Build an intermediary balances representation
@@ -121,7 +119,9 @@ function mergePayoutsIntoBalances(balances, events, paymentInfo) {
 
 function logMerge(channel, eventAggrs) {
 	if (eventAggrs.length === 0) return
-	console.log(`validatorWorker: channel ${channel.id}: processing ${eventAggrs.length} event aggregates`)
+	console.log(
+		`validatorWorker: channel ${channel.id}: processing ${eventAggrs.length} event aggregates`
+	)
 }
 
 module.exports = { tick }

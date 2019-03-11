@@ -6,15 +6,15 @@ const dbName = process.env.DB_MONGO_NAME || 'adexValidator'
 let mongoClient = null
 
 function connect() {
-	return MongoClient.connect(url, { useNewUrlParser: true })
-	.then(function(client) {
+	return MongoClient.connect(url, { useNewUrlParser: true }).then(function(client) {
 		mongoClient = client
 	})
 }
 
 function getMongo() {
 	if (mongoClient) return mongoClient.db(dbName)
-	else throw 'db.connect() needs to be invoked before using getMongo()'
+	// eslint-disable-next-line no-throw-literal
+	throw 'db.connect() needs to be invoked before using getMongo()'
 }
 
 module.exports = { connect, getMongo }

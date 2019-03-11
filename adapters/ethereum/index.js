@@ -1,9 +1,11 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
-const { Wallet } = require('ethers')
+const ethers = require('ethers')
 const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
+
+const { Wallet } = ethers
 const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
 
@@ -18,20 +20,18 @@ let keystoreJson = null
 let wallet = null
 
 function init(opts) {
-	assert.ok(typeof(opts.keystoreFile) == 'string', 'keystoreFile required')
-	return readFile(opts.keystoreFile)
-	.then(json => {
+	assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
+	return readFile(opts.keystoreFile).then(json => {
 		keystoreJson = json
-		address = formatAddress('0x'+JSON.parse(json).address)
+		address = formatAddress(`0x${JSON.parse(json).address}`)
 		console.log(`Ethereum address: ${whoami()}`)
 	})
 }
 
 function unlock(opts) {
 	assert.ok(keystoreJson != null, 'init() needs to be called before unlock()')
-	assert.ok(typeof(opts.keystorePwd) == 'string', 'keystorePwd required')
-	return Wallet.fromEncryptedJson(keystoreJson, opts.keystorePwd)
-	.then(w => {
+	assert.ok(typeof opts.keystorePwd === 'string', 'keystorePwd required')
+	return Wallet.fromEncryptedJson(keystoreJson, opts.keystorePwd).then(w => {
 		wallet = w
 	})
 }
@@ -47,14 +47,14 @@ function sign(stateRoot) {
 }
 
 function verify(signer, stateRoot, signature) {
-	assert.ok(stateRoot, "valid state root must be provided")
-	assert.ok(signature, "valid signature must be provided")
-	assert.ok(signer, "valid signer is required")
-	
+	assert.ok(stateRoot, 'valid state root must be provided')
+	assert.ok(signature, 'valid signature must be provided')
+	assert.ok(signer, 'valid signer is required')
+
 	try {
 		const from = ethers.utils.verifyMessage(stateRoot, signature)
 		return Promise.resolve(signer === from)
-	} catch(e){
+	} catch (e) {
 		return Promise.resolve(false)
 	}
 }
@@ -70,10 +70,11 @@ function sessionFromToken(token) {
 		// @TODO: validate era
 		return Promise.resolve(tokensVerified.get(tokenId))
 	}
-	return ewt.verify(token)
-	.then(function({ from, payload }) {
+	return ewt.verify(token).then(function({ from, payload }) {
 		if (payload.id !== whoami()) {
-			return Promise.reject(new Error('token payload.id !== whoami(): token was not intended for us'))
+			return Promise.reject(
+				new Error('token payload.id !== whoami(): token was not intended for us')
+			)
 		}
 		// @TODO: validate era too
 		const sess = { uid: from, era: payload.era }
@@ -96,32 +97,31 @@ function getAuthFor(validator) {
 
 	const payload = {
 		id: validator.id,
-		era: Math.floor(Date.now()/60000),
+		era: Math.floor(Date.now() / 60000)
 	}
-	return ewt.sign(wallet, payload)
-	.then(function(token) {
+	return ewt.sign(wallet, payload).then(function(token) {
 		tokensForAuth.set(validator.id, token)
 		return token
 	})
 }
 
 // ~350ms for 100k operations; takes minutes to do it w/o cache
-//const work = () => getAuthFor({ id: whoami() }).then(t => sessionFromToken(t))
-//const start = Date.now()
-//const argv = require('yargs').argv
-//let p = init(argv).then(()=>unlock(argv))
-//for (var i=0; i!=100000; i++) p = p.then(work)
-//p.then(() => console.log(Date.now()-start))
+// const work = () => getAuthFor({ id: whoami() }).then(t => sessionFromToken(t))
+// const start = Date.now()
+// const argv = require('yargs').argv
+// let p = init(argv).then(()=>unlock(argv))
+// for (var i=0; i!=100000; i++) p = p.then(work)
+// p.then(() => console.log(Date.now()-start))
 
-module.exports = { 
-	init, 
-	unlock, 
-	whoami, 
-	sign, 
-	getBalanceLeaf, 
-	sessionFromToken, 
-	getAuthFor, 
+module.exports = {
+	init,
+	unlock,
+	whoami,
+	sign,
+	getBalanceLeaf,
+	sessionFromToken,
+	getAuthFor,
 	MerkleTree,
 	verify,
-	getSignableStateRoot,
+	getSignableStateRoot
 }
