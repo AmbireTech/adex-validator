@@ -40,7 +40,7 @@ if [ -n "$RUN_EXTERNAL" ]; then
 	LEADER_DATABASE=$LEAD_MONGO FOLLOWER_DATABASE=$FOLLOW_MONGO npm run test-local
 else 
 	./test/integration.js
-	# ./test/routes.js
+	./test/routes.js
 fi
 
 exitCode=$?

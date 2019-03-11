@@ -38,10 +38,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const newBalances = toBNMap(newMsg.balances)
 	const { balancesAfterFees } = newMsg
 
-	const prevBalancesString = toStringBN(prevBalances)
-	const newBalancesString = toStringBN(newBalances)
-
-
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		return onError(
 			channel,
@@ -49,8 +45,8 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			{
 				reason: 'InvalidTransition',
 				newMsg,
-				prevBalancesString, 
-				newBalancesString 
+				prevBalances,
+				newBalances 
 			}
 		)
 	}
@@ -62,8 +58,8 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			{
 				reason: `InvalidValidatorFees`,
 				newMsg,
-				prevBalancesString, 
-				newBalancesString 
+				prevBalances,
+				newBalances 
 			}
 		)
 	}
@@ -81,8 +77,8 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 			{
 				reason: `InvalidRootHash`,
 				newMsg,
-				prevBalancesString, 
-				newBalancesString 
+				prevBalances,
+				newBalances  
 			}
 		)
 	}
@@ -96,8 +92,8 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 				{
 					reason: `InvalidSignature`,
 					newMsg,
-					prevBalancesString, 
-					newBalancesString 
+					prevBalances,
+					newBalances 
 				}
 			)
 		}

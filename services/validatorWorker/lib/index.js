@@ -77,7 +77,10 @@ function invalidNewState(channel, adapter, { reason, newMsg}) {
 	})
 }
 
-function onError(channel, adapter, { reason, newMsg, prevBalancesString, newBalancesString }) {
+function onError(channel, adapter, { reason, newMsg, prevBalances, newBalances }) {
+	const prevBalancesString = toStringBN(prevBalances)
+	const newBalancesString = toStringBN(newBalances)
+
 	const errMsg = getErrorMsg(reason, channel, prevBalancesString, newBalancesString)
 
 	return invalidNewState(channel, adapter, { reason, newMsg})
