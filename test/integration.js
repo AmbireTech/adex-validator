@@ -460,7 +460,7 @@ tape('cannot exceed channel deposit', function(t) {
 	.then(res => res.json())
 	.then(function(resp) {
 		// 1 event pays 1 token for now
-		// @TODO make this work with a more complex model
+		// @TODO more complex model Math.ceil(channel.depositAmount / perIpression) + 1
 		const evCount = resp.channel.depositAmount + 1
 		return Promise.all([leaderUrl, followerUrl].map(url =>
 			postEvents(url, dummyVals.channel.id, genImpressions(evCount))
@@ -475,7 +475,7 @@ tape('cannot exceed channel deposit', function(t) {
 		const sum = Object.keys(resp.balances)
 			.map(k => parseInt(resp.balances[k]))
 			.reduce((a, b) => a+b, 0)
-		t.ok(sum <= expectedDepositAmnt, 'balance does not exceed the deposit')
+		t.ok(sum == expectedDepositAmnt, 'balance does not exceed the deposit, but matches it')
 		// @TODO state changed to exhausted, unable to take any more events
 		t.end()
 	})
