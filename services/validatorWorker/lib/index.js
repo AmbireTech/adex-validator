@@ -33,13 +33,14 @@ function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
 
 function getBalancesAfterFeesTree(balances, channel) {
 	const { depositAmount } = channel
-	const leaderFee = new BN(channel.spec.validators[0].fee)
-	const followerFee = new BN(channel.spec.validators[1].fee)
 
-	const totalValidatorFee = leaderFee.add(followerFee)
+	const totalValidatorFee = channel.spec.validators
+		.map(v => new BN(v.fee))
+		.reduce((a, b) => a.add(b), new BN(0))
 
+	// currentValidatorFee / totalValidatorFee is always equal to
+	// the sum of all balances / total deposit
 	let currentValidatorFee = new BN(0, 10)
-	
 	let balancesAfterFees = {}
 
 	Object.keys(balances).forEach((publisher) => {
