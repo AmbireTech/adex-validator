@@ -2,7 +2,7 @@ const assert = require('assert')
 const BN = require('bn.js')
 const db = require('../../db')
 const cfg = require('../../cfg')
-const { getBalancesAfterFeesTree } = require("./lib")
+const { getBalancesAfterFeesTree, toBNStringMap } = require("./lib")
 
 function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
@@ -78,16 +78,10 @@ function mergeAggrs(stateTree, aggrs, channel) {
 		mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, depositAmount)
 	})
 
-	// Rewrite into the newStateTree
-	Object.keys(balances).forEach(function(acc) {
-		newStateTree.balances[acc] = balances[acc].toString(10)
-	})
+	newStateTree.balances = toBNStringMap(balances)
 
 	const balancesAfterFees = getBalancesAfterFeesTree(balances, channel)
-	// Rewrite into the newStateTree
-	Object.keys(balancesAfterFees).forEach(function(acc) {
-		newStateTree.balancesAfterFees[acc] = balancesAfterFees[acc].toString(10)
-	})
+	newStateTree.balancesAfterFees = toBNStringMap(balancesAfterFees)
 
 	return { balances, balancesAfterFees, newStateTree }
 }
