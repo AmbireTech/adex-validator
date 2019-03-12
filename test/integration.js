@@ -172,7 +172,8 @@ tape('/channel/{id}/events-aggregates', function(t) {
 	.then(function(resp) {
 		t.ok(resp.channel, 'has resp.channel')
 		t.ok(resp.events, 'has resp.events')
-		t.ok(resp.events.length >= 1, "should have events of min legnth 1")
+		t.ok(resp.events.length >= 1, 'should have events of min legnth 1')
+		t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
 		t.end()
 	})
 	.catch(err => t.fail(err))
