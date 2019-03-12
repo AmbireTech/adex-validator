@@ -24,6 +24,14 @@ function toBNMap(raw) {
 	return balances
 }
 
+function toBNStringMap(raw){
+	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
+	const balances = {}
+	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = bal.toString(10))
+	return balances
+}
+
+
 // returns BN
 function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
 	const numerator = depositAmount.sub(totalValidatorFee)
@@ -54,13 +62,6 @@ function getBalancesAfterFeesTree(balances, channel) {
 	})
 
 	return { ...balancesAfterFees, validator: currentValidatorFee }
-}
-
-function toBNStringMap(raw){
-	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
-	const balances = {}
-	Object.entries(raw).forEach(([acc, bal]) => balances[acc] = bal.toString(10))
-	return balances
 }
 
 module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap }
