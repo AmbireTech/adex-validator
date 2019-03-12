@@ -28,7 +28,7 @@ function tick(adapter, channel) {
 		return producer.tick(channel, true)
 		.then(function(res) {
 			return onNewState(adapter, { ...res, newMsg, approveMsg })
-		}) 
+		})
 	})
 	.then(res => heartbeatIfNothingNew(adapter, channel, res))
 }
