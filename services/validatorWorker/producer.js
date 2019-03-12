@@ -35,8 +35,7 @@ function tick(channel, force) {
 			const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
 				stateTree,
 				aggrs,
-				// @TODO obtain channel payment info
-				{ ...channel, amount: new BN(1), depositAmount: new BN(channel.depositAmount)  }
+				channel,
 			)
 
 			return stateTreeCol
@@ -54,12 +53,13 @@ function tick(channel, force) {
 
 // Pure, should not mutate inputs
 // @TODO isolate those pure functions into a separate file
-function mergeAggrs(stateTree, aggrs, paymentInfo) {
+function mergeAggrs(stateTree, aggrs, channel) {
 	const newStateTree = { 
 		balances: {}, 
 		balancesAfterFees: {}, 
 		lastEvAggr: stateTree.lastEvAggr 
 	}
+	const depositAmount = new BN(channel.depositAmount, 10)
 
 	// Build an intermediary balances representation
 	const balances = {}
@@ -75,7 +75,7 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 			evAggr.created.getTime()
 		))
 		// @TODO do something about this hardcoded event type assumption
-		mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, paymentInfo)
+		mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, depositAmount)
 	})
 
 	// Rewrite into the newStateTree
@@ -83,7 +83,7 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 		newStateTree.balances[acc] = balances[acc].toString(10)
 	})
 
-	const balancesAfterFees = getBalancesAfterFeesTree(balances, paymentInfo)
+	const balancesAfterFees = getBalancesAfterFeesTree(balances, channel)
 	// Rewrite into the newStateTree
 	Object.keys(balancesAfterFees).forEach(function(acc) {
 		newStateTree.balancesAfterFees[acc] = balancesAfterFees[acc].toString(10)
@@ -94,13 +94,13 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 
 // Mutates the balances input
 // For now, this just disregards anything that goes over the depositAmount
-function mergePayoutsIntoBalances(balances, events, paymentInfo) {
+function mergePayoutsIntoBalances(balances, events, depositAmount) {
 	if (!events) return
 
 	// total of state tree balance
 	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
 	// remaining of depositAmount
-	let remaining = paymentInfo.depositAmount.sub(total)
+	let remaining = depositAmount.sub(total)
 
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
 
