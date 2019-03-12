@@ -4,7 +4,7 @@ function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
 }
 
-function reduce(userId, aggr, ev, channel) {
+function reduce(userId, channel, aggr, ev) {
 	// for now, we don't use userId
 	// @TODO: this is one of the places to add other ev types
 	if (ev.type === 'IMPRESSION') {
@@ -28,7 +28,7 @@ function mergeImpressionEv(map, ev, channel) {
 	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
 	// add the minimum price per impression
 	// to the current amount
-	map.eventPayouts[ev.publisher] = addAndToString(currentAmount, new BN(channel.minPerImpression || 1))
+	map.eventPayouts[ev.publisher] = addAndToString(currentAmount, new BN(channel.spec.minPerImpression || 1))
 	return map
 }
 
