@@ -40,28 +40,34 @@ function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
 }
 
 function getBalancesAfterFeesTree(balances, channel) {
-	const { depositAmount } = channel
+	const depositAmount = new BN(channel.depositAmount, 10)
 
+	const totalDistributed = Object.values(balances)
+		.reduce((a, b) => a.add(b), new BN(0))
 	const totalValidatorFee = channel.spec.validators
 		.map(v => new BN(v.fee))
 		.reduce((a, b) => a.add(b), new BN(0))
 
-	// currentValidatorFee / totalValidatorFee is always equal to
+	// the sum of all validator fees / totalValidatorFee is always equal to
 	// the sum of all balances / total deposit
-	let currentValidatorFee = new BN(0, 10)
 	let balancesAfterFees = {}
 
 	Object.keys(balances).forEach((publisher) => {
 		let publisherBalance = new BN(balances[publisher], 10);
-		const validatorFee = getValidatorFee(publisherBalance, totalValidatorFee, new BN(depositAmount, 10))
+		const validatorFee = getValidatorFee(publisherBalance, totalValidatorFee, depositAmount)
 		publisherBalance = publisherBalance.sub(validatorFee)
 		assert.ok(!publisherBalance.isNeg(), 'publisher balance should not be negative')
 
-		currentValidatorFee = currentValidatorFee.add(validatorFee)
 		balancesAfterFees[publisher] = publisherBalance
 	})
 
-	return { ...balancesAfterFees, validator: currentValidatorFee }
+	channel.spec.validators.forEach(v => {
+		balancesAfterFees[v.id] = (new BN(v.fee, 10).mul(totalDistributed)).div(depositAmount)
+	})
+	// @TODO fix rounding errors by assigning the rest to the first validator
+
+	console.log(balances, balancesAfterFees)
+	return balancesAfterFees
 }
 
 module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap }
