@@ -208,14 +208,17 @@ tape('/channel/{id}/events-aggregates', function(t) {
 			authorization: `Bearer ${dummyVals.auth.publisher}`,
 			'content-type': 'application/json'
 		}
-	.then(function(resp) {
-		t.ok(resp.channel, 'has resp.channel')
-		t.ok(resp.events, 'has resp.events')
-		t.ok(resp.events.length >= 1, 'should have events of min legnth 1')
-		t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
-		t.end()
 	})
-	.catch(err => t.fail(err))
+		.then(res => {
+			return res.json()
+		})
+		.then(function(resp) {
+			t.ok(resp.channel, 'has resp.channel')
+			t.ok(resp.events, 'has resp.events')
+			t.ok(resp.events.length >= 1, 'should have events of min legnth 1')
+			t.end()
+		})
+		.catch(err => t.fail(err))
 })
 
 tape('health works correctly', function(t) {
@@ -530,17 +533,30 @@ tape('POST /channel/{id}/events: malformed events', function(t) {
 
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
-	.then(res => res.json())
-	.then(function(resp) {
-		const sum = Object.keys(resp.balances)
-			.map(k => parseInt(resp.balances[k]))
-			.reduce((a, b) => a+b, 0)
-			
-		t.ok(sum == expectedDepositAmnt, 'balance does not exceed the deposit')
-		// @TODO state changed to exhausted, unable to take any more events
-		t.end()
-	})
-	.catch(err => t.fail(err))
+		.then(res => res.json())
+		.then(function(resp) {
+			// 1 event pays 1 token for now
+			// @TODO make this work with a more complex model
+			const evCount = resp.channel.depositAmount + 1
+			return Promise.all(
+				[leaderUrl, followerUrl].map(url =>
+					postEvents(url, dummyVals.channel.id, genImpressions(evCount))
+				)
+			)
+		})
+		.then(() => wait(waitTime))
+		.then(function() {
+			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
+		})
+		.then(function(resp) {
+			const sum = Object.keys(resp.balances)
+				.map(k => parseInt(resp.balances[k]))
+				.reduce((a, b) => a + b, 0)
+			t.ok(sum <= expectedDepositAmnt, 'balance does not exceed the deposit')
+			// @TODO state changed to exhausted, unable to take any more events
+			t.end()
+		})
+		.catch(err => t.fail(err))
 })
 
 function postEvents(url, channelId, events) {
@@ -579,7 +595,6 @@ function incrementKeys(raw) {
 	)
 	return incBalances
 }
-
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
 // @TODO tests for the adapters and especially ewt
