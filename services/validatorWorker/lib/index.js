@@ -31,42 +31,48 @@ function toBNStringMap(raw){
 	return balances
 }
 
-
-// returns BN
-function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
-	const numerator = depositAmount.sub(totalValidatorFee)
-	const fee = (publisherBalance.mul(numerator)).div(depositAmount)
-	return fee
-}
-
+// @TODO tests, and split out into fee.js
 function getBalancesAfterFeesTree(balances, channel) {
 	const depositAmount = new BN(channel.depositAmount, 10)
-
 	const totalDistributed = Object.values(balances)
+		.map(v => new BN(v, 10))
 		.reduce((a, b) => a.add(b), new BN(0))
 	const totalValidatorFee = channel.spec.validators
-		.map(v => new BN(v.fee))
+		.map(v => new BN(v.fee, 10))
 		.reduce((a, b) => a.add(b), new BN(0))
+	const depositToDistribute = depositAmount.sub(totalValidatorFee)
 
 	// the sum of all validator fees / totalValidatorFee is always equal to
 	// the sum of all balances / total deposit
 	let balancesAfterFees = {}
-
-	Object.keys(balances).forEach((publisher) => {
-		let publisherBalance = new BN(balances[publisher], 10);
-		const validatorFee = getValidatorFee(publisherBalance, totalValidatorFee, depositAmount)
-		publisherBalance = publisherBalance.sub(validatorFee)
-		assert.ok(!publisherBalance.isNeg(), 'publisher balance should not be negative')
-
-		balancesAfterFees[publisher] = publisherBalance
+	let total = new BN(0)
+	// Multiply all balances by the proportion of (deposit - totalValidatorFee)/deposit,
+	// so that if the entire deposit is distributed, we still have totalValidatorFee yet to distribute
+	Object.keys(balances).forEach(acc => {
+		const adjustedBalance = new BN(balances[acc], 10)
+			.mul(depositToDistribute)
+			.div(depositAmount);
+		balancesAfterFees[acc] = adjustedBalance
+		total = total.add(adjustedBalance)
 	})
 
+	// And this will distribute UP TO totalValidatorFee,
 	channel.spec.validators.forEach(v => {
-		balancesAfterFees[v.id] = (new BN(v.fee, 10).mul(totalDistributed)).div(depositAmount)
+		const fee = new BN(v.fee, 10)
+			.mul(totalDistributed)
+			.div(depositAmount)
+		balancesAfterFees[v.id] = fee
+		total = total.add(fee)
 	})
-	// @TODO fix rounding errors by assigning the rest to the first validator
 
-	console.log(balances, balancesAfterFees)
+	// BN.js always floors, that's why the math until now always results in sum(balancesAfterFees) <= sum(balances)
+	// however, it might be lower, so we will fix this rounding error by assigning the rest to the first validator
+	// @TODO: this assertion CAN fail, if totalValidatorFee is a major number
+	assert.ok(channel.spec.validators[0], 'there is a first validator')
+	const remaining = totalDistributed.sub(total)
+	assert.ok(!remaining.isNeg(), 'remaining should never be negative')
+	balancesAfterFees[channel.spec.validators[0].id] = remaining
+
 	return balancesAfterFees
 }
 

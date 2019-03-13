@@ -146,9 +146,10 @@ tape('submit events and ensure they are accounted for', function(t) {
 		const { stateRoot } = lastNew.msg
 		t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 
+		// @TODO: revert this to what it was before the fees, since fees will be moved to a separate test path
 		// this is a bit out of scope, looks like a test of the MerkleTree lib, 
 		// but better be safe than sorry
-		const expectedBalanceAfterFees = '1'
+		const expectedBalanceAfterFees = '2'
 		const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBalanceAfterFees)
 		const proof = mTree.proof(leaf)
 		t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
