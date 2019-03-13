@@ -7,7 +7,7 @@ const recorders = new Map()
 
 function record(channel, userId, events) {
 	const { id } = channel
-	
+
 	if (!recorders.has(id)) {
 		recorders.set(id, makeRecorder(id))
 	}

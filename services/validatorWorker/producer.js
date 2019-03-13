@@ -68,10 +68,9 @@ function mergeAggrs(stateTree, aggrs, paymentInfo) {
 
 	// Merge in all the aggrs
 	aggrs.forEach(function(evAggr) {
-		newStateTree.lastEvAggr = new Date(Math.max(
-			newStateTree.lastEvAggr.getTime(),
-			evAggr.created.getTime()
-		))
+		newStateTree.lastEvAggr = new Date(
+			Math.max(newStateTree.lastEvAggr.getTime(), evAggr.created.getTime())
+		)
 		// @TODO do something about this hardcoded event type assumption
 		mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, paymentInfo)
 	})
@@ -106,9 +105,9 @@ function mergePayoutsIntoBalances(balances, events, paymentInfo) {
 	// take the eventPayouts key
 	Object.keys(eventPayouts).forEach(function(acc) {
 		if (!balances[acc]) balances[acc] = new BN(0, 10)
-		
+
 		const eventPayout = new BN(eventPayouts[acc])
-		const toAdd = BN.min(remaining, eventPayout)	
+		const toAdd = BN.min(remaining, eventPayout)
 		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
 
 		balances[acc] = balances[acc].add(toAdd)

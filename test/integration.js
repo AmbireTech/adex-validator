@@ -579,6 +579,7 @@ function incrementKeys(raw) {
 	)
 	return incBalances
 }
+
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
 // @TODO tests for the adapters and especially ewt

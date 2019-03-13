@@ -148,17 +148,18 @@ function postValidatorMessages(req, res, next) {
 function postEvents(req, res, next) {
 	const events = req.body.events
 	const { channel } = req
-	
+
 	const isValid = Array.isArray(events) && events.every(isEventValid)
 	if (!isValid) {
 		res.sendStatus(400)
 		return
 	}
-	eventAggrService.record(channel, req.session.uid, events)
-	.then(function() {
-		res.send({ success: true })
-	})
-	.catch(next)
+	eventAggrService
+		.record(channel, req.session.uid, events)
+		.then(function() {
+			res.send({ success: true })
+		})
+		.catch(next)
 }
 
 // Helpers
