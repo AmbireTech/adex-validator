@@ -3,7 +3,8 @@ const tape = require('tape')
 
 const BN = require('bn.js')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
-const { getStateRootHash } = require('../services/validatorWorker/lib')
+const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
+const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')
 const channel = { depositAmount: new BN(100) }
 
@@ -112,6 +113,32 @@ tape('getStateRootHash: returns correct result', function(t) {
 	
 	t.end()
 })
+
+//
+// Fees
+//
+tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(t) {
+	// some semi-randomly created trees
+	const tree1 = { a: '1001', b: '3124', c: '122' }
+	const tree2 = { a: '1', b: '2', c: '3' }
+	const tree3 = { a: '1' }
+	const tree4 = { a: '1', b: '99999' }
+	const zeroFeeChannel = {
+		spec: { validators: [{ id: 'one', fee: '0' }, { id: 'two', fee: '0' }] },
+		depositAmount: '100000'
+	}
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree1, zeroFeeChannel)), tree1)
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, zeroFeeChannel)), tree2)
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree3, zeroFeeChannel)), tree3)
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree4, zeroFeeChannel)), tree4)
+	t.end()
+})
+
+tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
+	t.end()
+})
+
+
 
 // @TODO: event aggregator
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances

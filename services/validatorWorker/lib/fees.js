@@ -31,19 +31,22 @@ function getBalancesAfterFeesTree(balances, channel) {
 		: new BN(0)
 	assert.ok(!roundingErr.isNeg(), 'roundingErr should never be negative')
 
+	// otherwise, we won't be able to fix the rounding error
+	assert.ok(channel.spec.validators[0], 'there is a first validator')
+
 	// And this will distribute UP TO totalValidatorFee
-	channel.spec.validators.forEach(v => {
+	channel.spec.validators.forEach((v, idx) => {
 		const fee = new BN(v.fee, 10)
 			.mul(totalDistributed)
 			.div(depositAmount)
-		balancesAfterFees[v.id] = fee
+		// BN.js always floors, that's why the math until now always results in sum(balancesAfterFees) <= sum(balances)
+		// however, it might be lower, so we will fix this rounding error by assigning the rest to the first validator
+		const feeWithRounding = idx == 0 ?
+			fee.add(roundingErr)
+			: fee
+		if (feeWithRounding.gt(new BN(0)))
+			balancesAfterFees[v.id] = feeWithRounding
 	})
-
-	// BN.js always floors, that's why the math until now always results in sum(balancesAfterFees) <= sum(balances)
-	// however, it might be lower, so we will fix this rounding error by assigning the rest to the first validator
-	const firstValidator = channel.spec.validators[0]
-	assert.ok(firstValidator, 'there is a first validator')
-	balancesAfterFees[firstValidator.id] = balancesAfterFees[firstValidator.id].add(roundingErr)
 
 	return balancesAfterFees
 }
