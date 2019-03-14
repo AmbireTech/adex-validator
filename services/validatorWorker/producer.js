@@ -2,7 +2,8 @@ const assert = require('assert')
 const BN = require('bn.js')
 const db = require('../../db')
 const cfg = require('../../cfg')
-const { getBalancesAfterFeesTree, toBNStringMap } = require("./lib")
+const { toBNStringMap } = require("./lib")
+const { getBalancesAfterFeesTree } = require('./lib/fees')
 
 function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
