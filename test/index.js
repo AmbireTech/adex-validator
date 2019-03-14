@@ -135,6 +135,21 @@ tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(
 })
 
 tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
+	const sum = tree => Object.values(tree)
+		.map(a => new BN(a, 10))
+		.reduce((a, b) => a.add(b), new BN(0))
+	const channel = {
+		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
+		depositAmount: '10000'
+	}
+	// partially distributed
+	const tree1 = { a: '1000', b: '1200' }
+	// fully distributed; tihs also tests rounding error correction
+	const tree2 =               { a: '105', b: '195', c: '700', d: '5000', e: '4000' }
+	const tree2ExpectedResult = { a: '103', b: '193', c: '693', d: '4950', e: '3960', one: '51', two: '50' }
+	t.deepEqual(sum(tree2), sum(tree2ExpectedResult))
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, channel)), tree2ExpectedResult)
+
 	t.end()
 })
 
