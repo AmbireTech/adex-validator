@@ -283,10 +283,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.then(res => res.json())
 	.then(function(res) {
 		const { balances } = res.validatorMessages[0].msg
-
-		let incBalances = {}
-		// increase the state tree balance by 1
-		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
+		const incBalances = incrementKeys(balances)
 
 		const balancesAfterFees = getBalancesAfterFeesTree(incBalances, dummyVals.channel)
 		const stateRoot = getStateRootHash({id: dummyVals.channel.id}, balancesAfterFees, dummyAdapter)
