@@ -107,7 +107,7 @@ tape('getStateRootHash: returns correct result', function(t) {
 			expectedHash: "0b64767e909e9f36ab9574e6b93921390c40a0d899c3587db3b2df077b8e87d7"
 		}
 	].forEach(({ expectedHash, channel, balances }) => {
-		const actualHash = getStateRootHash(channel, balances, dummyAdapter)
+		const actualHash = getStateRootHash(dummyAdapter, channel, balances)
 		t.equal(actualHash, expectedHash, "correct root hash")
 	});
 	

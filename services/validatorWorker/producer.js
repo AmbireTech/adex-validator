@@ -30,9 +30,8 @@ function tick(channel, force) {
 				return { channel }
 			}
 
-			// balances should be addition of eventPayouts
+			// balances should be a sum of eventPayouts
 			// 
-
 			const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
 				stateTree,
 				aggrs,
@@ -81,6 +80,7 @@ function mergeAggrs(stateTree, aggrs, channel) {
 
 	newStateTree.balances = toBNStringMap(balances)
 
+	// apply fees
 	const balancesAfterFees = getBalancesAfterFeesTree(balances, channel)
 	newStateTree.balancesAfterFees = toBNStringMap(balancesAfterFees)
 

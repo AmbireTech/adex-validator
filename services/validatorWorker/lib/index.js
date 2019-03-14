@@ -1,7 +1,9 @@
 const assert = require('assert')
 const BN = require('bn.js')
+const { getBalancesAfterFeesTree } = require('./fees')
+const isEqual = require('lodash.isequal');
 
-function getStateRootHash(channel, balances, adapter){
+function getStateRootHash(adapter, channel, balances) {
 	// Note: MerkleTree takes care of deduplicating and sorting
 	const elems = Object.keys(balances).map(
 		acc => adapter.getBalanceLeaf(acc, balances[acc])
@@ -13,8 +15,13 @@ function getStateRootHash(channel, balances, adapter){
 	return stateRoot
 }
 
-function isValidRootHash(leaderRootHash, { channel, balancesAfterFees, adapter }) {
-	return getStateRootHash(channel, balancesAfterFees, adapter) === leaderRootHash
+function isValidRootHash(adapter, leaderRootHash, channel, balances) {
+	return getStateRootHash(adapter, channel, balances) === leaderRootHash
+}
+
+function isValidValidatorFees(channel, balances, balancesAfterFees) {
+	const calcBalancesAfterFees = getBalancesAfterFeesTree(balances, channel)
+	return isEqual(calcBalancesAfterFees, balancesAfterFees)
 }
 
 function toBNMap(raw) {
@@ -31,4 +38,4 @@ function toBNStringMap(raw){
 	return balances
 }
 
-module.exports = { getStateRootHash, isValidRootHash, toBNMap, toBNStringMap }
+module.exports = { getStateRootHash, isValidRootHash, isValidValidatorFees, toBNMap, toBNStringMap }

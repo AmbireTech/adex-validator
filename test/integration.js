@@ -286,7 +286,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 		const incBalances = incrementKeys(balances)
 
 		const balancesAfterFees = getBalancesAfterFeesTree(incBalances, dummyVals.channel)
-		const stateRoot = getStateRootHash({id: dummyVals.channel.id}, balancesAfterFees, dummyAdapter)
+		const stateRoot = getStateRootHash(dummyAdapter, {id: dummyVals.channel.id}, balancesAfterFees)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -331,7 +331,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 		const { balances, balancesAfterFees } = res.validatorMessages[0].msg
 		const fakeBalances = { "publisher": "3" }
 
-		deceptiveRootHash = getStateRootHash(dummyVals.channel, fakeBalances, dummyAdapter)
+		deceptiveRootHash = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -374,7 +374,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) balanceAfterFee
 
 		const { balances, balancesAfterFees } = res.validatorMessages[0].msg
 
-		stateRoot = getStateRootHash(dummyVals.channel, balancesAfterFees, dummyAdapter)
+		stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balancesAfterFees)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',

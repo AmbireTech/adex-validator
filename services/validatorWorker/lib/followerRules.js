@@ -47,6 +47,4 @@ function sumMins(our, approved) {
 	)
 }
 
-
-
 module.exports = { isValidTransition, isHealthy }
