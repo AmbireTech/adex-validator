@@ -143,12 +143,12 @@ tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 		depositAmount: '10000'
 	}
 	// partially distributed
-	const tree1 =                  { a: '1000', b: '1200',  }
+	const tree1 =                  { a: '1000', b: '1200' }
 	const tree1ExpectedResult =    { a: '990', b: '1188', one: '11', two: '11' }
 	t.deepEqual(sum(tree1), sum(tree1ExpectedResult))
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree1, channel)), tree1ExpectedResult)
 
-	// fully distributed; tihs also tests rounding error correction
+	// fully distributed; this also tests rounding error correction
 	const tree2 =               { a: '105', b: '195', c: '700', d: '5000', e: '4000' }
 	const tree2ExpectedResult = { a: '103', b: '193', c: '693', d: '4950', e: '3960', one: '51', two: '50' }
 	t.deepEqual(sum(tree2), sum(tree2ExpectedResult))
