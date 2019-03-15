@@ -77,13 +77,10 @@ function invalidNewState(channel, adapter, { reason, newMsg}) {
 	})
 }
 
-function onError(channel, adapter, { reason, newMsg, prevBalances, newBalances }) {
-	const prevBalancesString = toStringBN(prevBalances)
-	const newBalancesString = toStringBN(newBalances)
+function onError(channel, adapter, { reason, newMsg }) {
+	const errMsg = getErrorMsg(reason, channel)
 
-	const errMsg = getErrorMsg(reason, channel, prevBalancesString, newBalancesString)
-
-	return invalidNewState(channel, adapter, { reason, newMsg})
+	return invalidNewState(channel, adapter, { reason, newMsg })
 	.then(function(){
 
 		console.error(errMsg)
@@ -91,9 +88,8 @@ function onError(channel, adapter, { reason, newMsg, prevBalances, newBalances }
 	})
 }
 
-function getErrorMsg(type, channel, prevBalancesString, newBalancesString ){
-	return `validatatorWorker: ${channel.id}: ${type} requested in NewState 
-			 prevBalances: ${prevBalancesString}, \n newBalances: ${newBalancesString}`
+function getErrorMsg(reason, channel ){
+	return `validatatorWorker: ${channel.id}: ${reason} requested in NewState`
 }
 
 module.exports = { 

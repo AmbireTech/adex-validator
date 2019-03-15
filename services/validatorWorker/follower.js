@@ -2,7 +2,13 @@ const assert = require('assert')
 const isEqual = require('lodash.isequal');
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap, onError, toStringBN  } = require('./lib')
+const { 
+	isValidRootHash, 
+	getBalancesAfterFeesTree, 
+	onError, 
+	toBNMap, 
+	toBNStringMap 
+} = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeatIfNothingNew } = require('./heartbeat')
@@ -39,29 +45,11 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const { balancesAfterFees } = newMsg
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
-		return onError(
-			channel,
-			adapter,
-			{
-				reason: 'InvalidTransition',
-				newMsg,
-				prevBalances,
-				newBalances 
-			}
-		)
+		return onError( channel, adapter, { reason: 'InvalidTransition', newMsg })
 	}
 
 	if(!isValidValidatorFees(channel, newBalances, balancesAfterFees)) {
-		return onError(
-			channel,
-			adapter,
-			{
-				reason: `InvalidValidatorFees`,
-				newMsg,
-				prevBalances,
-				newBalances 
-			}
-		)
+		return onError( channel, adapter, { reason: `InvalidValidatorFees`, newMsg })
 	}
 
 	const whoami = adapter.whoami()
@@ -71,31 +59,13 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
 	if (!isValidRootHash(stateRoot, { channel, balancesAfterFees, adapter })){
-		return onError(
-			channel,
-			adapter,
-			{
-				reason: `InvalidRootHash`,
-				newMsg,
-				prevBalances,
-				newBalances  
-			}
-		)
+		return onError( channel, adapter, { reason: `InvalidRootHash`, newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
 	return adapter.verify(leader.id, stateRoot, signature)
 	.then(function(isValidSig) {
 		if (!isValidSig) {
-			return onError(
-				channel,
-				adapter,
-				{
-					reason: `InvalidSignature`,
-					newMsg,
-					prevBalances,
-					newBalances 
-				}
-			)
+			return onError( channel, adapter, { reason: `InvalidSignature`, newMsg })
 		}
     
 		const stateRootRaw = Buffer.from(stateRoot, 'hex')
