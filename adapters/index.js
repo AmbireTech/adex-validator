@@ -1,4 +1,7 @@
+const dummy = require('./dummy')
+const ethereum = require('./ethereum')
+
 module.exports = {
-	dummy: require('./dummy'),
-	ethereum: require('./ethereum'),
+	dummy,
+	ethereum
 }

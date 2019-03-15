@@ -9,5 +9,5 @@ module.exports = {
 	HEALTH_THRESHOLD_PROMILLES: 950,
 	// This generally depends on (SNOOZE_TIME+WAIT_TIME)/AGGR_THROTTLE
 	// but it's way more, in order to allow for the possibility of the validator worker crashing
-	PRODUCER_MAX_AGGR_PER_TICK: 100,
+	PRODUCER_MAX_AGGR_PER_TICK: 100
 }

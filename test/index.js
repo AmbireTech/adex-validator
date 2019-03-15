@@ -6,6 +6,7 @@ const { isValidTransition, isHealthy } = require('../services/validatorWorker/li
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')
+
 const channel = { depositAmount: new BN(100) }
 
 tape('isValidTransition: empty to empty', function(t) {
@@ -19,35 +20,52 @@ tape('isValidTransition: a valid transition', function(t) {
 })
 
 tape('isValidTransition: more funds than channel', function(t) {
-	t.notOk(isValidTransition(channel, {}, { a: new BN(51), b: new BN(50) }), 'not a valid transition')
+	t.notOk(
+		isValidTransition(channel, {}, { a: new BN(51), b: new BN(50) }),
+		'not a valid transition'
+	)
 	t.end()
 })
 
 tape('isValidTransition: single value is lower', function(t) {
-	t.notOk(isValidTransition(channel, { a: new BN(55) }, { a: new BN(54) }), 'not a valid transition')
+	t.notOk(
+		isValidTransition(channel, { a: new BN(55) }, { a: new BN(54) }),
+		'not a valid transition'
+	)
 	t.end()
 })
 
 tape('isValidTransition: a value is lower, but overall sum is higher', function(t) {
-	t.notOk(isValidTransition(channel, { a: new BN(55) }, { a: new BN(54), b: new BN(3) }), 'not a valid transition')
+	t.notOk(
+		isValidTransition(channel, { a: new BN(55) }, { a: new BN(54), b: new BN(3) }),
+		'not a valid transition'
+	)
 	t.end()
 })
 
 tape('isValidTransition: overall sum is lower', function(t) {
-	t.notOk(isValidTransition(channel, { a: new BN(54), b: new BN(3) }, { a: new BN(54) }), 'not a valid transition')
+	t.notOk(
+		isValidTransition(channel, { a: new BN(54), b: new BN(3) }, { a: new BN(54) }),
+		'not a valid transition'
+	)
 	t.end()
 })
 
 tape('isValidTransition: overall sum is the same, but we remove an entry', function(t) {
-	t.notOk(isValidTransition(channel, { a: new BN(54), b: new BN(3) }, { a: new BN(57) }), 'not a valid transition')
+	t.notOk(
+		isValidTransition(channel, { a: new BN(54), b: new BN(3) }, { a: new BN(57) }),
+		'not a valid transition'
+	)
 	t.end()
 })
 
 tape('isValidTransition: transition to a state with a negative number', function(t) {
-	t.notOk(isValidTransition(channel, {}, { a: new BN(51), b: new BN(-5) }), 'not a valid transition')
+	t.notOk(
+		isValidTransition(channel, {}, { a: new BN(51), b: new BN(-5) }),
+		'not a valid transition'
+	)
 	t.end()
 })
-
 
 //
 // isHealthy
@@ -86,31 +104,31 @@ tape('isHealthy: they have the same sum, but different entities are earning', fu
 // State Root Hash
 //
 tape('getStateRootHash: returns correct result', function(t) {
-	[
+	;[
 		{
 			channel: {
-				id: "testing"
+				id: 'testing'
 			},
 			balances: {
-				"publisher": 1,
-				"tester": 2
+				publisher: 1,
+				tester: 2
 			},
-			expectedHash: "da9b42bb60da9622404cade0aec4cda0a10104c6ec5f07ad67de081abb58c803"
+			expectedHash: 'da9b42bb60da9622404cade0aec4cda0a10104c6ec5f07ad67de081abb58c803'
 		},
 		{
 			channel: {
-				id: "fake"
+				id: 'fake'
 			},
 			balances: {
-				"publisher": 0,
+				publisher: 0
 			},
-			expectedHash: "0b64767e909e9f36ab9574e6b93921390c40a0d899c3587db3b2df077b8e87d7"
+			expectedHash: '0b64767e909e9f36ab9574e6b93921390c40a0d899c3587db3b2df077b8e87d7'
 		}
 	].forEach(({ expectedHash, channel, balances }) => {
 		const actualHash = getStateRootHash(dummyAdapter, channel, balances)
-		t.equal(actualHash, expectedHash, "correct root hash")
-	});
-	
+		t.equal(actualHash, expectedHash, 'correct root hash')
+	})
+
 	t.end()
 })
 
@@ -135,29 +153,36 @@ tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(
 })
 
 tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
-	const sum = tree => Object.values(tree)
-		.map(a => new BN(a, 10))
-		.reduce((a, b) => a.add(b), new BN(0))
+	const sum = tree =>
+		Object.values(tree)
+			.map(a => new BN(a, 10))
+			.reduce((a, b) => a.add(b), new BN(0))
 	const channel = {
 		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
 		depositAmount: '10000'
 	}
 	// partially distributed
-	const tree1 =                  { a: '1000', b: '1200' }
-	const tree1ExpectedResult =    { a: '990', b: '1188', one: '11', two: '11' }
+	const tree1 = { a: '1000', b: '1200' }
+	const tree1ExpectedResult = { a: '990', b: '1188', one: '11', two: '11' }
 	t.deepEqual(sum(tree1), sum(tree1ExpectedResult))
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree1, channel)), tree1ExpectedResult)
 
 	// fully distributed; this also tests rounding error correction
-	const tree2 =               { a: '105', b: '195', c: '700', d: '5000', e: '4000' }
-	const tree2ExpectedResult = { a: '103', b: '193', c: '693', d: '4950', e: '3960', one: '51', two: '50' }
+	const tree2 = { a: '105', b: '195', c: '700', d: '5000', e: '4000' }
+	const tree2ExpectedResult = {
+		a: '103',
+		b: '193',
+		c: '693',
+		d: '4950',
+		e: '3960',
+		one: '51',
+		two: '50'
+	}
 	t.deepEqual(sum(tree2), sum(tree2ExpectedResult))
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, channel)), tree2ExpectedResult)
 
 	t.end()
 })
-
-
 
 // @TODO: event aggregator
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances
