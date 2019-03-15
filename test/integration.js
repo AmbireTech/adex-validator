@@ -3,7 +3,8 @@ const tape = require('tape')
 const fetch = require('node-fetch')
 const BN = require('bn.js')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
-const { getStateRootHash, getBalancesAfterFeesTree, toBNStringMap } = require('../services/validatorWorker/lib')
+const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
+const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const dummyAdapter = require('../adapters/dummy')
 
 const cfg = require('../cfg')
@@ -146,9 +147,10 @@ tape('submit events and ensure they are accounted for', function(t) {
 		const { stateRoot } = lastNew.msg
 		t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 
+		// @TODO: revert this to what it was before the fees, since fees will be moved to a separate test path
 		// this is a bit out of scope, looks like a test of the MerkleTree lib, 
 		// but better be safe than sorry
-		const expectedBalanceAfterFees = '1'
+		const expectedBalanceAfterFees = '2'
 		const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBalanceAfterFees)
 		const proof = mTree.proof(leaf)
 		t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
@@ -281,13 +283,10 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.then(res => res.json())
 	.then(function(res) {
 		const { balances } = res.validatorMessages[0].msg
-
-		let incBalances = {}
-		// increase the state tree balance by 1
-		Object.keys(balances).forEach((item) => (incBalances[item] = `${parseInt(balances[item])+1}`))
+		const incBalances = incrementKeys(balances)
 
 		const balancesAfterFees = getBalancesAfterFeesTree(incBalances, dummyVals.channel)
-		const stateRoot = getStateRootHash({id: dummyVals.channel.id}, balancesAfterFees, dummyAdapter)
+		const stateRoot = getStateRootHash(dummyAdapter, {id: dummyVals.channel.id}, balancesAfterFees)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -332,7 +331,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 		const { balances, balancesAfterFees } = res.validatorMessages[0].msg
 		const fakeBalances = { "publisher": "3" }
 
-		deceptiveRootHash = getStateRootHash(dummyVals.channel, fakeBalances, dummyAdapter)
+		deceptiveRootHash = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -375,7 +374,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) balanceAfterFee
 
 		const { balances, balancesAfterFees } = res.validatorMessages[0].msg
 
-		stateRoot = getStateRootHash(dummyVals.channel, balancesAfterFees, dummyAdapter)
+		stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balancesAfterFees)
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',

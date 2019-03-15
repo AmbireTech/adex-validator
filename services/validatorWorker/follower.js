@@ -1,8 +1,7 @@
 const assert = require('assert')
-const isEqual = require('lodash.isequal');
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap  } = require('./lib')
+const { isValidRootHash, isValidValidatorFees, toBNMap, toBNStringMap } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeatIfNothingNew } = require('./heartbeat')
@@ -36,44 +35,44 @@ function tick(adapter, channel) {
 function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
-	const { balancesAfterFees } = newMsg
+	const newBalancesAfterFees = toBNMap(newMsg.balancesAfterFees)
 
 	if (!isValidTransition(channel, prevBalances, newBalances)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid transition requested in NewState`, prevBalances, newBalances)
 		return { nothingNew: true }
 	}
 
-	if(!isValidValidatorFees(channel, newBalances, balancesAfterFees)) {
+	if (!isValidValidatorFees(channel, newBalances, newBalancesAfterFees)) {
 		console.error(`validatatorWorker: ${channel.id}: invalid validator fees requested in NewState`, 
-			toBNStringMap(newBalances), toBNStringMap(balancesAfterFees))
+			toBNStringMap(newBalances), toBNStringMap(newBalancesAfterFees))
 		return { nothingNew: true }
 	}
 
-	const whoami = adapter.whoami()
-	const leader = channel.spec.validators[0]
-	const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
-	const { stateRoot, signature } = newMsg
-
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (!isValidRootHash(stateRoot, { channel, balancesAfterFees, adapter })){
-		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, stateRoot)
+	if (!isValidRootHash(adapter, newMsg.stateRoot, channel, newBalancesAfterFees)) {
+		console.error(`validatatorWorker: ${channel.id}: invalid state root hash `, newMsg.stateRoot)
 		return { nothingNew: true }
 	}
 
 	// verify the signature of newMsg: whether it was signed by the leader validator
-	return adapter.verify(leader.id, stateRoot, signature)
+	// @TODO use await at some point
+	const leader = channel.spec.validators[0]
+	return adapter.verify(leader.id, newMsg.stateRoot, newMsg.signature)
 	.then(function(isValidSig) {
 		if (!isValidSig) {
 			console.error(`validatatorWorker: ${channel.id}: invalid signature NewState`, prevBalances, newBalances)
 			return { nothingNew: true }
 		}
-    
+
+		const stateRoot = newMsg.stateRoot
 		const stateRootRaw = Buffer.from(stateRoot, 'hex')
 		return adapter.sign(stateRootRaw)
 		.then(function(signature) {
+			const whoami = adapter.whoami()
+			const otherValidators = channel.spec.validators.filter(v => v.id != whoami)
 			return persistAndPropagate(adapter, otherValidators, channel, {
 				type: 'ApproveState',
-				stateRoot: stateRoot,
+				stateRoot,
 				isHealthy: isHealthy(balances, newBalances),
 				signature,
 			})
@@ -81,10 +80,6 @@ function onNewState(adapter, {channel, balances, newMsg, approveMsg}) {
 	})
 }
 
-function isValidValidatorFees(channel, balances, balancesAfterFees) {
-	let calcBalancesAfterFees = toBNStringMap(getBalancesAfterFeesTree(balances, channel))
-	return isEqual(calcBalancesAfterFees, toBNStringMap(balancesAfterFees))
-}
 
 // @TODO getLatestMsg should be a part of a DB abstraction so we can use it in other places too
 // e.g. validating on POST /validator-messages (to get the previous), and a public API to get the latest msgs of a type

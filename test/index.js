@@ -3,7 +3,8 @@ const tape = require('tape')
 
 const BN = require('bn.js')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
-const { getStateRootHash } = require('../services/validatorWorker/lib')
+const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
+const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')
 const channel = { depositAmount: new BN(100) }
 
@@ -106,12 +107,57 @@ tape('getStateRootHash: returns correct result', function(t) {
 			expectedHash: "0b64767e909e9f36ab9574e6b93921390c40a0d899c3587db3b2df077b8e87d7"
 		}
 	].forEach(({ expectedHash, channel, balances }) => {
-		const actualHash = getStateRootHash(channel, balances, dummyAdapter)
+		const actualHash = getStateRootHash(dummyAdapter, channel, balances)
 		t.equal(actualHash, expectedHash, "correct root hash")
 	});
 	
 	t.end()
 })
+
+//
+// Fees
+//
+tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(t) {
+	// some semi-randomly created trees
+	const tree1 = { a: '1001', b: '3124', c: '122' }
+	const tree2 = { a: '1', b: '2', c: '3' }
+	const tree3 = { a: '1' }
+	const tree4 = { a: '1', b: '99999' }
+	const zeroFeeChannel = {
+		spec: { validators: [{ id: 'one', fee: '0' }, { id: 'two', fee: '0' }] },
+		depositAmount: '100000'
+	}
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree1, zeroFeeChannel)), tree1)
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, zeroFeeChannel)), tree2)
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree3, zeroFeeChannel)), tree3)
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree4, zeroFeeChannel)), tree4)
+	t.end()
+})
+
+tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
+	const sum = tree => Object.values(tree)
+		.map(a => new BN(a, 10))
+		.reduce((a, b) => a.add(b), new BN(0))
+	const channel = {
+		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
+		depositAmount: '10000'
+	}
+	// partially distributed
+	const tree1 =                  { a: '1000', b: '1200' }
+	const tree1ExpectedResult =    { a: '990', b: '1188', one: '11', two: '11' }
+	t.deepEqual(sum(tree1), sum(tree1ExpectedResult))
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree1, channel)), tree1ExpectedResult)
+
+	// fully distributed; this also tests rounding error correction
+	const tree2 =               { a: '105', b: '195', c: '700', d: '5000', e: '4000' }
+	const tree2ExpectedResult = { a: '103', b: '193', c: '693', d: '4950', e: '3960', one: '51', two: '50' }
+	t.deepEqual(sum(tree2), sum(tree2ExpectedResult))
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, channel)), tree2ExpectedResult)
+
+	t.end()
+})
+
+
 
 // @TODO: event aggregator
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances

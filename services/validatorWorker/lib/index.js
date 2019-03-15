@@ -1,7 +1,9 @@
 const assert = require('assert')
 const BN = require('bn.js')
+const { getBalancesAfterFeesTree } = require('./fees')
+const isEqual = require('lodash.isequal');
 
-function getStateRootHash(channel, balances, adapter){
+function getStateRootHash(adapter, channel, balances) {
 	// Note: MerkleTree takes care of deduplicating and sorting
 	const elems = Object.keys(balances).map(
 		acc => adapter.getBalanceLeaf(acc, balances[acc])
@@ -13,8 +15,13 @@ function getStateRootHash(channel, balances, adapter){
 	return stateRoot
 }
 
-function isValidRootHash(leaderRootHash, { channel, balancesAfterFees, adapter }) {
-	return getStateRootHash(channel, balancesAfterFees, adapter) === leaderRootHash
+function isValidRootHash(adapter, leaderRootHash, channel, balances) {
+	return getStateRootHash(adapter, channel, balances) === leaderRootHash
+}
+
+function isValidValidatorFees(channel, balances, balancesAfterFees) {
+	const calcBalancesAfterFees = getBalancesAfterFeesTree(balances, channel)
+	return isEqual(calcBalancesAfterFees, balancesAfterFees)
 }
 
 function toBNMap(raw) {
@@ -24,37 +31,6 @@ function toBNMap(raw) {
 	return balances
 }
 
-// returns BN
-function getValidatorFee(publisherBalance, totalValidatorFee, depositAmount) {
-	const numerator = depositAmount.sub(totalValidatorFee)
-	const fee = (publisherBalance.mul(numerator)).div(depositAmount)
-	return fee
-}
-
-function getBalancesAfterFeesTree(balances, channel) {
-	const { depositAmount } = channel
-	const leaderFee = new BN(channel.spec.validators[0].fee)
-	const followerFee = new BN(channel.spec.validators[1].fee)
-
-	const totalValidatorFee = leaderFee.add(followerFee)
-
-	let currentValidatorFee = new BN(0, 10)
-	
-	let balancesAfterFees = {}
-
-	Object.keys(balances).forEach((publisher) => {
-		let publisherBalance = new BN(balances[publisher], 10);
-		const validatorFee = getValidatorFee(publisherBalance, totalValidatorFee, new BN(depositAmount, 10))
-		publisherBalance = publisherBalance.sub(validatorFee)
-		assert.ok(!publisherBalance.isNeg(), 'publisher balance should not be negative')
-
-		currentValidatorFee = currentValidatorFee.add(validatorFee)
-		balancesAfterFees[publisher] = publisherBalance
-	})
-
-	return { ...balancesAfterFees, validator: currentValidatorFee }
-}
-
 function toBNStringMap(raw){
 	assert.ok(raw && typeof(raw) === 'object', 'raw map is a valid object')
 	const balances = {}
@@ -62,4 +38,4 @@ function toBNStringMap(raw){
 	return balances
 }
 
-module.exports = { getStateRootHash, isValidRootHash, toBNMap, getBalancesAfterFeesTree, toBNStringMap }
+module.exports = { getStateRootHash, isValidRootHash, isValidValidatorFees, toBNMap, toBNStringMap }
