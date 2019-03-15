@@ -15,16 +15,14 @@ function getBalancesAfterFeesTree(balances, channel) {
 
 	// the sum of all validator fees / totalValidatorFee is always equal to
 	// the sum of all balances / total deposit
-	let balancesAfterFees = {}
+	const balancesAfterFees = {}
 	let total = new BN(0)
 	// Multiply all balances by the proportion of (depositAmount - totalValidatorFee)/deposit,
 	// so that if the entire deposit is distributed, we still have totalValidatorFee yet to distribute
 	// this will distribute UP TO depositToDistribute, which is defined as depositAmount-totalValidatorFee
 	// (minus the rounding error, which we'll add later)
 	Object.keys(balances).forEach(acc => {
-		const adjustedBalance = new BN(balances[acc], 10)
-			.mul(depositToDistribute)
-			.div(depositAmount);
+		const adjustedBalance = new BN(balances[acc], 10).mul(depositToDistribute).div(depositAmount)
 		balancesAfterFees[acc] = adjustedBalance
 		total = total.add(adjustedBalance)
 	})
@@ -38,16 +36,11 @@ function getBalancesAfterFeesTree(balances, channel) {
 
 	// And this will distribute UP TO totalValidatorFee
 	channel.spec.validators.forEach((v, idx) => {
-		const fee = new BN(v.fee, 10)
-			.mul(totalDistributed)
-			.div(depositAmount)
+		const fee = new BN(v.fee, 10).mul(totalDistributed).div(depositAmount)
 		// BN.js always floors, that's why the math until now always results in sum(balancesAfterFees) <= sum(balances)
 		// however, it might be lower, so we will fix this rounding error by assigning the rest to the first validator
-		const feeWithRounding = idx == 0 ?
-			fee.add(roundingErr)
-			: fee
-		if (feeWithRounding.gt(new BN(0)))
-			balancesAfterFees[v.id] = feeWithRounding
+		const feeWithRounding = idx === 0 ? fee.add(roundingErr) : fee
+		if (feeWithRounding.gt(new BN(0))) balancesAfterFees[v.id] = feeWithRounding
 	})
 
 	return balancesAfterFees

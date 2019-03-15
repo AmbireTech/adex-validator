@@ -4,6 +4,7 @@ language: node_js
 node_js:
         - "10"
 script:
+        - npm run lint
         - npm test
         - npm run test-integration
         - npm run test-integration-external
