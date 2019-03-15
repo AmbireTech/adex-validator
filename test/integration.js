@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 const tape = require('tape')
 const fetch = require('node-fetch')
-const BN = require('bn.js')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const dummyAdapter = require('../adapters/dummy')
+const {
+	postEvents,
+	genImpressions,
+	getDummySig,
+	wait,
+	filterInvalidNewStateMsg,
+	incrementKeys,
+} = require('./lib')
 
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -19,65 +26,7 @@ const expectedDepositAmnt = dummyVals.channel.depositAmount
 const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME*2 + cfg.WAIT_TIME*2 + 500
 const waitAggrTime = cfg.AGGR_THROTTLE + 500
 
-tape('/channel/list', function(t) {
-	fetch(`${leaderUrl}/channel/list`)
-	.then(res => res.json())
-	.then(function(resp) {
-		t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
-		t.equal(resp.channels.length, 1, 'resp.channels is the right len')
-		t.equal(resp.channels[0].status, 'live', 'channel is the right status')
-		t.end()
-	})
-	.catch(err => t.fail(err))
-	// @TODO: test channel list filters if there are any
-})
-
-tape('/channel/{id}/{status,tree}: non existant channel', function(t) {
-	Promise.all(['status', 'tree'].map(path =>
-		fetch(`${leaderUrl}/channel/xxxtentacion/${path}`)
-		.then(function(res) {
-			t.equal(res.status, 404, 'status should be 404')
-		})
-	))
-	.then(() => t.end())
-	.catch(err => t.fail(err))
-})
-
-tape('POST /channel/{id}/events: non existant channel', function(t) {
-	return postEvents(leaderUrl, 'xxxtentacion', [])
-	.then(function(resp) {
-		t.equal(resp.status, 404, 'status should be 404')
-		t.end()
-	})
-})
-
-tape('/channel/{id}/status', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
-	.then(res => res.json())
-	.then(function(resp) {
-		t.ok(resp.channel, 'has resp.channel')
-		t.equal(resp.channel.status, 'live', 'channel has right status')
-		t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
-		t.end()
-	})
-	.catch(err => t.fail(err))
-})
-
-tape('/channel/{id}/tree', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
-	.then(res => res.json())
-	.then(function(resp) {
-		t.ok(resp.channel, 'has resp.channel')
-		t.equal(resp.channel.status, 'live', 'channel has right status')
-		t.deepEqual(resp.balances, {}, 'channel has balances')
-		t.equal(new Date(resp.lastEvAggr).getTime(0), 0, 'lastEvAggr is 0')
-		t.end()
-	})
-	.catch(err => t.fail(err))
-})
-
 // @TODO: validator-messages, and it's filters
-
 tape('submit events and ensure they are accounted for', function(t) {
 	const evs = genImpressions(3).concat(genImpressions(2, 'anotherPublisher'))
 	const expectedBal = '3'
@@ -160,27 +109,26 @@ tape('submit events and ensure they are accounted for', function(t) {
 	.catch(err => t.fail(err))
 })
 
-tape('/channel/{id}/events-aggregates', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
-		method: 'GET',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.publisher}`,
-			'content-type': 'application/json',
-		},
-	})
-	.then(res => {
-		return res.json()
-	})
-	.then(function(resp) {
-		t.ok(resp.channel, 'has resp.channel')
-		t.ok(resp.events, 'has resp.events')
-		t.ok(resp.events.length >= 1, 'should have events of min legnth 1')
+tape('/channel/{id}/events-aggregates', function(t) {	
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {	
+		method: 'GET',	
+		headers: {	
+			'authorization': `Bearer ${dummyVals.auth.publisher}`,	
+			'content-type': 'application/json',	
+		},	
+	})	
+	.then(res => {	
+		return res.json()	
+	})	
+	.then(function(resp) {	
+		t.ok(resp.channel, 'has resp.channel')	
+		t.ok(resp.events, 'has resp.events')	
+		t.ok(resp.events.length >= 1, "should have events of min legnth 1")	
 		t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
-		t.end()
-	})
-	.catch(err => t.fail(err))
+		t.end()	
+	})	
+	.catch(err => t.fail(err))	
 })
-
 
 tape('health works correctly', function(t) {
 	const toFollower = 8
@@ -256,28 +204,9 @@ tape('heartbeat works correctly', function(t){
 	.catch(err => t.fail(err))
 })
 
-tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', function(t) {
-	Promise.all(
-		['events', 'validator-messages'].map(path =>
-			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, {
-				method: 'POST',
-				headers: {
-					'authorization': `Bearer WRONG AUTH`,
-					'content-type': 'application/json',
-				},
-				body: JSON.stringify({messages:[]}),
-			})
-			.then(function(resp) {
-				t.equal(resp.status, 401, 'status must be Unauthorized')
-			})
-		)
-	)
-	.then(() => t.end())
-	.catch(err => t.fail(err))
-})
-
 tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	let stateRoot = ""
+	let signature = ""
 
 	fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.leader}/NewState?limit=1`)
 	.then(res => res.json())
@@ -286,7 +215,8 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 		const incBalances = incrementKeys(balances)
 
 		const balancesAfterFees = getBalancesAfterFeesTree(incBalances, dummyVals.channel)
-		const stateRoot = getStateRootHash(dummyAdapter, {id: dummyVals.channel.id}, balancesAfterFees)
+		stateRoot = getStateRootHash(dummyAdapter, {id: dummyVals.channel.id}, balancesAfterFees)
+		signature = getDummySig(stateRoot, "awesomeLeader12")
 
 		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
 			method: 'POST',
@@ -302,7 +232,8 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 					balancesAfterFees: toBNStringMap(balancesAfterFees),
 					lastEvAggr: "2019-01-23T09:09:29.959Z",
 					// sign by awesomeLeader1 rather than awesomeLeader
-					signature: getDummySig(stateRoot, "awesomeLeader1")
+					signature,
+					created: Date.now()
 				}]
 			}),
 		})
@@ -316,6 +247,20 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
 		t.equal(lastApprove, undefined, 'follower should not sign state with invalid signature')
+	})
+	.then(function(){
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/InvalidNewState`)
+		.then(res => res.json())
+	})
+	.then(function(resp){
+		const message = filterInvalidNewStateMsg(resp.validatorMessages, { reason: 'InvalidSignature', stateRoot })[0]
+
+		t.ok(message, 'should have an invalid new state')
+		t.equal(message.msg.type, 'InvalidNewState', 'should have an invalid new state')
+		t.equal(message.msg.reason, 'InvalidSignature', 'reason should be invalid root hash')
+		t.equal(message.msg.stateRoot, stateRoot, 'should have state root')
+		t.equal(message.msg.signature, signature, 'should have the invalid signature')
+		
 		t.end()
 	})
 	.catch(err => t.fail(err))
@@ -346,7 +291,8 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 					balances,
 					balancesAfterFees,
 					"lastEvAggr": "2019-01-23T09:10:29.959Z",
-					"signature": `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
+					"signature": `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`,
+					created: Date.now()
 				}]
 			}),
 		})
@@ -360,6 +306,19 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 	.then(function(resp) {
 		const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === deceptiveRootHash)
 		t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
+	})
+	.then(function(){
+		return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${dummyVals.ids.follower}/InvalidNewState`)
+		.then(res => res.json())
+	})
+	.then(function(resp){
+		const message = filterInvalidNewStateMsg(resp.validatorMessages, { reason: 'InvalidRootHash', 'stateRoot': deceptiveRootHash })[0]
+
+		t.ok(message, 'should have an invalid new state')
+		t.equal(message.msg.type, 'InvalidNewState', 'should have an invalid new state')
+		t.equal(message.msg.reason, 'InvalidRootHash', 'reason should be invalid root hash')
+		t.equal(message.msg.stateRoot, deceptiveRootHash, 'should have the deceptive root hash')
+
 		t.end()
 	})
 	.catch(err => t.fail(err))
@@ -409,51 +368,6 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) balanceAfterFee
 })
 
 
-tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', function(t) {
-	Promise.all([
-		null,
-		{ type: 1 },
-		{ type: 'NewState' },
-		{ type: 'NewState', balances: 'iamobject' },
-		{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' },
-	].map(msg =>
-		fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-			method: 'POST',
-			headers: {
-				'authorization': `Bearer ${dummyVals.auth.leader}`,
-				'content-type': 'application/json',
-			},
-			body: JSON.stringify({ messages: [msg] }),
-		})
-		.then(function(resp) {
-			t.equal(resp.status, 400, 'status must be BadRequest')
-		})
-	))
-	.then(() => t.end())
-	.catch(err => t.fail(err))
-})
-
-tape('POST /channel/{id}/events: malformed events', function(t) {
-	Promise.all([
-		null,
-		{ type: 1 },
-		{ type: null },
-	].map(ev =>
-		fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
-			method: 'POST',
-			headers: {
-				'authorization': `Bearer ${dummyVals.auth.user}`,
-				'content-type': 'application/json',
-			},
-			body: JSON.stringify({ events: [ev] }),
-		})
-		.then(function(resp) {
-			t.equal(resp.status, 400, 'status is BadRequest')
-		})
-	))
-	.then(() => t.end())
-	.catch(err => t.fail(err))
-})
 
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
@@ -462,6 +376,7 @@ tape('cannot exceed channel deposit', function(t) {
 		// 1 event pays 1 token for now
 		// @TODO make this work with a more complex model
 		const evCount = resp.channel.depositAmount + 1
+		
 		return Promise.all([leaderUrl, followerUrl].map(url =>
 			postEvents(url, dummyVals.channel.id, genImpressions(evCount))
 		))
@@ -483,39 +398,6 @@ tape('cannot exceed channel deposit', function(t) {
 	.catch(err => t.fail(err))
 })
 
-function postEvents(url, channelId, events) {
-	return fetch(`${url}/channel/${channelId}/events`, {
-		method: 'POST',
-		headers: {
-			'authorization': `Bearer ${dummyVals.auth.user}`,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({ events }),
-	})
-}
-
-function genImpressions(n, pubName) {
-	const events = []
-	for (let i=0; i<n; i++) events.push({
-		type: 'IMPRESSION',
-		publisher: pubName || defaultPubName,
-	})
-	return events
-}
-
-function getDummySig(hash, from) {
-	return `Dummy adapter signature for ${hash} by ${from}`
-}
-
-function wait(ms) {
-	return new Promise((resolve, _) => setTimeout(resolve, ms))
-}
-
-function incrementKeys(raw){
-	let incBalances = {}
-	Object.keys(raw).forEach((item) => ( incBalances[item] = (new BN(raw[item], 10).add(new BN(1))).toString(10) ))
-	return incBalances
-}
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
 // @TODO tests for the adapters and especially ewt

@@ -25,6 +25,7 @@ function afterProducer(adapter, {channel, newStateTree, balancesAfterFees}) {
 			...newStateTree,
 			stateRoot,
 			signature,
+			created: Date.now()
 		})
 	})
 }

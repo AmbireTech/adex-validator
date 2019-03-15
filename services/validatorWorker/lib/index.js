@@ -1,7 +1,8 @@
 const assert = require('assert')
 const BN = require('bn.js')
+const { persist } = require('./propagation')
 const { getBalancesAfterFeesTree } = require('./fees')
-const isEqual = require('lodash.isequal');
+const isEqual = require('lodash.isequal')
 
 function getStateRootHash(adapter, channel, balances) {
 	// Note: MerkleTree takes care of deduplicating and sorting
@@ -38,4 +39,34 @@ function toBNStringMap(raw){
 	return balances
 }
 
-module.exports = { getStateRootHash, isValidRootHash, isValidValidatorFees, toBNMap, toBNStringMap }
+function invalidNewState(adapter, channel, { reason, newMsg}) {
+	// quirk: type is overiding type in newMsg
+	return persist(adapter, channel, {
+		...newMsg,
+		type: 'InvalidNewState',
+		reason,
+	})
+}
+
+function onError(adapter, channel, { reason, newMsg }) {
+	const errMsg = getErrorMsg(reason, channel)
+
+	return invalidNewState(adapter, channel, { reason, newMsg })
+	.then(function(){
+		console.error(errMsg)
+		return { nothingNew: true }
+	})
+}
+
+function getErrorMsg(reason, channel) {
+	return `validatatorWorker: ${channel.id}: ${reason} error in NewState`
+}
+
+module.exports = { 
+	getStateRootHash, 
+	isValidRootHash,
+	isValidValidatorFees,
+	toBNMap,
+	toBNStringMap, 
+	onError, 
+}

@@ -39,6 +39,7 @@ if [ -n "$RUN_EXTERNAL" ]; then
 	cd ./node_modules/adex-validator-stack-test
 	LEADER_DATABASE=$LEAD_MONGO FOLLOWER_DATABASE=$FOLLOW_MONGO npm run test-local
 else 
+	./test/routes.js
 	./test/integration.js
 fi
 
