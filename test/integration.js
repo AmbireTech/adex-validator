@@ -376,6 +376,7 @@ tape('cannot exceed channel deposit', function(t) {
 		// 1 event pays 1 token for now
 		// @TODO make this work with a more complex model
 		const evCount = resp.channel.depositAmount + 1
+		
 		return Promise.all([leaderUrl, followerUrl].map(url =>
 			postEvents(url, dummyVals.channel.id, genImpressions(evCount))
 		))

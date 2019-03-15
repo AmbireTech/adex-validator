@@ -62,12 +62,6 @@ function toBNStringMap(raw){
 	return balances
 }
 
-function toStringBN(raw) {
-	let result = ``
-	Object.entries(raw).forEach(([acc, bal]) => result = `${result} ${acc}: ${bal.toString()}`)
-	return result
-}
-
 function invalidNewState(channel, adapter, { reason, newMsg}) {
 	// quirk: type is overiding type in newMsg
 	return persist(adapter, channel, {
@@ -82,13 +76,12 @@ function onError(channel, adapter, { reason, newMsg }) {
 
 	return invalidNewState(channel, adapter, { reason, newMsg })
 	.then(function(){
-
 		console.error(errMsg)
 		return { nothingNew: true }
 	})
 }
 
-function getErrorMsg(reason, channel ){
+function getErrorMsg(reason, channel) {
 	return `validatatorWorker: ${channel.id}: ${reason} requested in NewState`
 }
 
@@ -98,7 +91,6 @@ module.exports = {
 	toBNMap,
 	invalidNewState, 
 	onError, 
-	toStringBN, 
 	getErrorMsg, 
 	toBNStringMap, 
 	getBalancesAfterFeesTree,

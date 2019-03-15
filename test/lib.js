@@ -33,11 +33,11 @@ function wait(ms) {
 	return new Promise((resolve, _) => setTimeout(resolve, ms))
 }
 
-function filterInvalidNewStateMSg(messages, properties){
+function filterInvalidNewStateMSg(messages, filter){
     assert.ok(Array.isArray(messages), 'messages should be array')
     
     messages = messages.filter(
-        (msg) => msg.msg.reason == properties.reason && msg.msg.stateRoot == properties.stateRoot
+        (msg) => msg.msg.reason == filter.reason && msg.msg.stateRoot == filter.stateRoot
     )
 
     return messages

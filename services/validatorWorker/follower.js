@@ -91,8 +91,7 @@ function isValidValidatorFees(channel, balances, balancesAfterFees) {
 // e.g. validating on POST /validator-messages (to get the previous), and a public API to get the latest msgs of a type
 function getLatestMsg(channelId, from, type) {
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	// @TODO: this assumption of getting the latest is flawed; won't work if it's within the same second: https://docs.mongodb.com/manual/reference/method/ObjectId/
-	// it is very important that we get this right, since it will be used to gather data about the channel state too
+
 	return validatorMsgCol.find({
 		channelId,
 		from: from,
