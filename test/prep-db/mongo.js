@@ -18,7 +18,7 @@ const dummyVals = {
 		// @TODO: document schema
 		_id: 'awesomeTestChannel',
 		id: 'awesomeTestChannel',
-		status: 'live',
+		status: 'active',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
 		validators: ['awesomeLeader', 'awesomeFollower'],
