@@ -53,6 +53,9 @@ function makeRecorder(channelId) {
 	})
 
 	return function(userId, events) {
+		// @TODO keep in mind that at one point validator messages will be able to change payment/bidding information
+		// that needs to be passed into the eventReducer
+		// this will probably be implemented an updateRecorder() function
 		return channelPromise.then(channel => {
 			aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
 			throttledPersistAndReset()
