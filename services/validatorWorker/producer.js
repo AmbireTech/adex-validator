@@ -85,7 +85,8 @@ function mergeAggrs(stateTree, aggrs, channel) {
 }
 
 // Mutates the balances input
-// For now, this just disregards anything that goes over the depositAmount
+// It does not allow the sum of all balances to exceed the depositAmount
+// it will do nothing after the depositAmount is exhausted
 function mergePayoutsIntoBalances(balances, events, depositAmount) {
 	if (!events) return
 

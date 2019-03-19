@@ -5,19 +5,20 @@ const eventReducer = require('./lib/eventReducer')
 
 const recorders = new Map()
 
-function record(channel, userId, events) {
-	const { id } = channel
-
+function record(id, userId, events) {
 	if (!recorders.has(id)) {
 		recorders.set(id, makeRecorder(id))
 	}
 
-	recorders.get(id)(userId, events, channel)
-	return Promise.resolve()
+	return recorders.get(id)(userId, events)
 }
 
 function makeRecorder(channelId) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
+	const channelsCol = db.getMongo().collection('channels')
+
+	// get the channel
+	const channelPromise = channelsCol.findOne({ _id: channelId })
 
 	// persist each individual aggregate
 	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
@@ -33,6 +34,7 @@ function makeRecorder(channelId) {
 	}
 
 	// persist and reset
+	// `aggr` is the current event aggregate record
 	let aggr = eventReducer.newAggr(channelId)
 	const persistAndReset = function() {
 		const toSave = aggr
@@ -50,9 +52,11 @@ function makeRecorder(channelId) {
 		trailing: true
 	})
 
-	return function(userId, events, channel) {
-		aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
-		throttledPersistAndReset()
+	return function(userId, events) {
+		return channelPromise.then(channel => {
+			aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
+			throttledPersistAndReset()
+		})
 	}
 }
 
