@@ -27,7 +27,8 @@ function heartbeat(adapter, channel) {
 
 		return persistAndPropagate(adapter, otherValidators, channel, {
 			type: 'Heartbeat',
-			timestamp,
+			timestampHash: timestamp,
+			timestamp: Date.now(),
 			signature,
 			stateRoot
 		})
