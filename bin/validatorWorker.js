@@ -15,6 +15,8 @@ const { argv } = yargs
 	.describe('keystoreFile', 'path to JSON Ethereum keystore file')
 	.describe('keystorePwd', 'password to unlock the Ethereum keystore file')
 	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
+	.boolean('singleTick')
+	.describe('singleTick', 'run a single tick and exit')
 	.demandOption(['adapter'])
 
 const adapter = adapters[argv.adapter]
@@ -24,7 +26,11 @@ db.connect()
 		return adapter.init(argv).then(() => adapter.unlock(argv))
 	})
 	.then(function() {
-		loopChannels()
+		if (argv.singleTick) {
+			allChannelsTick()
+		} else {
+			loopChannels()
+		}
 	})
 	.catch(function(err) {
 		console.error('Fatal error while connecting to the database', err)
@@ -40,6 +46,11 @@ function allChannelsTick() {
 		.then(function(channels) {
 			return Promise.all([Promise.all(channels.map(validatorTick)), wait(cfg.WAIT_TIME)])
 		})
+
+}
+
+function loopChannels() {
+	allChannelsTick()
 		.then(function([allResults]) {
 			// If nothing is new, snooze
 			if (allResults.every(x => x && x.nothingNew)) {
@@ -47,12 +58,9 @@ function allChannelsTick() {
 			}
 			logPostChannelsTick(allResults)
 		})
-}
-
-function loopChannels() {
-	allChannelsTick().then(function() {
-		loopChannels()
-	})
+		.then(function() {
+			loopChannels()
+		})
 }
 
 function validatorTick(channel) {

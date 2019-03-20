@@ -45,10 +45,11 @@ tape('submit events and ensure they are accounted for', function(t) {
 			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
 		})
 		.then(function(resp) {
+			t.ok(resp && resp.balances, 'there is a balances tree')
 			channel = resp.channel
 			tree = resp.balances
 			balancesAfterFeesTree = resp.balancesAfterFees
-			t.equal(resp.balances[defaultPubName], expectedBal, 'balances is right')
+			t.equal(tree[defaultPubName], expectedBal, 'balances is right')
 			// We will check the leader, cause this means this happened:
 			// the NewState was generated, sent to the follower,
 			// who generated ApproveState and sent back to the leader
