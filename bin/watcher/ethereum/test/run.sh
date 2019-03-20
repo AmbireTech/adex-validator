@@ -20,7 +20,7 @@ start_testrpc(){
         --account="0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501208,9000000000000000000000000000"
         --account="0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501209,9000000000000000000000000000"
     )
-    node_modules/.bin/ganache-cli --blockTime 2 --port $testrpc_port --gasLimit 0xfffffffffffff "${accounts[@]}" > /dev/null &
+    node_modules/.bin/ganache-cli --port $testrpc_port --gasLimit 0xfffffffffffff "${accounts[@]}" > /dev/null &
     testrpc_pid=$!
 }
 
@@ -56,6 +56,7 @@ echo "-------- Seeding database --------"
 # address hence seeding after setting up contracts
 node ./test/prep-db/mongo.js && mongo $DATABASE ./test/prep-db/seed.js
 
+sleep 3
 
 echo "-------- Open Channel --------"
 # create channel to emit LogChanelOpen event
@@ -73,7 +74,7 @@ exitCode=$?
 pkill -P $$
 
 # cleanup
-rm ./test/mocks/*.json
+rm ./test/mocks/deploy.json
 rm ./test/prep-db/seed.js  # remove seed file
 mongo $DATABASE --eval 'db.dropDatabase()' >/dev/null # drop database
 

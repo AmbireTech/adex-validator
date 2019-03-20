@@ -1,8 +1,7 @@
 const assert = require('assert')
-const { providers, Contract, Wallet } = require('ethers')
+const { Contract } = require('ethers')
 const adexCoreAbi = require('adex-protocol-eth/abi/AdExCore.json')
-
-const provider = new providers.JsonRpcProvider('http://localhost:8545')
+const { wallet } = require('./index')
 // eslint-disable-next-line import/no-unresolved
 const deployed = require('../mocks/deploy.json')
 // eslint-disable-next-line import/no-unresolved
@@ -10,9 +9,6 @@ const tokenAbi = require('../mocks/tokenabi.json')
 
 let core = null
 let token = null
-
-const privateKey = '0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200'
-const wallet = new Wallet(privateKey, provider)
 
 async function channelOpen() {
 	core = new Contract(deployed.adexcore, adexCoreAbi, wallet)
