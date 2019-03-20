@@ -24,37 +24,36 @@ db.connect()
 		return adapter.init(argv).then(() => adapter.unlock(argv))
 	})
 	.then(function() {
-		const channelsCol = db.getMongo().collection('channels')
-
-		function allChannelsTick() {
-			return channelsCol
-				.find({ validators: adapter.whoami() })
-				.limit(cfg.MAX_CHANNELS)
-				.toArray()
-				.then(function(channels) {
-					return Promise.all([Promise.all(channels.map(validatorTick)), wait(cfg.WAIT_TIME)])
-				})
-				.then(function([allResults]) {
-					// If nothing is new, snooze
-					if (allResults.every(x => x && x.nothingNew)) {
-						return wait(cfg.SNOOZE_TIME)
-					}
-					logPostChannelsTick(allResults)
-				})
-		}
-
-		function loopChannels() {
-			allChannelsTick().then(function() {
-				loopChannels()
-			})
-		}
-
 		loopChannels()
 	})
 	.catch(function(err) {
 		console.error('Fatal error while connecting to the database', err)
 		process.exit(1)
 	})
+
+function allChannelsTick() {
+	const channelsCol = db.getMongo().collection('channels')
+	return channelsCol
+		.find({ validators: adapter.whoami() })
+		.limit(cfg.MAX_CHANNELS)
+		.toArray()
+		.then(function(channels) {
+			return Promise.all([Promise.all(channels.map(validatorTick)), wait(cfg.WAIT_TIME)])
+		})
+		.then(function([allResults]) {
+			// If nothing is new, snooze
+			if (allResults.every(x => x && x.nothingNew)) {
+				return wait(cfg.SNOOZE_TIME)
+			}
+			logPostChannelsTick(allResults)
+		})
+}
+
+function loopChannels() {
+	allChannelsTick().then(function() {
+		loopChannels()
+	})
+}
 
 function validatorTick(channel) {
 	const validatorIdx = channel.validators.indexOf(adapter.whoami())
