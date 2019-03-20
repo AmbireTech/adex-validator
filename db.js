@@ -16,7 +16,7 @@ function getMongo() {
 	throw new Error('db.connect() needs to be invoked before using getMongo()')
 }
 
-function close(){
+function close() {
 	mongoClient.close()
 }
 

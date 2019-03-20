@@ -1,110 +1,109 @@
 #!/usr/bin/env node
 
 const { providers, Contract } = require('ethers')
-const fs = require('fs')
+const abi = require('adex-protocol-eth/abi/AdExCore.json')
+
 const cfg = require('./cfg')
 
-const provider = new providers.JsonRpcProvider(cfg.HTTP_PROVIDER);
-const abi = require('adex-protocol-eth/abi/AdExCore.json')
+const provider = new providers.JsonRpcProvider(cfg.HTTP_PROVIDER)
 
 const db = require('../../../db')
 
-const listeningContracts = new Array()
+const listeningContracts = []
 let lastestTime = 0
 
 db.connect()
-.then(function(){
-    function allPendingCampaignsTick(){
-        // subsribe to the ethereum network for events
-    
-        const channelsCol = db.getMongo().collection('channels')
-        //
-        const key = `watcher.ethereum.contract`
-    
-        return channelsCol.find({
-            status: 'pending',
-            [key]: { $exists: true },
-            created: { $gt: lastestTime }
-        })
-        .toArray()
-        .then(function(data) {
-            console.log(`watcher: processing ${data.length} campaigns`)
+	.then(function() {
+		function allPendingCampaignsTick() {
+			// subsribe to the ethereum network for events
 
-            return Promise.all([
-				Promise.all(data.map(campaignTick)),
-				wait(cfg.SNOOZE_TIME)
-			])
-        })
-    }
+			const channelsCol = db.getMongo().collection('channels')
+			//
+			const key = `watcher.ethereum.contract`
 
-    function removeOldPendingChannels(){
-        let currentDate = new Date()
-        currentDate = currentDate.setDate(currentDate.getDate() - cfg.EVICT_THRESHOLD)
+			return channelsCol
+				.find({
+					status: 'pending',
+					[key]: { $exists: true },
+					created: { $gt: lastestTime }
+				})
+				.toArray()
+				.then(function(data) {
+					console.log(`watcher: processing ${data.length} campaigns`)
 
-        const channelsCol = db.getMongo().collection('channels')
-        return channelsCol
-        .deleteOne(
-            {
-                created: { $lte: currentDate}
-            }
-        )
-    }
+					return Promise.all([Promise.all(data.map(campaignTick)), wait(cfg.SNOOZE_TIME)])
+				})
+		}
 
-    function loop(){
-        allPendingCampaignsTick()
-        .then(function(){
-            // delete old pending channels
-            return removeOldPendingChannels()
-            .then(function(data){
-                if(data.result.n){
-                    console.log(`watcher: removed ${data.result.n} old campaigns`)
-                }
-            })
-        })
-		.then(function() { loop() })
-    }
+		function removeOldPendingChannels() {
+			let currentDate = new Date()
+			currentDate = currentDate.setDate(currentDate.getDate() - cfg.EVICT_THRESHOLD)
 
-    loop()
-})
-.catch(function(err) {
-	console.error('Fatal error while connecting to the database', err)
-	process.exit(1)
-})
+			const channelsCol = db.getMongo().collection('channels')
+			return channelsCol.deleteOne({
+				created: { $lte: currentDate }
+			})
+		}
 
-function updateStatus(channelId, eventObj){    
-    channelId = channelId.toString()
+		function loop() {
+			allPendingCampaignsTick()
+				.then(function() {
+					// delete old pending channels
+					return removeOldPendingChannels().then(function(data) {
+						if (data.result.n) {
+							console.log(`watcher: removed ${data.result.n} old campaigns`)
+						}
+					})
+				})
+				.then(function() {
+					loop()
+				})
+		}
 
-    // move the status of the channel to active
-    const channelsCol = db.getMongo().collection('channels')
+		loop()
+	})
+	.catch(function(err) {
+		console.error('Fatal error while connecting to the database', err)
+		process.exit(1)
+	})
 
-    return channelsCol
-    .updateOne(
-        { _id: channelId },
-        { $set: 
-            {
-            status: 'active'
-            } 
-        },
-        { upsert: false }
-    ).then(() => console.log(`Status of campaign ${channelId} updated to active`))
-    
+function updateStatus(channelId) {
+	channelId = channelId.toString()
+
+	// move the status of the channel to active
+	const channelsCol = db.getMongo().collection('channels')
+
+	return channelsCol
+		.updateOne(
+			{ _id: channelId },
+			{
+				$set: {
+					status: 'active'
+				}
+			},
+			{ upsert: false }
+		)
+		.then(() => console.log(`Status of campaign ${channelId} updated to active`))
 }
 
 function campaignTick(data) {
-    const { watcher: { ethereum: { contract }}} = data
-    if(listeningContracts.includes(contract)){
-        return;
-    }
+	const {
+		watcher: {
+			ethereum: { contract }
+		}
+	} = data
+	if (listeningContracts.includes(contract)) {
+		return
+	}
 
-    listeningContracts.push(contract)
-    let adexCore = new Contract(contract, abi, provider);
-    const eventName = 'LogChannelOpen'
-    
-    adexCore.on(eventName, updateStatus)
-    lastestTime = Date.now()
+	listeningContracts.push(contract)
+	const adexCore = new Contract(contract, abi, provider)
+	const eventName = 'LogChannelOpen'
+
+	adexCore.on(eventName, updateStatus)
+	lastestTime = Date.now()
 }
 
-
 function wait(ms) {
-	return new Promise((resolve, _) => setTimeout(resolve, ms))
+	return new Promise(resolve => setTimeout(resolve, ms))
 }

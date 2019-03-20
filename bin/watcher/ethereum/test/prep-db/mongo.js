@@ -1,11 +1,12 @@
-const data = require('../mocks/deploy.json');
 const fs = require('fs')
+// eslint-disable-next-line import/no-unresolved
+const data = require('../mocks/deploy.json')
 const cfg = require('../../cfg')
 
 let expiredDate = new Date()
 expiredDate = expiredDate.setDate(expiredDate.getDate() - (cfg.EVICT_THRESHOLD + 20))
 
-let dummyVals = {
+const dummyVals = {
 	channel: [
 		{
 			// @TODO: document schema
@@ -17,16 +18,16 @@ let dummyVals = {
 			validators: ['awesomeLeader', 'awesomeFollower'],
 			spec: {
 				validators: [
-					{ id: 'awesomeLeader', url: 'http://localhost:8005', fee:  100 },
-					{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+					{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+					{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
 				]
 			},
 			watcher: {
-				ethereum : {
+				ethereum: {
 					contract: ''
 				}
 			},
-			created: Date.now(),
+			created: Date.now()
 		},
 		{
 			// @TODO: document schema
@@ -38,21 +39,22 @@ let dummyVals = {
 			validators: ['awesomeLeader', 'awesomeFollower'],
 			spec: {
 				validators: [
-					{ id: 'awesomeLeader', url: 'http://localhost:8005', fee:  100 },
-					{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+					{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+					{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
 				]
 			},
 			watcher: {
-				ethereum : {
+				ethereum: {
 					contract: '0xweb'
 				}
 			},
-			created: expiredDate,
+			created: expiredDate
 		}
 	]
 }
 
-// overwrite values 
+// overwrite values
+// eslint-disable-next-line no-underscore-dangle
 dummyVals.channel[0]._id = data.channelId
 dummyVals.channel[0].id = data.channelId
 dummyVals.channel[0].watcher.ethereum.contract = data.adexcore
@@ -65,7 +67,6 @@ db.channels.insertMany(data)
 }
 `
 
-fs.writeFileSync('./test/prep-db/seed.js', file);
+fs.writeFileSync('./test/prep-db/seed.js', file)
 
-
-if (typeof(module) !== 'undefined') module.exports = Object.freeze(dummyVals)
+if (typeof module !== 'undefined') module.exports = Object.freeze(dummyVals)
