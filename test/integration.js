@@ -24,8 +24,11 @@ const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 function aggrAndTick() {
 	// If we need to run the production config with AGGR_THROTTLE, then we need to wait for cfg.AGGR_THROTTLE + 500
-	return forceTick()
-	//return wait(waitTime).then(() => forceTick())
+	if (process.env.NODE_ENV == 'production') {
+		return wait(cfg.AGGR_THROTTLE + cfg.WAIT_TIME).then(forceTick)
+	} else {
+		return forceTick()
+	}
 }
 
 tape('submit events and ensure they are accounted for', function(t) {
