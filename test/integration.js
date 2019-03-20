@@ -22,9 +22,10 @@ const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
-const waitTime = cfg.AGGR_THROTTLE + 500
 function aggrAndTick() {
-	return wait(waitTime).then(() => forceTick())
+	// If we need to run the production config with AGGR_THROTTLE, then we need to wait for cfg.AGGR_THROTTLE + 500
+	return forceTick()
+	//return wait(waitTime).then(() => forceTick())
 }
 
 tape('submit events and ensure they are accounted for', function(t) {
