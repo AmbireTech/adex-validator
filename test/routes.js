@@ -12,8 +12,6 @@ const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
-// const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME * 2 + cfg.WAIT_TIME * 2 + 500
-
 tape('/channel/list', function(t) {
 	fetch(`${leaderUrl}/channel/list`)
 		.then(res => res.json())

@@ -27,7 +27,7 @@ db.connect()
 	})
 	.then(function() {
 		if (argv.singleTick) {
-			allChannelsTick()
+			allChannelsTick().then(() => process.exit(0))
 		} else {
 			loopChannels()
 		}
@@ -46,7 +46,6 @@ function allChannelsTick() {
 		.then(function(channels) {
 			return Promise.all([Promise.all(channels.map(validatorTick)), wait(cfg.WAIT_TIME)])
 		})
-
 }
 
 function loopChannels() {
