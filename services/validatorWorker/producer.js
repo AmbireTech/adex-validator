@@ -88,10 +88,11 @@ function mergeAggrs(stateTree, aggrs, channel) {
 // It does not allow the sum of all balances to exceed the depositAmount
 // it will do nothing after the depositAmount is exhausted
 function mergePayoutsIntoBalances(balances, events, depositAmount) {
-	if (!events) return
-
 	// new tree that will be generated
 	const newBalances = { ...balances }
+
+	if (!events) return newBalances
+
 	// total of state tree balance
 	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
 	// remaining of depositAmount
