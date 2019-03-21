@@ -473,7 +473,7 @@ tape('cannot exceed channel deposit', function(t) {
 		})
 		.then(function(resp) {
 			const sum = Object.keys(resp.balances)
-				.map(k => parseInt(resp.balances[k]))
+				.map(k => parseInt(resp.balances[k], 10))
 				.reduce((a, b) => a + b, 0)
 
 			t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
