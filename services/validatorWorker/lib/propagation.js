@@ -35,7 +35,7 @@ function persist(adapter, channel, msg) {
 function persistAndPropagate(adapter, receivers, channel, msg) {
 	logPropagate(receivers, channel, msg)
 
-	persist(adapter, channel, msg).then(function() {
+	return persist(adapter, channel, msg).then(function() {
 		return Promise.all(
 			receivers.map(function(receiver) {
 				return propagate(adapter, receiver, channel, msg).catch(function(e) {
