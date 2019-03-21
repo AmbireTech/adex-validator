@@ -55,7 +55,9 @@ function loopChannels() {
 			if (allResults.every(x => x && x.nothingNew)) {
 				return wait(cfg.SNOOZE_TIME)
 			}
+
 			logPostChannelsTick(allResults)
+			return Promise.resolve()
 		})
 		.then(function() {
 			loopChannels()

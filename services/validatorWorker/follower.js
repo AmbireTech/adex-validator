@@ -91,7 +91,7 @@ function getLatestMsg(channelId, from, type) {
 
 // ApproveState messages do not contain the full `balances`; so augment them
 function augmentWithBalances(approveMsg) {
-	if (!approveMsg) return
+	if (!approveMsg) return Promise.resolve()
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	return validatorMsgCol
