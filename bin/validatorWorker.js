@@ -44,12 +44,12 @@ function allChannelsTick() {
 		.limit(cfg.MAX_CHANNELS)
 		.toArray()
 		.then(function(channels) {
-			return Promise.all([Promise.all(channels.map(validatorTick)), wait(cfg.WAIT_TIME)])
+			return Promise.all(channels.map(validatorTick))
 		})
 }
 
 function loopChannels() {
-	allChannelsTick()
+	Promise.all([allChannelsTick(), wait(cfg.WAIT_TIME)])
 		.then(function([allResults]) {
 			// If nothing is new, snooze
 			if (allResults.every(x => x && x.nothingNew)) {
