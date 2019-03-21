@@ -40,9 +40,9 @@ function filterInvalidNewStateMsg(messages, filter) {
 
 function incrementKeys(raw) {
 	const incBalances = {}
-	Object.keys(raw).forEach(
-		item => (incBalances[item] = new BN(raw[item], 10).add(new BN(1)).toString(10))
-	)
+	Object.keys(raw).forEach(item => {
+		incBalances[item] = new BN(raw[item], 10).add(new BN(1)).toString(10)
+	})
 	return incBalances
 }
 
