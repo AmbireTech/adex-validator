@@ -66,7 +66,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 						}/NewState?limit=1`
 					).then(res => res.json())
 				})
-				.then(function(resp) {
+				.then(function({ validatorMessages }) {
 					return fetch(
 						`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
 							dummyVals.ids.follower
@@ -74,7 +74,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 					)
 						.then(res => res.json())
 						.then(res => {
-							msgs = resp.validatorMessages.concat(res.validatorMessages)
+							msgs = validatorMessages.concat(res.validatorMessages)
 						})
 				})
 		})
