@@ -25,11 +25,10 @@ const expectedDepositAmnt = dummyVals.channel.depositAmount
 function aggrAndTick() {
 	// If we need to run the production config with AGGR_THROTTLE, then we need to wait for cfg.AGGR_THROTTLE + 500
 	// the reason is that in production we have a throttle for saving event aggregates
-	if (process.env.NODE_ENV == 'production') {
+	if (process.env.NODE_ENV === 'production') {
 		return wait(cfg.AGGR_THROTTLE + cfg.WAIT_TIME).then(forceTick)
-	} else {
-		return forceTick()
 	}
+	return forceTick()
 }
 
 tape('submit events and ensure they are accounted for', function(t) {
