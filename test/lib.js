@@ -18,7 +18,7 @@ function postEvents(url, channelId, events) {
 
 function genImpressions(n, pubName) {
 	const events = []
-	for (let i = 0; i < n; i++)
+	for (let i = 0; i < n; i += 1)
 		events.push({
 			type: 'IMPRESSION',
 			publisher: pubName || defaultPubName
