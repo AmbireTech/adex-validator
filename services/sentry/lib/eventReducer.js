@@ -5,24 +5,28 @@ function newAggr(channelId) {
 }
 
 function reduce(userId, channel, aggr, ev) {
+	const newAggr = { ...aggr }
 	// for now, we don't use userId
 	// @TODO: this is one of the places to add other ev types
 	if (ev.type === 'IMPRESSION') {
-		aggr.events.IMPRESSION = mergeImpressionEv(aggr.events.IMPRESSION, ev, channel)
+		newAggr.events.IMPRESSION = mergeImpressionEv(aggr.events.IMPRESSION, ev, channel)
 	}
 
-	return aggr
+	return newAggr
 }
 
-function mergeImpressionEv(map, ev, channel) {
+function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, channel) {
+	const map = {
+		eventCounts: { ...initialMap.eventCounts },
+		eventPayouts: { ...initialMap.eventPayouts }
+	}
 	if (typeof ev.publisher !== 'string') return map
-	if (!map) map = { eventCounts: {}, eventPayouts: {} }
 	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
 
 	// increase the event count
-	const eventCounts = new BN(map.eventCounts[ev.publisher], 10)
-	map.eventCounts[ev.publisher] = addAndToString(eventCounts, new BN(1))
+	const newEventCounts = new BN(map.eventCounts[ev.publisher], 10)
+	map.eventCounts[ev.publisher] = addAndToString(newEventCounts, new BN(1))
 
 	// current publisher payout
 	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)

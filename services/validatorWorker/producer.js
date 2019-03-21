@@ -60,7 +60,7 @@ function mergeAggrs(stateTree, aggrs, channel) {
 	const depositAmount = new BN(channel.depositAmount, 10)
 
 	// Build an intermediary balances representation
-	const balances = {}
+	let balances = {}
 	Object.keys(stateTree.balances).forEach(function(acc) {
 		balances[acc] = new BN(stateTree.balances[acc], 10)
 		assert.ok(!balances[acc].isNeg(), 'balance should not be negative')
@@ -72,7 +72,7 @@ function mergeAggrs(stateTree, aggrs, channel) {
 			Math.max(newStateTree.lastEvAggr.getTime(), evAggr.created.getTime())
 		)
 		// @TODO do something about this hardcoded event type assumption
-		mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, depositAmount)
+		balances = mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, depositAmount)
 	})
 
 	newStateTree.balances = toBNStringMap(balances)
@@ -90,6 +90,8 @@ function mergeAggrs(stateTree, aggrs, channel) {
 function mergePayoutsIntoBalances(balances, events, depositAmount) {
 	if (!events) return
 
+	// new tree that will be generated
+	const newBalances = { ...balances }
 	// total of state tree balance
 	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
 	// remaining of depositAmount
@@ -100,16 +102,17 @@ function mergePayoutsIntoBalances(balances, events, depositAmount) {
 	const { eventPayouts } = events
 	// take the eventPayouts key
 	Object.keys(eventPayouts).forEach(function(acc) {
-		if (!balances[acc]) balances[acc] = new BN(0, 10)
+		if (!newBalances[acc]) newBalances[acc] = new BN(0, 10)
 
 		const eventPayout = new BN(eventPayouts[acc])
 		const toAdd = BN.min(remaining, eventPayout)
 		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
 
-		balances[acc] = balances[acc].add(toAdd)
+		newBalances[acc] = newBalances[acc].add(toAdd)
 		remaining = remaining.sub(toAdd)
 		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
 	})
+	return newBalances
 }
 
 function logMerge(channel, eventAggrs) {

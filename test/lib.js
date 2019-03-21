@@ -33,11 +33,9 @@ function getDummySig(hash, from) {
 function filterInvalidNewStateMsg(messages, filter) {
 	assert.ok(Array.isArray(messages), 'messages should be array')
 
-	messages = messages.filter(
+	return messages.filter(
 		msg => msg.msg.reason === filter.reason && msg.msg.stateRoot === filter.stateRoot
 	)
-
-	return messages
 }
 
 function incrementKeys(raw) {
