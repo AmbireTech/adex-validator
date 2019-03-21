@@ -97,6 +97,8 @@ npm test && npm run test-integration
 
 ``--dummyIdentity`` - dummy adapter identity (Dummy adapter)
 
+``--singleTick`` - applies to the `validatorWorker` - run a single tick and exit
+
 ## Testing setup
 
 

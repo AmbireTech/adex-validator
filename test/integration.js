@@ -6,14 +6,14 @@ const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const dummyAdapter = require('../adapters/dummy')
 const {
+	forceTick,
+	wait,
 	postEvents,
 	genImpressions,
 	getDummySig,
-	wait,
 	filterInvalidNewStateMsg,
 	incrementKeys
 } = require('./lib')
-
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -22,12 +22,15 @@ const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
-// Times to wait before being sure the sentry + validator workers have updated everything
-// 500ms is just to "make sure" we're giving it enough time
-const waitTime = cfg.AGGR_THROTTLE + cfg.SNOOZE_TIME * 2 + cfg.WAIT_TIME * 2 + 500
-// const waitAggrTime = cfg.AGGR_THROTTLE + 500
+function aggrAndTick() {
+	// If we need to run the production config with AGGR_THROTTLE, then we need to wait for cfg.AGGR_THROTTLE + 500
+	// the reason is that in production we have a throttle for saving event aggregates
+	if (process.env.NODE_ENV === 'production') {
+		return wait(cfg.AGGR_THROTTLE + cfg.WAIT_TIME).then(forceTick)
+	}
+	return forceTick()
+}
 
-// @TODO: validator-messages, and it's filters
 tape('submit events and ensure they are accounted for', function(t) {
 	const evs = genImpressions(3).concat(genImpressions(2, 'anotherPublisher'))
 	const expectedBal = '3'
@@ -40,20 +43,21 @@ tape('submit events and ensure they are accounted for', function(t) {
 		// @TODO maybe we should assert that the status is 200 here?
 		[leaderUrl, followerUrl].map(url => postEvents(url, dummyVals.channel.id, evs))
 	)
-		.then(() => wait(waitTime))
+		.then(() => aggrAndTick())
 		.then(function() {
 			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
 		})
 		.then(function(resp) {
+			t.ok(resp && resp.balances, 'there is a balances tree')
 			channel = resp.channel
 			tree = resp.balances
 			balancesAfterFeesTree = resp.balancesAfterFees
-			t.equal(resp.balances[defaultPubName], expectedBal, 'balances is right')
+			t.equal(tree[defaultPubName], expectedBal, 'balances is right')
 			// We will check the leader, cause this means this happened:
 			// the NewState was generated, sent to the follower,
 			// who generated ApproveState and sent back to the leader
 			// first wait though, as we need the follower to discover they have an event to approve
-			return wait(waitTime)
+			return aggrAndTick()
 				.then(function() {
 					return fetch(
 						`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
@@ -181,7 +185,8 @@ tape('health works correctly', function(t) {
 	)
 		// postEvents(followerUrl, dummyVals.channel.id, genImpressions(4))
 		// wait for the events to be aggregated and new states to be issued
-		.then(() => wait(waitTime))
+		.then(() => aggrAndTick())
+		.then(() => forceTick())
 		.then(function() {
 			// get the latest state
 			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`).then(res =>
@@ -193,16 +198,12 @@ tape('health works correctly', function(t) {
 			// @TODO: Should we assert balances numbers?
 			t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
 
-			// should propagate heartbeat notification
-			const health = resp.validatorMessages.find(x => x.msg.type === 'Heartbeat')
-			t.ok(health, 'should propagate heartbeat notification')
-			t.ok(health.msg.signature, 'heartbeat notification has signature')
-			t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
-
 			// send events to the leader so it catches up
 			return postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
 		})
-		.then(() => wait(waitTime))
+		// one tick will generate NewState, the other ApproveState
+		.then(() => aggrAndTick())
+		.then(() => forceTick())
 		.then(function() {
 			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`).then(res =>
 				res.json()
@@ -218,7 +219,7 @@ tape('health works correctly', function(t) {
 
 tape('heartbeat works correctly', function(t) {
 	Promise.resolve()
-		.then(() => wait(waitTime)) // wait till a new state is schedule to be produced
+		.then(() => aggrAndTick())
 		.then(function() {
 			;[
 				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
@@ -295,7 +296,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 				})
 			}).then(r => t.equal(r.status, 200, 'response status is right'))
 		})
-		.then(() => wait(waitTime))
+		.then(() => aggrAndTick())
 		.then(function() {
 			return fetch(
 				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
@@ -367,7 +368,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 				})
 			}).then(r => t.equal(r.status, 200, 'response status is right'))
 		})
-		.then(() => wait(waitTime))
+		.then(() => aggrAndTick())
 		.then(function() {
 			return fetch(
 				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
@@ -436,7 +437,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) balanceAfterFee
 				})
 			}).then(r => t.equal(r.status, 200, 'response status is right'))
 		})
-		.then(() => wait(waitTime))
+		.then(() => aggrAndTick())
 		.then(function() {
 			return fetch(
 				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
@@ -466,13 +467,13 @@ tape('cannot exceed channel deposit', function(t) {
 				)
 			)
 		})
-		.then(() => wait(waitTime))
+		.then(() => aggrAndTick())
 		.then(function() {
 			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
 		})
 		.then(function(resp) {
 			const sum = Object.keys(resp.balances)
-				.map(k => parseInt(resp.balances[k]))
+				.map(k => parseInt(resp.balances[k], 10))
 				.reduce((a, b) => a + b, 0)
 
 			t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
