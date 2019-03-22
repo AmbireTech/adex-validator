@@ -33,10 +33,6 @@ sleep 2
 
 # Run the integration tests
 if [ -n "$RUN_EXTERNAL" ]; then
-	# Start workers
-	DB_MONGO_NAME=$LEAD_MONGO bin/validatorWorker.js $LEAD_ARGS &
-	DB_MONGO_NAME=$FOLLOW_MONGO bin/validatorWorker.js $FOLLOW_ARGS &
-
 	echo "Running external tests"
 	cd ./node_modules/adex-validator-stack-test
 	LEADER_DATABASE=$LEAD_MONGO FOLLOWER_DATABASE=$FOLLOW_MONGO npm run test-local
