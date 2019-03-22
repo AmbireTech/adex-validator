@@ -5,48 +5,39 @@ const cfg = require('../../cfg')
 const { toBNStringMap } = require('./lib')
 const { getBalancesAfterFeesTree } = require('./lib/fees')
 
-function tick(channel, force) {
+async function tick(channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const stateTreeCol = db.getMongo().collection('channelStateTrees')
 
-	return stateTreeCol
-		.findOne({ _id: channel.id })
-		.then(function(stateTree) {
-			return stateTree || { balances: {}, lastEvAggr: new Date(0) }
+	const stateTree = (await stateTreeCol.findOne({ _id: channel.id })) || {
+		balances: {},
+		lastEvAggr: new Date(0)
+	}
+
+	// Process eventAggregates, from old to new, newer than the lastEvAggr time
+	const aggrs = await eventAggrCol
+		.find({
+			channelId: channel.id,
+			created: { $gt: stateTree.lastEvAggr }
 		})
-		.then(function(stateTree) {
-			// Process eventAggregates, from old to new, newer than the lastEvAggr time
-			return eventAggrCol
-				.find({
-					channelId: channel.id,
-					created: { $gt: stateTree.lastEvAggr }
-				})
-				.sort({ created: 1 })
-				.limit(cfg.PRODUCER_MAX_AGGR_PER_TICK)
-				.toArray()
-				.then(function(aggrs) {
-					logMerge(channel, aggrs)
+		.sort({ created: 1 })
+		.limit(cfg.PRODUCER_MAX_AGGR_PER_TICK)
+		.toArray()
 
-					const shouldUpdate = force || aggrs.length
-					if (!shouldUpdate) {
-						return { channel }
-					}
+	logMerge(channel, aggrs)
 
-					// balances should be a sum of eventPayouts
-					//
-					const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
-						stateTree,
-						aggrs,
-						channel
-					)
+	const shouldUpdate = force || aggrs.length
+	if (!shouldUpdate) {
+		return { channel }
+	}
 
-					return stateTreeCol
-						.updateOne({ _id: channel.id }, { $set: newStateTree }, { upsert: true })
-						.then(function() {
-							return { channel, balances, balancesAfterFees, newStateTree }
-						})
-				})
-		})
+	// balances should be a sum of eventPayouts
+	//
+	const { balances, balancesAfterFees, newStateTree } = mergeAggrs(stateTree, aggrs, channel)
+
+	await stateTreeCol.updateOne({ _id: channel.id }, { $set: newStateTree }, { upsert: true })
+
+	return { channel, balances, balancesAfterFees, newStateTree }
 }
 
 // Pure, should not mutate inputs
