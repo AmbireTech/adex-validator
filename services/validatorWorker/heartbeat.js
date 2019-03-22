@@ -10,7 +10,7 @@ function heartbeat(adapter, channel) {
 	)
 	const otherValidators = channel.spec.validators.filter(v => v.id !== whoami)
 
-	let timestamp = Buffer.alloc(32)
+	const timestamp = Buffer.alloc(32)
 	timestamp.writeUIntBE(Date.now(), 26, 6)
 
 	// in the future, we can add more information to this tree,
@@ -23,11 +23,8 @@ function heartbeat(adapter, channel) {
 
 	return adapter.sign(stateRootRaw).then(function(signature) {
 		const stateRoot = stateRootRaw.toString('hex')
-		timestamp = timestamp.toString('hex')
-
 		return persistAndPropagate(adapter, otherValidators, channel, {
 			type: 'Heartbeat',
-			timestampHash: timestamp,
 			timestamp: Date.now(),
 			signature,
 			stateRoot

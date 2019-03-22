@@ -29,11 +29,6 @@ Can be obtained from sentry route `'/channel/:id/validator-messages'`, returns `
 
 ---
 
-**`timestampHash`** - Hash of timestamp of the heartbeat message.
-- *In messages of type: `Heartbeat`*
-
----
-
 **`signature`** - Signature message
 
 - *In messages of type: `NewState`, `ApproveState`, `Heartbeat`*
