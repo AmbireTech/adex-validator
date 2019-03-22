@@ -10,19 +10,18 @@ function tick(adapter, channel) {
 		.then(res => heartbeatIfNothingNew(adapter, channel, res))
 }
 
-function afterProducer(adapter, { channel, newStateTree, balancesAfterFees }) {
+async function afterProducer(adapter, { channel, newStateTree, balancesAfterFees }) {
 	const followers = channel.spec.validators.slice(1)
 	const stateRootRaw = getStateRootHash(adapter, channel, balancesAfterFees)
 
-	return adapter.sign(stateRootRaw).then(function(signature) {
-		const stateRoot = stateRootRaw.toString('hex')
-		return persistAndPropagate(adapter, followers, channel, {
-			type: 'NewState',
-			...newStateTree,
-			stateRoot,
-			signature,
-			created: Date.now()
-		})
+	const signature = await adapter.sign(stateRootRaw)
+	const stateRoot = stateRootRaw.toString('hex')
+	return persistAndPropagate(adapter, followers, channel, {
+		type: 'NewState',
+		...newStateTree,
+		stateRoot,
+		signature,
+		created: Date.now()
 	})
 }
 
