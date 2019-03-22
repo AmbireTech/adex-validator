@@ -132,8 +132,7 @@ function postValidatorMessages(req, res, next) {
 	const toInsert = messages.map(function(msg) {
 		return validatorMsgCol.insertOne({
 			channelId: req.channel.id,
-			from: req.session.uid, // @TODO recover sig
-			submittedBy: req.session.uid,
+			from: req.session.uid,
 			msg
 		})
 	})
