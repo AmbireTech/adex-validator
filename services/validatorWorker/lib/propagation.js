@@ -27,20 +27,19 @@ function persist(adapter, channel, msg) {
 }
 
 // receivers are the receiving validators
-function persistAndPropagate(adapter, receivers, channel, msg) {
+async function persistAndPropagate(adapter, receivers, channel, msg) {
 	logPropagate(receivers, channel, msg)
 
-	return persist(adapter, channel, msg).then(function() {
-		return Promise.all(
-			receivers.map(function(receiver) {
-				return propagate(adapter, receiver, channel, msg).catch(function(e) {
-					console.error(
-						`validatorWorker: Unable to propagate ${msg.type} to ${receiver.id}: ${e.message || e}`
-					)
-				})
+	await persist(adapter, channel, msg)
+	return Promise.all(
+		receivers.map(function(receiver) {
+			return propagate(adapter, receiver, channel, msg).catch(function(e) {
+				console.error(
+					`validatorWorker: Unable to propagate ${msg.type} to ${receiver.id}: ${e.message || e}`
+				)
 			})
-		)
-	})
+		})
+	)
 }
 
 function logPropagate(receivers, channel, msg) {
