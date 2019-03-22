@@ -195,6 +195,7 @@ tape('health works correctly', function(t) {
 		.then(function(resp) {
 			const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
 			// @TODO: Should we assert balances numbers?
+			// @TODO assert number of messages; this will be easy once we create a separate channel for each test
 			t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
 
 			// send events to the leader so it catches up
