@@ -135,7 +135,7 @@ function createCampaign(req, res, next) {
 		validators,
 		spec,
 		watcher,
-		status: 'pending',
+		status: 'active',
 		created: new Date().getTime()
 	}
 
