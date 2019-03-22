@@ -6,27 +6,24 @@ const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeatIfNothingNew } = require('./heartbeat')
 
-function tick(adapter, channel) {
+async function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
-	return Promise.all([
+	const [newMsg, approveMsg] = await Promise.all([
 		getLatestMsg(channel.id, channel.validators[0], 'NewState'),
 		getLatestMsg(channel.id, adapter.whoami(), 'ApproveState').then(augmentWithBalances)
 	])
-		.then(function([newMsg, approveMsg]) {
-			const latestIsApproved = newMsg && approveMsg && newMsg.stateRoot === approveMsg.stateRoot
-			// there are no unapproved NewState messages, only merge all eventAggrs
-			if (!newMsg || latestIsApproved) {
-				return producer.tick(channel).then(function(res) {
-					return { nothingNew: !res.newStateTree }
-				})
-			}
+	const latestIsApproved = newMsg && approveMsg && newMsg.stateRoot === approveMsg.stateRoot
 
-			return producer.tick(channel, true).then(function(res) {
-				return onNewState(adapter, { ...res, newMsg, approveMsg })
-			})
-		})
-		.then(res => heartbeatIfNothingNew(adapter, channel, res))
+	// there are no unapproved NewState messages, only merge all eventAggrs
+	const res =
+		!newMsg || latestIsApproved
+			? await producer.tick(channel).then(r => ({ nothingNew: !r.newStateTree }))
+			: await producer
+					.tick(channel, true)
+					.then(r => onNewState(adapter, { ...r, newMsg, approveMsg }))
+
+	return heartbeatIfNothingNew(adapter, channel, res)
 }
 
 async function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
