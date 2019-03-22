@@ -1,25 +1,20 @@
 const fetch = require('node-fetch')
 const db = require('../../../db')
 
-function propagate(adapter, receiver, channel, msg) {
-	return adapter
-		.getAuthFor(receiver)
-		.then(function(authToken) {
-			return fetch(`${receiver.url}/channel/${channel.id}/validator-messages`, {
-				method: 'POST',
-				headers: {
-					'content-type': 'application/json',
-					authorization: `Bearer ${authToken}`
-				},
-				body: JSON.stringify({ messages: [msg] })
-			})
-		})
-		.then(function(resp) {
-			if (resp.status !== 200) {
-				return Promise.reject(new Error(`request failed with status code ${resp.status}`))
-			}
-			return resp.json()
-		})
+async function propagate(adapter, receiver, channel, msg) {
+	const authToken = await adapter.getAuthFor(receiver)
+	const resp = await fetch(`${receiver.url}/channel/${channel.id}/validator-messages`, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			authorization: `Bearer ${authToken}`
+		},
+		body: JSON.stringify({ messages: [msg] })
+	})
+	if (resp.status !== 200) {
+		return Promise.reject(new Error(`request failed with status code ${resp.status}`))
+	}
+	return resp.json()
 }
 
 function persist(adapter, channel, msg) {
