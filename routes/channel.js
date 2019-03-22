@@ -50,6 +50,7 @@ function getStatus(withTree, req, res) {
 					}
 				})
 			}
+			return Promise.resolve()
 		})
 		.then(function() {
 			res.send(resp)

@@ -28,14 +28,18 @@ function isValidValidatorFees(channel, balances, balancesAfterFees) {
 function toBNMap(raw) {
 	assert.ok(raw && typeof raw === 'object', 'raw map is a valid object')
 	const balances = {}
-	Object.entries(raw).forEach(([acc, bal]) => (balances[acc] = new BN(bal, 10)))
+	Object.entries(raw).forEach(([acc, bal]) => {
+		balances[acc] = new BN(bal, 10)
+	})
 	return balances
 }
 
 function toBNStringMap(raw) {
 	assert.ok(raw && typeof raw === 'object', 'raw map is a valid object')
 	const balances = {}
-	Object.entries(raw).forEach(([acc, bal]) => (balances[acc] = bal.toString(10)))
+	Object.entries(raw).forEach(([acc, bal]) => {
+		balances[acc] = bal.toString(10)
+	})
 	return balances
 }
 

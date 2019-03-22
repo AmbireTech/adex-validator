@@ -18,7 +18,7 @@ function postEvents(url, channelId, events) {
 
 function genImpressions(n, pubName) {
 	const events = []
-	for (let i = 0; i < n; i++)
+	for (let i = 0; i < n; i += 1)
 		events.push({
 			type: 'IMPRESSION',
 			publisher: pubName || defaultPubName
@@ -33,18 +33,16 @@ function getDummySig(hash, from) {
 function filterInvalidNewStateMsg(messages, filter) {
 	assert.ok(Array.isArray(messages), 'messages should be array')
 
-	messages = messages.filter(
+	return messages.filter(
 		msg => msg.msg.reason === filter.reason && msg.msg.stateRoot === filter.stateRoot
 	)
-
-	return messages
 }
 
 function incrementKeys(raw) {
 	const incBalances = {}
-	Object.keys(raw).forEach(
-		item => (incBalances[item] = new BN(raw[item], 10).add(new BN(1)).toString(10))
-	)
+	Object.keys(raw).forEach(item => {
+		incBalances[item] = new BN(raw[item], 10).add(new BN(1)).toString(10)
+	})
 	return incBalances
 }
 

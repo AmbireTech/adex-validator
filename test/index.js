@@ -7,21 +7,21 @@ const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fe
 const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')
 
-const channel = { depositAmount: new BN(100) }
+const dummyChannel = { depositAmount: new BN(100) }
 
 tape('isValidTransition: empty to empty', function(t) {
-	t.ok(isValidTransition(channel, {}, {}), 'is valid transition')
+	t.ok(isValidTransition(dummyChannel, {}, {}), 'is valid transition')
 	t.end()
 })
 
 tape('isValidTransition: a valid transition', function(t) {
-	t.ok(isValidTransition(channel, {}, { a: new BN(100) }), 'is valid transition')
+	t.ok(isValidTransition(dummyChannel, {}, { a: new BN(100) }), 'is valid transition')
 	t.end()
 })
 
-tape('isValidTransition: more funds than channel', function(t) {
+tape('isValidTransition: more funds than dummyChannel', function(t) {
 	t.notOk(
-		isValidTransition(channel, {}, { a: new BN(51), b: new BN(50) }),
+		isValidTransition(dummyChannel, {}, { a: new BN(51), b: new BN(50) }),
 		'not a valid transition'
 	)
 	t.end()
@@ -29,7 +29,7 @@ tape('isValidTransition: more funds than channel', function(t) {
 
 tape('isValidTransition: single value is lower', function(t) {
 	t.notOk(
-		isValidTransition(channel, { a: new BN(55) }, { a: new BN(54) }),
+		isValidTransition(dummyChannel, { a: new BN(55) }, { a: new BN(54) }),
 		'not a valid transition'
 	)
 	t.end()
@@ -37,7 +37,7 @@ tape('isValidTransition: single value is lower', function(t) {
 
 tape('isValidTransition: a value is lower, but overall sum is higher', function(t) {
 	t.notOk(
-		isValidTransition(channel, { a: new BN(55) }, { a: new BN(54), b: new BN(3) }),
+		isValidTransition(dummyChannel, { a: new BN(55) }, { a: new BN(54), b: new BN(3) }),
 		'not a valid transition'
 	)
 	t.end()
@@ -45,7 +45,7 @@ tape('isValidTransition: a value is lower, but overall sum is higher', function(
 
 tape('isValidTransition: overall sum is lower', function(t) {
 	t.notOk(
-		isValidTransition(channel, { a: new BN(54), b: new BN(3) }, { a: new BN(54) }),
+		isValidTransition(dummyChannel, { a: new BN(54), b: new BN(3) }, { a: new BN(54) }),
 		'not a valid transition'
 	)
 	t.end()
@@ -53,7 +53,7 @@ tape('isValidTransition: overall sum is lower', function(t) {
 
 tape('isValidTransition: overall sum is the same, but we remove an entry', function(t) {
 	t.notOk(
-		isValidTransition(channel, { a: new BN(54), b: new BN(3) }, { a: new BN(57) }),
+		isValidTransition(dummyChannel, { a: new BN(54), b: new BN(3) }, { a: new BN(57) }),
 		'not a valid transition'
 	)
 	t.end()
@@ -61,7 +61,7 @@ tape('isValidTransition: overall sum is the same, but we remove an entry', funct
 
 tape('isValidTransition: transition to a state with a negative number', function(t) {
 	t.notOk(
-		isValidTransition(channel, {}, { a: new BN(51), b: new BN(-5) }),
+		isValidTransition(dummyChannel, {}, { a: new BN(51), b: new BN(-5) }),
 		'not a valid transition'
 	)
 	t.end()

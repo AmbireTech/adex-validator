@@ -60,11 +60,11 @@ function makeRecorder(channelId) {
 			aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
 			if (cfg.AGGR_THROTTLE) {
 				throttledPersistAndReset()
-			} else {
-				const toSave = aggr
-				aggr = eventReducer.newAggr(channelId)
-				return eventAggrCol.insertOne(toSave)
+				return Promise.resolve()
 			}
+			const toSave = aggr
+			aggr = eventReducer.newAggr(channelId)
+			return eventAggrCol.insertOne(toSave)
 		})
 	}
 }

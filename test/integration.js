@@ -38,6 +38,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 	let channel
 	let tree
 	let balancesAfterFeesTree
+	let msgs
 
 	Promise.all(
 		// @TODO maybe we should assert that the status is 200 here?
@@ -65,7 +66,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 						}/NewState?limit=1`
 					).then(res => res.json())
 				})
-				.then(function(resp) {
+				.then(function({ validatorMessages }) {
 					return fetch(
 						`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
 							dummyVals.ids.follower
@@ -73,13 +74,11 @@ tape('submit events and ensure they are accounted for', function(t) {
 					)
 						.then(res => res.json())
 						.then(res => {
-							resp.validatorMessages = resp.validatorMessages.concat(res.validatorMessages)
-							return resp
+							msgs = validatorMessages.concat(res.validatorMessages)
 						})
 				})
 		})
-		.then(function(resp) {
-			const msgs = resp.validatorMessages
+		.then(function() {
 			t.ok(Array.isArray(msgs), 'has validatorMessages')
 			// ensure NewState is in order
 			const lastNew = msgs.find(x => x.msg.type === 'NewState')
