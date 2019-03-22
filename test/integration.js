@@ -466,13 +466,13 @@ tape('cannot exceed channel deposit', function(t) {
 				)
 			)
 		})
-		.then(() => wait(waitTime))
+		.then(() => aggrAndTick())
 		.then(function() {
 			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
 		})
 		.then(function(resp) {
 			const sum = Object.keys(resp.balances)
-				.map(k => parseInt(resp.balances[k]))
+				.map(k => parseInt(resp.balances[k], 10))
 				.reduce((a, b) => a + b, 0)
 
 			t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
@@ -558,59 +558,6 @@ tape('POST /channel/{id}/campaign: should not create campaign', function(t) {
 			})
 		})
 	)
-	.then(() => t.end())
-	.catch(err => t.fail(err))
-})
-
-tape('POST /channel/{id}/events: malformed events', function(t) {
-	Promise.all([
-		null,
-		{ type: 1 },
-		{ type: null },
-	].map(ev =>
-		fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
-			method: 'POST',
-			headers: {
-				'authorization': `Bearer ${dummyVals.auth.user}`,
-				'content-type': 'application/json',
-			},
-			body: JSON.stringify({ events: [ev] }),
-		})
-		.then(function(resp) {
-			const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
-			t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
-			t.end()
-		})
-		.catch(err => t.fail(err))
-})
-
-tape('cannot exceed channel deposit', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
-		.then(res => res.json())
-		.then(function(resp) {
-			// 1 event pays 1 token for now
-			// @TODO make this work with a more complex model
-			const evCount = resp.channel.depositAmount + 1
-
-			return Promise.all(
-				[leaderUrl, followerUrl].map(url =>
-					postEvents(url, dummyVals.channel.id, genImpressions(evCount))
-				)
-			)
-		})
-		.then(() => aggrAndTick())
-		.then(function() {
-			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
-		})
-		.then(function(resp) {
-			const sum = Object.keys(resp.balances)
-				.map(k => parseInt(resp.balances[k], 10))
-				.reduce((a, b) => a + b, 0)
-
-			t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
-			// @TODO state changed to exhausted, unable to take any more events
-			t.end()
-		})
 		.then(() => t.end())
 		.catch(err => t.fail(err))
 })

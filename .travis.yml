@@ -7,4 +7,4 @@ script:
         - npm run lint
         - npm test
         - npm run test-integration
-        #- npm run test-integration-external
+        - npm run test-integration-external
