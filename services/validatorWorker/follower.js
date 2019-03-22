@@ -29,7 +29,7 @@ function tick(adapter, channel) {
 		.then(res => heartbeatIfNothingNew(adapter, channel, res))
 }
 
-function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
+async function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
 	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
 	const newBalances = toBNMap(newMsg.balances)
 	const newBalancesAfterFees = toBNMap(newMsg.balancesAfterFees)
@@ -47,26 +47,23 @@ function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
 		return onError(adapter, channel, { reason: `InvalidRootHash`, newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
-	// @TODO use await at some point
 	const leader = channel.spec.validators[0]
-	return adapter.verify(leader.id, newMsg.stateRoot, newMsg.signature).then(function(isValidSig) {
-		if (!isValidSig) {
-			return onError(adapter, channel, { reason: `InvalidSignature`, newMsg })
-		}
+	const isValidSig = await adapter.verify(leader.id, newMsg.stateRoot, newMsg.signature)
+	if (!isValidSig) {
+		return onError(adapter, channel, { reason: `InvalidSignature`, newMsg })
+	}
 
-		const { stateRoot } = newMsg
-		const stateRootRaw = Buffer.from(stateRoot, 'hex')
-		return adapter.sign(stateRootRaw).then(function(signature) {
-			const whoami = adapter.whoami()
-			const otherValidators = channel.spec.validators.filter(v => v.id !== whoami)
-			return persistAndPropagate(adapter, otherValidators, channel, {
-				type: 'ApproveState',
-				stateRoot,
-				isHealthy: isHealthy(balances, newBalances),
-				signature,
-				created: Date.now()
-			})
-		})
+	const { stateRoot } = newMsg
+	const stateRootRaw = Buffer.from(stateRoot, 'hex')
+	const signature = await adapter.sign(stateRootRaw)
+	const whoami = adapter.whoami()
+	const otherValidators = channel.spec.validators.filter(v => v.id !== whoami)
+	return persistAndPropagate(adapter, otherValidators, channel, {
+		type: 'ApproveState',
+		stateRoot,
+		isHealthy: isHealthy(balances, newBalances),
+		signature,
+		created: Date.now()
 	})
 }
 
