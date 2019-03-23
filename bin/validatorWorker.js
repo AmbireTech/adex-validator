@@ -27,8 +27,6 @@ const adapter = adapters[argv.adapter]
 adapter
 	.init(argv)
 	.then(() => adapter.unlock(argv))
-	// @TODO WIP, remove
-	.then(() => require('../db').connect())
 	.then(function() {
 		if (argv.singleTick) {
 			allChannelsTick().then(() => process.exit(0))

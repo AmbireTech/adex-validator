@@ -15,7 +15,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 
 	async function propagateTo(receiver, messages) {
 		const authToken = await adapter.getAuthFor(receiver)
-		const resp = await fetch(`${receiver.url}/channel/${channel.id}/validator-messages`, {
+		return fetchJson(`${receiver.url}/channel/${channel.id}/validator-messages`, {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/json',
@@ -23,10 +23,6 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 			},
 			body: JSON.stringify({ messages })
 		})
-		if (resp.status !== 200) {
-			return Promise.reject(new Error(`request failed with status code ${resp.status}`))
-		}
-		return resp.json()
 	}
 
 	// Public
@@ -41,19 +37,37 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 
 	this.getLatestMsg = function(from, type) {
 		const url = `${baseUrl}/validator-messages/${from}/${type}?limit=1`
-		return fetch(url)
-			.then(res => res.json())
-			.then(({ validatorMessages }) => (validatorMessages.length ? validatorMessages[0].msg : null))
+		return fetchJson(url).then(({ validatorMessages }) =>
+			validatorMessages.length ? validatorMessages[0].msg : null
+		)
 	}
 
 	this.getLastApproved = function() {
 		const lastApprovedUrl = `${baseUrl}/last-approved`
-		return fetch(lastApprovedUrl)
-			.then(res => res.json())
-			.then(({ lastApproved }) => lastApproved)
+		return fetchJson(lastApprovedUrl).then(({ lastApproved }) => lastApproved)
+	}
+
+	this.getEventAggrs = async function(params = { after: 0 }) {
+		const authToken = await adapter.getAuthFor(ourValidator)
+		let url = `${baseUrl}/events-aggregates`
+		if (params.after) url = `${url}?after=${new Date(params.after).getTime()}`
+		return fetchJson(url, {
+			headers: {
+				'content-type': 'application/json',
+				authorization: `Bearer ${authToken}`
+			}
+		}).then(({ events }) => events)
 	}
 
 	return Object.freeze(this)
+}
+
+async function fetchJson(url, opts) {
+	const resp = await fetch(url, opts)
+	if (resp.status !== 200) {
+		return Promise.reject(new Error(`request failed with status code ${resp.status}`))
+	}
+	return resp.json()
 }
 
 function onPropagationError(adapter, recv, msgs, e) {

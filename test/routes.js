@@ -18,7 +18,6 @@ tape('/channel/list', function(t) {
 		.then(function(resp) {
 			t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
 			t.equal(resp.channels.length, 1, 'resp.channels is the right len')
-			t.equal(resp.channels[0].status, 'live', 'channel is the right status')
 			t.end()
 		})
 		.catch(err => t.fail(err))
@@ -45,25 +44,11 @@ tape('POST /channel/{id}/events: non existant channel', function(t) {
 })
 
 tape('/channel/{id}/status', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
+	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
 		.then(res => res.json())
 		.then(function(resp) {
 			t.ok(resp.channel, 'has resp.channel')
-			t.equal(resp.channel.status, 'live', 'channel has right status')
 			t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
-			t.end()
-		})
-		.catch(err => t.fail(err))
-})
-
-tape('/channel/{id}/tree', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`)
-		.then(res => res.json())
-		.then(function(resp) {
-			t.ok(resp.channel, 'has resp.channel')
-			t.equal(resp.channel.status, 'live', 'channel has right status')
-			t.deepEqual(resp.balances, {}, 'channel has balances')
-			t.equal(new Date(resp.lastEvAggr).getTime(0), 0, 'lastEvAggr is 0')
 			t.end()
 		})
 		.catch(err => t.fail(err))

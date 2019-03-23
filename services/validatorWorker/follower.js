@@ -14,16 +14,16 @@ async function tick(adapter, iface, channel) {
 
 	// there are no unapproved NewState messages, only merge all eventAggrs
 	if (!newMsg || latestIsRespondedTo) {
-		await producer.tick(iface, channel)
+		await producer.tick(adapter, iface, channel)
 	} else {
-		const { balancesAfterFees } = await producer.tick(iface, channel, true)
-		await onNewState(adapter, iface, { channel, balancesAfterFees, newMsg })
+		const { balances } = await producer.tick(adapter, iface, channel, true)
+		await onNewState(adapter, iface, { channel, balances, newMsg })
 	}
 
 	await heartbeat(adapter, iface, channel)
 }
 
-async function onNewState(adapter, iface, { channel, balancesAfterFees, newMsg }) {
+async function onNewState(adapter, iface, { channel, balances, newMsg }) {
 	const newBalances = toBNMap(newMsg.balances)
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
@@ -46,11 +46,12 @@ async function onNewState(adapter, iface, { channel, balancesAfterFees, newMsg }
 	const { stateRoot } = newMsg
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 	const signature = await adapter.sign(stateRootRaw)
+	console.log(balances, newBalances)
 	return iface.propagate([
 		{
 			type: 'ApproveState',
 			stateRoot,
-			isHealthy: isHealthy(balancesAfterFees, newBalances),
+			isHealthy: isHealthy(balances, newBalances),
 			signature
 		}
 	])

@@ -34,9 +34,9 @@ tape('submit events and ensure they are accounted for', function(t) {
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
-	let channel
-	let tree
-	let balancesAfterFeesTree
+	const channel = dummyVals.channel
+	let balancesTreePreFees
+	let balancesTree
 
 	Promise.all(
 		// @TODO maybe we should assert that the status is 200 here?
@@ -44,14 +44,17 @@ tape('submit events and ensure they are accounted for', function(t) {
 	)
 		.then(() => aggrAndTick())
 		.then(function() {
-			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
+			return fetch(
+				`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
+			)
+				.then(res => res.json())
+				.then(({ validatorMessages }) => validatorMessages[0].msg)
 		})
 		.then(function(resp) {
 			t.ok(resp && resp.balances, 'there is a balances tree')
-			channel = resp.channel
-			tree = resp.balances
-			balancesAfterFeesTree = resp.balancesAfterFees
-			t.equal(tree[defaultPubName], expectedBal, 'balances is right')
+			balancesTreePreFees = resp.balancesBeforeFees
+			balancesTree = resp.balances
+			t.equal(balancesTreePreFees[defaultPubName], expectedBal, 'balances is right')
 			// We will check the leader, cause this means this happened:
 			// the NewState was generated, sent to the follower,
 			// who generated ApproveState and sent back to the leader
@@ -83,8 +86,8 @@ tape('submit events and ensure they are accounted for', function(t) {
 			)
 			t.deepEqual(
 				lastNew.msg.balances,
-				balancesAfterFeesTree,
-				'NewState: balances is the same as the one in /tree'
+				balancesTree,
+				'NewState: balances is the same as the one in Accounting'
 			)
 
 			// Ensure ApproveState is in order
@@ -105,12 +108,12 @@ tape('submit events and ensure they are accounted for', function(t) {
 				lastApprove.msg.stateRoot,
 				'stateRoot is the same between latest NewState and ApproveState'
 			)
-			t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is HEALTHY')
+			t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is true')
 
 			// Check inclusion proofs of the balance
 			// stateRoot = keccak256(channelId, balanceRoot)
-			const allLeafs = Object.keys(balancesAfterFeesTree).map(k =>
-				Channel.getBalanceLeaf(k, balancesAfterFeesTree[k])
+			const allLeafs = Object.keys(balancesTree).map(k =>
+				Channel.getBalanceLeaf(k, balancesTree[k])
 			)
 			const mTree = new MerkleTree(allLeafs)
 			const stateRootRaw = Channel.getSignableStateRoot(
@@ -133,6 +136,9 @@ tape('submit events and ensure they are accounted for', function(t) {
 		.catch(err => t.fail(err))
 })
 
+// @TODO filtering tests
+// do we return the aggregates we have access to only?
+// do we return everything if we're a superuser (validator)
 tape('/channel/{id}/events-aggregates', function(t) {
 	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
 		method: 'GET',
@@ -402,7 +408,11 @@ tape('cannot exceed channel deposit', function(t) {
 		})
 		.then(() => aggrAndTick())
 		.then(function() {
-			return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/tree`).then(res => res.json())
+			return fetch(
+				`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
+			)
+				.then(res => res.json())
+				.then(({ validatorMessages }) => validatorMessages[0].msg)
 		})
 		.then(function(resp) {
 			const sum = Object.keys(resp.balances)

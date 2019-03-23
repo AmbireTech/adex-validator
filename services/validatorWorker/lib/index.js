@@ -21,7 +21,9 @@ function toBNMap(raw) {
 	assert.ok(raw && typeof raw === 'object', 'raw map is a valid object')
 	const balances = {}
 	Object.entries(raw).forEach(([acc, bal]) => {
-		balances[acc] = new BN(bal, 10)
+		const bnBal = new BN(bal, 10)
+		assert.ok(!bnBal.isNeg(), 'balance should not be negative')
+		balances[acc] = bnBal
 	})
 	return balances
 }
