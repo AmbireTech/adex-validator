@@ -123,7 +123,6 @@ function getLastApprovedMessages(req, res, next) {
 
 async function retrieveLastApproved(channel) {
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	console.log(channel)
 	const approveStateMsgs = await validatorMsgCol
 		.find({
 			channelId: channel.id,

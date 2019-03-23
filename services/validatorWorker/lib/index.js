@@ -47,7 +47,7 @@ function invalidNewState(adapter, channel, { reason, newMsg }) {
 	// quirk: type is overiding type in newMsg
 	return persist(adapter, channel, {
 		...newMsg,
-		type: 'InvalidNewState',
+		type: 'RejectState',
 		reason
 	})
 }

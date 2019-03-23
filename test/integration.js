@@ -11,7 +11,7 @@ const {
 	postEvents,
 	genImpressions,
 	getDummySig,
-	filterInvalidNewStateMsg,
+	filterRejectStateMsg,
 	incrementKeys
 } = require('./lib')
 const cfg = require('../cfg')
@@ -292,17 +292,17 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 			return fetch(
 				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
 					dummyVals.ids.follower
-				}/InvalidNewState`
+				}/RejectState`
 			).then(res => res.json())
 		})
 		.then(function(resp) {
-			const message = filterInvalidNewStateMsg(resp.validatorMessages, {
+			const message = filterRejectStateMsg(resp.validatorMessages, {
 				reason: 'InvalidSignature',
 				stateRoot
 			})[0]
 
 			t.ok(message, 'should have an invalid new state')
-			t.equal(message.msg.type, 'InvalidNewState', 'should have an invalid new state')
+			t.equal(message.msg.type, 'RejectState', 'should have an invalid new state')
 			t.equal(message.msg.reason, 'InvalidSignature', 'reason should be invalid root hash')
 			t.equal(message.msg.stateRoot, stateRoot, 'should have state root')
 			t.equal(message.msg.signature, signature, 'should have the invalid signature')
@@ -363,17 +363,17 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 			return fetch(
 				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
 					dummyVals.ids.follower
-				}/InvalidNewState`
+				}/RejectState`
 			).then(res => res.json())
 		})
 		.then(function(resp) {
-			const message = filterInvalidNewStateMsg(resp.validatorMessages, {
+			const message = filterRejectStateMsg(resp.validatorMessages, {
 				reason: 'InvalidRootHash',
 				stateRoot: deceptiveRootHash
 			})[0]
 
 			t.ok(message, 'should have an invalid new state')
-			t.equal(message.msg.type, 'InvalidNewState', 'should have an invalid new state')
+			t.equal(message.msg.type, 'RejectState', 'should have an invalid new state')
 			t.equal(message.msg.reason, 'InvalidRootHash', 'reason should be invalid root hash')
 			t.equal(message.msg.stateRoot, deceptiveRootHash, 'should have the deceptive root hash')
 

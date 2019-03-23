@@ -30,7 +30,7 @@ function getDummySig(hash, from) {
 	return `Dummy adapter signature for ${hash} by ${from}`
 }
 
-function filterInvalidNewStateMsg(messages, filter) {
+function filterRejectStateMsg(messages, filter) {
 	assert.ok(Array.isArray(messages), 'messages should be array')
 
 	return messages.filter(
@@ -79,6 +79,6 @@ module.exports = {
 	getDummySig,
 	forceTick,
 	wait,
-	filterInvalidNewStateMsg,
+	filterRejectStateMsg,
 	incrementKeys
 }
