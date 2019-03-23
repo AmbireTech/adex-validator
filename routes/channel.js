@@ -95,6 +95,7 @@ function getList(req, res, next) {
 
 // Implementation of getValidatorMessages
 // It retrieves the last N validator messages
+const VALIDATOR_MSGS_PROJ = { _id: 0, channelId: 0 }
 function getValidatorMessages(req, res, next) {
 	const { type, id, uid } = req.params
 	const { limit } = req.query
@@ -105,7 +106,7 @@ function getValidatorMessages(req, res, next) {
 	if (typeof type === 'string') query['msg.type'] = type
 
 	validatorMsgCol
-		.find(query, { _id: 0 })
+		.find(query, { projection: VALIDATOR_MSGS_PROJ })
 		.sort({ received: -1 })
 		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
 		.toArray()
@@ -124,11 +125,14 @@ function getLastApprovedMessages(req, res, next) {
 async function retrieveLastApproved(channel) {
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const approveStateMsgs = await validatorMsgCol
-		.find({
-			channelId: channel.id,
-			from: channel.validators[1],
-			'msg.type': 'ApproveState'
-		})
+		.find(
+			{
+				channelId: channel.id,
+				from: channel.validators[1],
+				'msg.type': 'ApproveState'
+			},
+			{ projection: VALIDATOR_MSGS_PROJ }
+		)
 		.sort({ received: -1 })
 		.limit(1)
 		.toArray()
@@ -136,12 +140,15 @@ async function retrieveLastApproved(channel) {
 		return null
 	}
 	const approveState = approveStateMsgs[0]
-	const newState = await validatorMsgCol.findOne({
-		channelId: channel.id,
-		from: channel.validators[0],
-		'msg.type': 'NewState',
-		'msg.stateRoot': approveState.msg.stateRoot
-	})
+	const newState = await validatorMsgCol.findOne(
+		{
+			channelId: channel.id,
+			from: channel.validators[0],
+			'msg.type': 'NewState',
+			'msg.stateRoot': approveState.msg.stateRoot
+		},
+		{ projection: VALIDATOR_MSGS_PROJ }
+	)
 	if (newState) {
 		return { newState, approveState }
 	}
@@ -163,8 +170,8 @@ function postValidatorMessages(req, res, next) {
 	}
 
 	const startTime = Date.now()
-	const toInsert = messages.map(function(msg, idx) {
-		return validatorMsgCol.insertOne({
+	const toInsert = messages.map((msg, idx) =>
+		validatorMsgCol.insertOne({
 			channelId: req.channel.id,
 			from: req.session.uid,
 			msg,
@@ -173,7 +180,7 @@ function postValidatorMessages(req, res, next) {
 			// for this but we'll swap it out eventually
 			received: new Date(startTime + idx)
 		})
-	})
+	)
 	Promise.all(toInsert)
 		.then(function() {
 			res.send({ success: true })
