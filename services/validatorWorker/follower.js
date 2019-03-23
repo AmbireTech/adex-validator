@@ -46,7 +46,6 @@ async function onNewState(adapter, iface, { channel, balances, newMsg }) {
 	const { stateRoot } = newMsg
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 	const signature = await adapter.sign(stateRootRaw)
-	console.log(balances, newBalances)
 	return iface.propagate([
 		{
 			type: 'ApproveState',

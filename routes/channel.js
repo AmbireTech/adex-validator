@@ -40,8 +40,9 @@ function getEventAggregates(req, res, next) {
 		query = { ...query, [keyCounts]: { $exists: true } }
 		projection = { ...projection, created: 1, [keyCounts]: 1, [keyPayouts]: 1 }
 	}
-	if (typeof req.query.after === 'number') {
-		query = { ...query, created: { $gt: new Date(req.query.after) } }
+	if (typeof req.query.after === 'string') {
+		const after = parseInt(req.query.after, 10)
+		query = { ...query, created: { $gt: new Date(after) } }
 	}
 	return eventsCol
 		.find(query, { projection })
