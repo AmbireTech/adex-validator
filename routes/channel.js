@@ -99,14 +99,14 @@ function getValidatorMessages(req, res, next) {
 	const { type, id, uid } = req.params
 	const { limit } = req.query
 
-	const validatorCol = db.getMongo().collection('validatorMessages')
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const query = { channelId: id }
 	if (typeof uid === 'string') query.from = uid
 	if (typeof type === 'string') query['msg.type'] = type
 
-	validatorCol
+	validatorMsgCol
 		.find(query)
-		.sort({ _id: -1 })
+		.sort({ received: -1 })
 		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
 		.toArray()
 		.then(function(validatorMessages) {
@@ -133,7 +133,8 @@ function postValidatorMessages(req, res, next) {
 		return validatorMsgCol.insertOne({
 			channelId: req.channel.id,
 			from: req.session.uid,
-			msg
+			msg,
+			received: new Date()
 		})
 	})
 	Promise.all(toInsert)

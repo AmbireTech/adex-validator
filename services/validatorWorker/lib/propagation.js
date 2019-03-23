@@ -22,6 +22,7 @@ function persist(adapter, channel, msg) {
 	return validatorMsgCol.insertOne({
 		channelId: channel.id,
 		from: adapter.whoami(),
+		received: new Date(),
 		msg
 	})
 }

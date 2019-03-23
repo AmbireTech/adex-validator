@@ -20,8 +20,7 @@ async function afterProducer(adapter, { channel, newStateTree, balancesAfterFees
 		type: 'NewState',
 		...newStateTree,
 		stateRoot,
-		signature,
-		created: Date.now()
+		signature
 	})
 }
 

@@ -173,6 +173,9 @@ tape('health works correctly', function(t) {
 	const toFollower = 8
 	const toLeader = 1
 	const diff = toFollower - toLeader
+	const approveStateUrl = `${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+		dummyVals.ids.follower
+	}/ApproveState?limit=1`
 	Promise.all(
 		[leaderUrl, followerUrl].map(url =>
 			postEvents(
@@ -187,13 +190,10 @@ tape('health works correctly', function(t) {
 		.then(() => aggrAndTick())
 		.then(() => forceTick())
 		.then(function() {
-			// get the latest state
-			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`).then(res =>
-				res.json()
-			)
+			return fetch(approveStateUrl).then(res => res.json())
 		})
 		.then(function(resp) {
-			const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
+			const lastApprove = resp.validatorMessages[0]
 			// @TODO: Should we assert balances numbers?
 			// @TODO assert number of messages; this will be easy once we create a separate channel for each test
 			t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
@@ -205,12 +205,10 @@ tape('health works correctly', function(t) {
 		.then(() => aggrAndTick())
 		.then(() => forceTick())
 		.then(function() {
-			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`).then(res =>
-				res.json()
-			)
+			return fetch(approveStateUrl).then(res => res.json())
 		})
 		.then(function(resp) {
-			const lastApprove = resp.validatorMessages.find(x => x.msg.type === 'ApproveState')
+			const lastApprove = resp.validatorMessages[0]
 			t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
 			t.end()
 		})
@@ -289,8 +287,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 							balancesAfterFees: toBNStringMap(balancesAfterFees),
 							lastEvAggr: '2019-01-23T09:09:29.959Z',
 							// sign by awesomeLeader1 rather than awesomeLeader
-							signature,
-							created: Date.now()
+							signature
 						}
 					]
 				})
@@ -361,8 +358,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 							balances,
 							balancesAfterFees,
 							lastEvAggr: '2019-01-23T09:10:29.959Z',
-							signature: `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`,
-							created: Date.now()
+							signature: `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
 						}
 					]
 				})

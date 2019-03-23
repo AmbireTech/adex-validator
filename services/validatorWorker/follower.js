@@ -59,8 +59,7 @@ async function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
 		type: 'ApproveState',
 		stateRoot,
 		isHealthy: isHealthy(balances, newBalances),
-		signature,
-		created: Date.now()
+		signature
 	})
 }
 
@@ -75,7 +74,7 @@ function getLatestMsg(channelId, from, type) {
 			from,
 			'msg.type': type
 		})
-		.sort({ 'msg.created': -1 })
+		.sort({ received: -1 })
 		.limit(1)
 		.toArray()
 		.then(function([o]) {
