@@ -38,7 +38,6 @@ tape('submit events and ensure they are accounted for', function(t) {
 	let channel
 	let tree
 	let balancesAfterFeesTree
-	let msgs
 
 	Promise.all(
 		// @TODO maybe we should assert that the status is 200 here?
@@ -57,32 +56,16 @@ tape('submit events and ensure they are accounted for', function(t) {
 			// We will check the leader, cause this means this happened:
 			// the NewState was generated, sent to the follower,
 			// who generated ApproveState and sent back to the leader
-			// first wait though, as we need the follower to discover they have an event to approve
-			return aggrAndTick()
-				.then(function() {
-					return fetch(
-						`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-							dummyVals.ids.leader
-						}/NewState?limit=1`
-					).then(res => res.json())
-				})
-				.then(function({ validatorMessages }) {
-					return fetch(
-						`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-							dummyVals.ids.follower
-						}/ApproveState?limit=1`
-					)
-						.then(res => res.json())
-						.then(res => {
-							msgs = validatorMessages.concat(res.validatorMessages)
-						})
-				})
+			return aggrAndTick().then(function() {
+				return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/last-approved`).then(res =>
+					res.json()
+				)
+			})
 		})
-		.then(function() {
-			t.ok(Array.isArray(msgs), 'has validatorMessages')
+		.then(function({ lastApproved }) {
+			t.ok(lastApproved, 'has lastApproved')
 			// ensure NewState is in order
-			const lastNew = msgs.find(x => x.msg.type === 'NewState')
-
+			const lastNew = lastApproved.newState
 			t.ok(lastNew, 'has NewState')
 			t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
 			t.equal(lastNew.msg.balances[defaultPubName], expectedBal, 'NewState: balances is right')
@@ -103,7 +86,7 @@ tape('submit events and ensure they are accounted for', function(t) {
 			)
 
 			// Ensure ApproveState is in order
-			const lastApprove = msgs.find(x => x.msg.type === 'ApproveState')
+			const lastApprove = lastApproved.approveState
 			t.ok(lastApprove, 'has ApproveState')
 			t.equal(lastApprove.from, channel.validators[1], 'ApproveState: is by the follower')
 			t.ok(

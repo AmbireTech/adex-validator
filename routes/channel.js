@@ -17,6 +17,7 @@ router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 
 // Validator information
 router.get('/:id/validator-messages', getValidatorMessages)
+router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
 router.get(
 	'/:id/validator-messages/:uid/:type?',
 	channelIfExists,
@@ -92,9 +93,8 @@ function getList(req, res, next) {
 		.catch(next)
 }
 
-// Implementation of getValidatorMessagesDetailed
-// It retrieves the last recent N
-// validator messages
+// Implementation of getValidatorMessages
+// It retrieves the last N validator messages
 function getValidatorMessages(req, res, next) {
 	const { type, id, uid } = req.params
 	const { limit } = req.query
@@ -113,6 +113,40 @@ function getValidatorMessages(req, res, next) {
 			res.send({ validatorMessages, channel: req.channel })
 		})
 		.catch(next)
+}
+
+function getLastApprovedMessages(req, res, next) {
+	retrieveLastApproved(req.channel)
+		.then(lastApproved => res.send({ lastApproved }))
+		.catch(next)
+}
+
+async function retrieveLastApproved(channel) {
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	console.log(channel)
+	const approveStateMsgs = await validatorMsgCol
+		.find({
+			channelId: channel.id,
+			from: channel.validators[1],
+			'msg.type': 'ApproveState'
+		})
+		.sort({ received: -1 })
+		.limit(1)
+		.toArray()
+	if (!approveStateMsgs.length) {
+		return null
+	}
+	const approveState = approveStateMsgs[0]
+	const newState = await validatorMsgCol.findOne({
+		channelId: channel.id,
+		from: channel.validators[0],
+		'msg.type': 'NewState',
+		'msg.stateRoot': approveState.msg.stateRoot
+	})
+	if (newState) {
+		return { newState, approveState }
+	}
+	return null
 }
 
 function postValidatorMessages(req, res, next) {
