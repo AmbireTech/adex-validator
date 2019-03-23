@@ -30,13 +30,13 @@ async function onNewState(adapter, { channel, balancesAfterFees, newMsg }) {
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
 	if (!isValidRootHash(adapter, newMsg.stateRoot, channel, newBalances)) {
-		return onError(adapter, channel, { reason: `InvalidRootHash`, newMsg })
+		return onError(adapter, channel, { reason: 'InvalidRootHash', newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
 	const leader = channel.spec.validators[0]
 	const isValidSig = await adapter.verify(leader.id, newMsg.stateRoot, newMsg.signature)
 	if (!isValidSig) {
-		return onError(adapter, channel, { reason: `InvalidSignature`, newMsg })
+		return onError(adapter, channel, { reason: 'InvalidSignature', newMsg })
 	}
 
 	const lastApproved = await getLastApproved(adapter, channel)
