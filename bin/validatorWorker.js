@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 const assert = require('assert')
 const yargs = require('yargs')
+const fetch = require('node-fetch')
 const cfg = require('../cfg')
-const db = require('../db')
 const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
@@ -16,16 +16,19 @@ const { argv } = yargs
 	.describe('keystoreFile', 'path to JSON Ethereum keystore file')
 	.describe('keystorePwd', 'password to unlock the Ethereum keystore file')
 	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
+	.describe('sentryUrl', 'the URL to the sentry used for listing channels')
+	.default('sentryUrl', 'http://127.0.0.1:8005')
 	.boolean('singleTick')
 	.describe('singleTick', 'run a single tick and exit')
-	.demandOption(['adapter'])
+	.demandOption(['adapter', 'sentryUrl'])
 
 const adapter = adapters[argv.adapter]
 
-db.connect()
-	.then(function() {
-		return adapter.init(argv).then(() => adapter.unlock(argv))
-	})
+adapter
+	.init(argv)
+	.then(() => adapter.unlock(argv))
+	// @TODO WIP, remove
+	.then(() => require('../db').connect())
 	.then(function() {
 		if (argv.singleTick) {
 			allChannelsTick().then(() => process.exit(0))
@@ -39,14 +42,9 @@ db.connect()
 	})
 
 function allChannelsTick() {
-	const channelsCol = db.getMongo().collection('channels')
-	return channelsCol
-		.find({ validators: adapter.whoami() })
-		.limit(cfg.MAX_CHANNELS)
-		.toArray()
-		.then(function(channels) {
-			return Promise.all(channels.map(validatorTick))
-		})
+	return fetch(`${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`)
+		.then(res => res.json())
+		.then(({ channels }) => Promise.all(channels.map(validatorTick)))
 }
 
 function loopChannels() {
@@ -71,7 +69,7 @@ function wait(ms) {
 
 function logPostChannelsTick(channels) {
 	console.log(`validatorWorker: processed ${channels.length} channels`)
-	if (channels.length === cfg.MAX_CHANNELS) {
+	if (channels.length >= cfg.MAX_CHANNELS) {
 		console.log(
 			`validatorWorker: WARNING: channel limit cfg.MAX_CHANNELS=${cfg.MAX_CHANNELS} reached`
 		)

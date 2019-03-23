@@ -52,14 +52,10 @@ function exec(cmd) {
 function forceTick() {
 	return Promise.all([
 		exec(
-			`DB_MONGO_NAME=${
-				process.env.LEADER_DATABASE
-			} ./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeLeader`
+			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeLeader --sentryUrl=http://localhost:8005`
 		),
 		exec(
-			`DB_MONGO_NAME=${
-				process.env.FOLLOWER_DATABASE
-			} ./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeFollower`
+			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeFollower --sentryUrl=http://localhost:8006`
 		)
 	])
 }
