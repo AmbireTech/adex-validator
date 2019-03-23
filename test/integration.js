@@ -348,6 +348,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 		.then(() => aggrAndTick())
 		// we tick again to test if we'd produce another RejectState
 		// @TODO move into a separate test
+		// @TODO similar test for ApproveState
 		.then(() => forceTick())
 		.then(function() {
 			return fetch(

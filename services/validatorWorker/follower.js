@@ -1,5 +1,4 @@
 const fetch = require('node-fetch')
-const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
 const { isValidRootHash, onError, toBNMap } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
@@ -10,8 +9,8 @@ async function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	const [newMsg, responseMsg] = await Promise.all([
-		getLatestMsg(channel.id, channel.validators[0], 'NewState'),
-		getLatestMsg(channel.id, adapter.whoami(), { $in: ['ApproveState', 'RejectState'] })
+		getLatestMsg(adapter, channel, channel.validators[0], 'NewState'),
+		getLatestMsg(adapter, channel, adapter.whoami(), 'ApproveState+RejectState')
 	])
 	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
 
@@ -60,21 +59,13 @@ async function onNewState(adapter, { channel, balancesAfterFees, newMsg }) {
 }
 
 // @TODO: move into Sentry interface
-function getLatestMsg(channelId, from, type) {
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-
-	return validatorMsgCol
-		.find({
-			channelId,
-			from,
-			'msg.type': type
-		})
-		.sort({ received: -1 })
-		.limit(1)
-		.toArray()
-		.then(function([o]) {
-			return o ? o.msg : null
-		})
+function getLatestMsg(adapter, channel, from, type) {
+	const whoami = adapter.whoami()
+	const validator = channel.spec.validators.find(v => v.id === whoami)
+	const url = `${validator.url}/channel/${channel.id}/validator-messages/${from}/${type}?limit=1`
+	return fetch(url)
+		.then(res => res.json())
+		.then(({ validatorMessages }) => (validatorMessages.length ? validatorMessages[0].msg : null))
 }
 
 // @TODO: move into Sentry interface

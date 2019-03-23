@@ -18,11 +18,7 @@ router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 // Validator information
 router.get('/:id/validator-messages', channelIfExists, getValidatorMessages)
 router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
-router.get(
-	'/:id/validator-messages/:uid/:type?',
-	channelIfExists,
-	getValidatorMessages
-)
+router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessages)
 
 // event aggregates information
 router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad, getEventAggregates)
@@ -102,7 +98,9 @@ function getValidatorMessages(req, res, next) {
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const query = { channelId: id }
 	if (typeof uid === 'string') query.from = uid
-	if (typeof type === 'string') query['msg.type'] = type
+	if (typeof type === 'string') {
+		query['msg.type'] = { $in: type.split('+') }
+	}
 
 	validatorMsgCol
 		.find(query, { projection: VALIDATOR_MSGS_PROJ })
