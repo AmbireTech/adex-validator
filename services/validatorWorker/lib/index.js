@@ -1,6 +1,5 @@
 const assert = require('assert')
 const BN = require('bn.js')
-const { persist } = require('./propagation')
 
 function getStateRootHash(adapter, channel, balances) {
 	// Note: MerkleTree takes care of deduplicating and sorting
@@ -36,26 +35,14 @@ function toBNStringMap(raw) {
 	return balances
 }
 
-function invalidNewState(adapter, channel, { reason, newMsg }) {
-	// quirk: type is overiding type in newMsg
-	return persist(adapter, channel, {
-		...newMsg,
-		type: 'RejectState',
-		reason
-	})
-}
-
-function onError(adapter, channel, { reason, newMsg }) {
-	const errMsg = getErrorMsg(reason, channel)
-
-	return invalidNewState(adapter, channel, { reason, newMsg }).then(function() {
-		console.error(errMsg)
-		return { nothingNew: true }
-	})
-}
-
-function getErrorMsg(reason, channel) {
-	return `validatatorWorker: ${channel.id}: ${reason} error in NewState`
+function onError(iface, { reason, newMsg }) {
+	return iface.propagate([
+		{
+			...newMsg,
+			type: 'RejectState',
+			reason
+		}
+	])
 }
 
 module.exports = {

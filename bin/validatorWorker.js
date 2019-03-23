@@ -6,6 +6,7 @@ const db = require('../db')
 const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
+const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -61,7 +62,8 @@ function validatorTick(channel) {
 
 	const isLeader = validatorIdx === 0
 	const tick = isLeader ? leader.tick : follower.tick
-	return tick(adapter, channel)
+	const iface = new SentryInterface(adapter, channel)
+	return tick(adapter, iface, channel)
 }
 function wait(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms))

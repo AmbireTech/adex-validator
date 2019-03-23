@@ -1,28 +1,27 @@
-const { persistAndPropagate } = require('./lib/propagation')
 const { getStateRootHash } = require('./lib')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
 
-async function tick(adapter, channel) {
-	const res = await producer.tick(channel)
+async function tick(adapter, iface, channel) {
+	const res = await producer.tick(iface, channel)
 	if (res.newStateTree) {
-		await afterProducer(adapter, res)
+		await afterProducer(adapter, iface, res)
 	}
-	await heartbeat(adapter, channel)
+	await heartbeat(adapter, iface, channel)
 }
 
-async function afterProducer(adapter, { channel, newStateTree, balancesAfterFees }) {
-	const followers = channel.spec.validators.slice(1)
+async function afterProducer(adapter, iface, { channel, newStateTree, balancesAfterFees }) {
 	const stateRootRaw = getStateRootHash(adapter, channel, balancesAfterFees)
-
 	const signature = await adapter.sign(stateRootRaw)
 	const stateRoot = stateRootRaw.toString('hex')
-	return persistAndPropagate(adapter, followers, channel, {
-		type: 'NewState',
-		balances: newStateTree.balancesAfterFees,
-		stateRoot,
-		signature
-	})
+	return iface.propagate([
+		{
+			type: 'NewState',
+			balances: newStateTree.balancesAfterFees,
+			stateRoot,
+			signature
+		}
+	])
 }
 
 module.exports = { tick }

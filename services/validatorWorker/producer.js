@@ -5,7 +5,7 @@ const cfg = require('../../cfg')
 const { toBNStringMap } = require('./lib')
 const { getBalancesAfterFeesTree } = require('./lib/fees')
 
-async function tick(channel, force) {
+async function tick(iface, channel, force) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const stateTreeCol = db.getMongo().collection('channelStateTrees')
 

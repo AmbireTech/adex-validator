@@ -211,8 +211,7 @@ function isValidatorMsgValid(msg) {
 			typeof msg.timestamp === 'string') &&
 		typeof msg.signature === 'string' &&
 		((msg.type === 'NewState' && typeof msg.balances === 'object') ||
-			msg.type === 'ApproveState' ||
-			msg.type === 'Heartbeat')
+			['ApproveState', 'RejectState', 'Heartbeat'].includes(msg.type))
 	)
 }
 
