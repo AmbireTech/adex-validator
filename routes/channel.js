@@ -73,9 +73,12 @@ function getEventAggregates(req, res, next) {
 
 function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
-
+	const query = {}
+	if (typeof(req.query.validator) === 'string') {
+		query.validators = req.query.validator
+	}
 	return channelsCol
-		.find({}, { projection: { _id: 0 } })
+		.find(query, { projection: { _id: 0 } })
 		.limit(cfg.CHANNELS_FIND_LIMIT)
 		.toArray()
 		.then(function(channels) {
