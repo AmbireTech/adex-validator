@@ -27,7 +27,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 
 	// Public
 	this.propagate = function(msgs) {
-		if (opts.logging) logPropagate(receivers, channel, msgs)
+		if (opts.logging) logPropagate(adapter, receivers, channel, msgs)
 		return Promise.all(
 			receivers.map(recv =>
 				propagateTo(recv, msgs).catch(onPropagationError.bind(null, adapter, recv, msgs))
@@ -78,12 +78,12 @@ function onPropagationError(adapter, recv, msgs, e) {
 	)
 }
 
-function logPropagate(recvs, channel, msgs) {
+function logPropagate(adapter, recvs, channel, msgs) {
 	// @TODO detailed log for some types of messages, e.g. RejectState
 	console.log(
-		`${LOG_PREFIX}: channel ${channel.id}: propagating ${summarizeMsgs(msgs)} to ${
-			recvs.length
-		} validators`
+		`${LOG_PREFIX}(${adapter.whoami()}): channel ${channel.id}: propagating ${summarizeMsgs(
+			msgs
+		)} to ${recvs.length} validators`
 	)
 }
 
