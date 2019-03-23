@@ -348,6 +348,9 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 			}).then(r => t.equal(r.status, 200, 'response status is right'))
 		})
 		.then(() => aggrAndTick())
+		// we tick again to test if we'd produce another RejectState
+		// @TODO move into a separate test
+		.then(() => forceTick())
 		.then(function() {
 			return fetch(
 				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
@@ -367,10 +370,12 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 			).then(res => res.json())
 		})
 		.then(function(resp) {
-			const message = filterRejectStateMsg(resp.validatorMessages, {
+			const allMsgs = filterRejectStateMsg(resp.validatorMessages, {
 				reason: 'InvalidRootHash',
 				stateRoot: deceptiveRootHash
-			})[0]
+			})
+			t.equal(allMsgs.length, 1, 'RejectState is produced only once')
+			const message = allMsgs[0]
 
 			t.ok(message, 'should have an invalid new state')
 			t.equal(message.msg.type, 'RejectState', 'should have an invalid new state')
