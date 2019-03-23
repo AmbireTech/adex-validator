@@ -49,19 +49,10 @@ function allChannelsTick() {
 }
 
 function loopChannels() {
-	Promise.all([allChannelsTick(), wait(cfg.WAIT_TIME)])
-		.then(function([allResults]) {
-			// If nothing is new, snooze
-			if (allResults.every(x => x && x.nothingNew)) {
-				return wait(cfg.SNOOZE_TIME)
-			}
-
-			logPostChannelsTick(allResults)
-			return Promise.resolve()
-		})
-		.then(function() {
-			loopChannels()
-		})
+	Promise.all([allChannelsTick(), wait(cfg.WAIT_TIME)]).then(function([allResults]) {
+		logPostChannelsTick(allResults)
+		loopChannels()
+	})
 }
 
 function validatorTick(channel) {
