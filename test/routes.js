@@ -25,9 +25,9 @@ tape('/channel/list', function(t) {
 	// @TODO: test channel list filters if there are any
 })
 
-tape('/channel/{id}/{status,tree}: non existant channel', function(t) {
+tape('/channel/{id}/{status,validator-messages}: non existant channel', function(t) {
 	Promise.all(
-		['status', 'tree'].map(path =>
+		['status', 'validator-messages'].map(path =>
 			fetch(`${leaderUrl}/channel/xxxtentacion/${path}`).then(function(res) {
 				t.equal(res.status, 404, 'status should be 404')
 			})
