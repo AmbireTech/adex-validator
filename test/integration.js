@@ -200,40 +200,37 @@ tape('health works correctly', function(t) {
 		.catch(err => t.fail(err))
 })
 
-tape('heartbeat works correctly', function(t) {
+tape('heartbeat has been emitted', function(t) {
 	Promise.resolve()
-		.then(() => aggrAndTick())
+		.then(() => forceTick())
 		.then(function() {
-			;[
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/Heartbeat?limit=1`,
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.leader
-				}/Heartbeat?limit=1`,
-				`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.leader
-				}/Heartbeat?limit=1`,
-				`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/Heartbeat?limit=1`
-			].forEach(url => {
-				fetch(url)
-					.then(res => res.json())
-					.then(function(resp) {
-						const health = resp.validatorMessages.find(x => x.msg.type === 'Heartbeat')
-						t.ok(health, 'should propagate heartbeat notification')
-						t.ok(health.msg.signature, 'heartbeat notification has signature')
-						t.ok(health.msg.timestamp, 'heartbeat notification has timestamp')
-						t.ok(health.msg.stateRoot, 'heartbeat notification has stateRoot')
-					})
-			})
-
-			return fetch(
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/Heartbeat?limit=1`
-			).then(res => res.json())
+			return Promise.all(
+				[
+					`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+						dummyVals.ids.follower
+					}/Heartbeat?limit=1`,
+					`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+						dummyVals.ids.leader
+					}/Heartbeat?limit=1`,
+					`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+						dummyVals.ids.leader
+					}/Heartbeat?limit=1`,
+					`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+						dummyVals.ids.follower
+					}/Heartbeat?limit=1`
+				].map(url => {
+					return fetch(url)
+						.then(res => res.json())
+						.then(function({ validatorMessages }) {
+							const hb = validatorMessages.find(x => x.msg.type === 'Heartbeat')
+							if (!hb) throw new Error(`should propagate heartbeat notification for ${url}`)
+							t.ok(hb.msg.signature, 'heartbeat has signature')
+							t.ok(hb.msg.timestamp, 'heartbeat has timestamp')
+							t.ok(hb.msg.stateRoot, 'heartbeat has stateRoot')
+							// @TODO should we test the validity of the signature?
+						})
+				})
+			)
 		})
 		.then(() => t.end())
 		.catch(err => t.fail(err))

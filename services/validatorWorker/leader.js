@@ -1,13 +1,14 @@
 const { persistAndPropagate } = require('./lib/propagation')
 const { getStateRootHash } = require('./lib')
 const producer = require('./producer')
-const { heartbeatIfNothingNew } = require('./heartbeat')
+const { heartbeat } = require('./heartbeat')
 
-function tick(adapter, channel) {
-	return producer
-		.tick(channel)
-		.then(res => (res.newStateTree ? afterProducer(adapter, res) : { nothingNew: true }))
-		.then(res => heartbeatIfNothingNew(adapter, channel, res))
+async function tick(adapter, channel) {
+	const res = await producer.tick(channel)
+	if (res.newStateTree) {
+		await afterProducer(adapter, res)
+	}
+	await heartbeat(adapter, channel)
 }
 
 async function afterProducer(adapter, { channel, newStateTree, balancesAfterFees }) {

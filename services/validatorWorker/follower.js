@@ -4,7 +4,7 @@ const { persistAndPropagate } = require('./lib/propagation')
 const { isValidRootHash, onError, toBNMap } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
-const { heartbeatIfNothingNew } = require('./heartbeat')
+const { heartbeat } = require('./heartbeat')
 
 async function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -16,12 +16,14 @@ async function tick(adapter, channel) {
 	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
 
 	// there are no unapproved NewState messages, only merge all eventAggrs
-	const res =
-		!newMsg || latestIsRespondedTo
-			? await producer.tick(channel).then(r => ({ nothingNew: !r.newStateTree }))
-			: await producer.tick(channel, true).then(r => onNewState(adapter, { ...r, newMsg }))
+	if (!newMsg || latestIsRespondedTo) {
+		await producer.tick(channel)
+	} else {
+		const res = await producer.tick(channel, true)
+		await onNewState(adapter, { ...res, newMsg })
+	}
 
-	return heartbeatIfNothingNew(adapter, channel, res)
+	await heartbeat(adapter, channel)
 }
 
 async function onNewState(adapter, { channel, balancesAfterFees, newMsg }) {

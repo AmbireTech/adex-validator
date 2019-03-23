@@ -33,13 +33,13 @@ async function persistAndPropagate(adapter, receivers, channel, msg) {
 
 	await persist(adapter, channel, msg)
 	return Promise.all(
-		receivers.map(function(receiver) {
-			return propagate(adapter, receiver, channel, msg).catch(function(e) {
+		receivers.map(recv =>
+			propagate(adapter, recv, channel, msg).catch(function(e) {
 				console.error(
-					`validatorWorker: Unable to propagate ${msg.type} to ${receiver.id}: ${e.message || e}`
+					`validatorWorker: Unable to propagate ${msg.type} to ${recv.id}: ${e.message || e}`
 				)
 			})
-		})
+		)
 	)
 }
 

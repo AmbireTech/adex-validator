@@ -1,7 +1,8 @@
+const fetch = require('node-fetch')
 const { persistAndPropagate } = require('./lib/propagation')
-// const cfg = require('../../cfg')
+const cfg = require('../../cfg')
 
-function heartbeat(adapter, channel) {
+async function sendHeartbeat(adapter, channel) {
 	const whoami = adapter.whoami()
 
 	const timestamp = Buffer.alloc(32)
@@ -14,23 +15,38 @@ function heartbeat(adapter, channel) {
 	const infoRootRaw = tree.getRoot()
 
 	const stateRootRaw = adapter.getSignableStateRoot(Buffer.from(channel.id), infoRootRaw)
+	const signature = await adapter.sign(stateRootRaw)
+	const stateRoot = stateRootRaw.toString('hex')
 	const otherValidators = channel.spec.validators.filter(v => v.id !== whoami)
-	return adapter.sign(stateRootRaw).then(function(signature) {
-		const stateRoot = stateRootRaw.toString('hex')
-		return persistAndPropagate(adapter, otherValidators, channel, {
-			type: 'Heartbeat',
-			timestamp: Date.now(),
-			signature,
-			stateRoot
-		})
+	return persistAndPropagate(adapter, otherValidators, channel, {
+		type: 'Heartbeat',
+		timestamp: new Date(),
+		signature,
+		stateRoot
 	})
 }
 
-function heartbeatIfNothingNew(adapter, channel, res) {
-	if (res && res.nothingNew) {
-		return heartbeat(adapter, channel).then(() => res)
+async function heartbeat(adapter, channel) {
+	const heartbeatMsg = await getOurLatestMsg(adapter, channel, 'Heartbeat')
+	const shouldSend = !heartbeatMsg ||
+		Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME
+	
+	if (shouldSend) {
+		await sendHeartbeat(adapter, channel)
 	}
-	return Promise.resolve(res)
 }
 
-module.exports = { heartbeat, heartbeatIfNothingNew }
+// @TODO: move into Sentry interface
+function getOurLatestMsg(adapter, channel, type) {
+	const whoami = adapter.whoami()
+	const validator = channel.spec.validators.find(v => v.id == whoami)
+	// assert.ok(validator, 'has validator entry for whomai')
+	const url = `${validator.url}/channel/${channel.id}/validator-messages/${
+		validator.id
+	}/${type}?limit=1`
+	return fetch(url)
+		.then(res => res.json())
+		.then(({ validatorMessages }) => (validatorMessages.length ? validatorMessages[0].msg : null))
+}
+
+module.exports = { heartbeat }
