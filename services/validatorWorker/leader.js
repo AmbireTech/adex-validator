@@ -18,7 +18,7 @@ async function afterProducer(adapter, { channel, newStateTree, balancesAfterFees
 	const stateRoot = stateRootRaw.toString('hex')
 	return persistAndPropagate(adapter, followers, channel, {
 		type: 'NewState',
-		...newStateTree,
+		balances: newStateTree.balancesAfterFees,
 		stateRoot,
 		signature
 	})

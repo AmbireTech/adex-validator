@@ -2,8 +2,7 @@
 const tape = require('tape')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
-const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
-const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
+const { getStateRootHash } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')
 const {
 	forceTick,
@@ -11,8 +10,7 @@ const {
 	postEvents,
 	genImpressions,
 	getDummySig,
-	filterRejectStateMsg,
-	incrementKeys
+	filterRejectStateMsg
 } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -34,6 +32,7 @@ function aggrAndTick() {
 tape('submit events and ensure they are accounted for', function(t) {
 	const evs = genImpressions(3).concat(genImpressions(2, 'anotherPublisher'))
 	const expectedBal = '3'
+	const expectedBalAfterFees = '2'
 
 	let channel
 	let tree
@@ -68,7 +67,6 @@ tape('submit events and ensure they are accounted for', function(t) {
 			const lastNew = lastApproved.newState
 			t.ok(lastNew, 'has NewState')
 			t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
-			t.equal(lastNew.msg.balances[defaultPubName], expectedBal, 'NewState: balances is right')
 			t.ok(
 				typeof lastNew.msg.stateRoot === 'string' && lastNew.msg.stateRoot.length === 64,
 				'NewState: stateRoot is sane'
@@ -78,11 +76,15 @@ tape('submit events and ensure they are accounted for', function(t) {
 				getDummySig(lastNew.msg.stateRoot, lastNew.from),
 				'NewState: signature is sane'
 			)
-			t.deepEqual(lastNew.msg.balances, tree, 'NewState: balances is the same as the one in /tree')
+			t.equal(
+				lastNew.msg.balances[defaultPubName],
+				expectedBalAfterFees,
+				'NewState: balance is as expected, after fees'
+			)
 			t.deepEqual(
-				lastNew.msg.balancesAfterFees,
+				lastNew.msg.balances,
 				balancesAfterFeesTree,
-				'NewState: balancesAfterFeesTree is the same as the one in /tree'
+				'NewState: balances is the same as the one in /tree'
 			)
 
 			// Ensure ApproveState is in order
@@ -247,12 +249,13 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 		}/NewState?limit=1`
 	)
 		.then(res => res.json())
-		.then(function(res) {
-			const { balances } = res.validatorMessages[0].msg
-			const incBalances = incrementKeys(balances)
-
-			const balancesAfterFees = getBalancesAfterFeesTree(incBalances, dummyVals.channel)
-			stateRoot = getStateRootHash(dummyAdapter, { id: dummyVals.channel.id }, balancesAfterFees)
+		.then(function({ validatorMessages }) {
+			// NOTE: we need to generate a new balances tree here, so that we can
+			// force a new NewState
+			// otherwise, we'd just create a NewState with the same hash as the previous one
+			const { balances } = validatorMessages[0].msg
+			balances.someoneElse = '1'
+			stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
 			signature = getDummySig(stateRoot, 'awesomeLeader12')
 
 			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
@@ -266,10 +269,9 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 						{
 							type: 'NewState',
 							stateRoot,
-							balances: incBalances,
-							balancesAfterFees: toBNStringMap(balancesAfterFees),
+							balances,
 							lastEvAggr: '2019-01-23T09:09:29.959Z',
-							// sign by awesomeLeader1 rather than awesomeLeader
+							// sign by awesomeLeader12 rather than awesomeLeader
 							signature
 						}
 					]
@@ -301,7 +303,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 				stateRoot
 			})[0]
 
-			t.ok(message, 'should have an invalid new state')
+			if (!message) throw new Error('should have an invalid new state')
 			t.equal(message.msg.type, 'RejectState', 'should have an invalid new state')
 			t.equal(message.msg.reason, 'InvalidSignature', 'reason should be invalid root hash')
 			t.equal(message.msg.stateRoot, stateRoot, 'should have state root')
@@ -322,8 +324,8 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 	)
 		.then(res => res.json())
 		.then(function(res) {
-			const { balances, balancesAfterFees } = res.validatorMessages[0].msg
-			const fakeBalances = { publisher: '3' }
+			const { balances } = res.validatorMessages[0].msg
+			const fakeBalances = { publisher: '33333' }
 
 			deceptiveRootHash = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances)
 
@@ -339,7 +341,6 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 							type: 'NewState',
 							stateRoot: deceptiveRootHash,
 							balances,
-							balancesAfterFees,
 							lastEvAggr: '2019-01-23T09:10:29.959Z',
 							signature: `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
 						}
@@ -387,56 +388,6 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 		.catch(err => t.fail(err))
 })
 
-tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) balanceAfterFees', function(t) {
-	let stateRoot
-
-	fetch(
-		`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-			dummyVals.ids.leader
-		}/NewState?limit=1`
-	)
-		.then(res => res.json())
-		.then(function(res) {
-			const { balances, balancesAfterFees } = res.validatorMessages[0].msg
-
-			stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balancesAfterFees)
-
-			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({
-					messages: [
-						{
-							type: 'NewState',
-							stateRoot,
-							balances,
-							balancesAfterFees: incrementKeys(balancesAfterFees),
-							lastEvAggr: '2019-01-23T09:10:29.959Z',
-							signature: `Dummy adapter for ${stateRoot} by awesomeLeader`
-						}
-					]
-				})
-			}).then(r => t.equal(r.status, 200, 'response status is right'))
-		})
-		.then(() => aggrAndTick())
-		.then(function() {
-			return fetch(
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/ApproveState`
-			).then(res => res.json())
-		})
-		.then(function(resp) {
-			const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
-			t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
-			t.end()
-		})
-		.catch(err => t.fail(err))
-})
-
 tape('cannot exceed channel deposit', function(t) {
 	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
 		.then(res => res.json())
@@ -467,6 +418,7 @@ tape('cannot exceed channel deposit', function(t) {
 		.catch(err => t.fail(err))
 })
 
+// @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
 // @TODO tests for the adapters and especially ewt

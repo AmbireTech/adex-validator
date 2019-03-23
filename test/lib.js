@@ -1,6 +1,5 @@
 const assert = require('assert')
 const fetch = require('node-fetch')
-const BN = require('bn.js')
 const childproc = require('child_process')
 const dummyVals = require('./prep-db/mongo')
 
@@ -38,14 +37,6 @@ function filterRejectStateMsg(messages, filter) {
 	)
 }
 
-function incrementKeys(raw) {
-	const incBalances = {}
-	Object.keys(raw).forEach(item => {
-		incBalances[item] = new BN(raw[item], 10).add(new BN(1)).toString(10)
-	})
-	return incBalances
-}
-
 function wait(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -79,6 +70,5 @@ module.exports = {
 	getDummySig,
 	forceTick,
 	wait,
-	filterRejectStateMsg,
-	incrementKeys
+	filterRejectStateMsg
 }

@@ -1,8 +1,6 @@
 const assert = require('assert')
 const BN = require('bn.js')
-const isEqual = require('lodash.isequal')
 const { persist } = require('./propagation')
-const { getBalancesAfterFeesTree } = require('./fees')
 
 function getStateRootHash(adapter, channel, balances) {
 	// Note: MerkleTree takes care of deduplicating and sorting
@@ -18,11 +16,6 @@ function getStateRootHash(adapter, channel, balances) {
 
 function isValidRootHash(adapter, leaderRootHash, channel, balances) {
 	return getStateRootHash(adapter, channel, balances) === leaderRootHash
-}
-
-function isValidValidatorFees(channel, balances, balancesAfterFees) {
-	const calcBalancesAfterFees = getBalancesAfterFeesTree(balances, channel)
-	return isEqual(calcBalancesAfterFees, balancesAfterFees)
 }
 
 function toBNMap(raw) {
@@ -68,7 +61,6 @@ function getErrorMsg(reason, channel) {
 module.exports = {
 	getStateRootHash,
 	isValidRootHash,
-	isValidValidatorFees,
 	toBNMap,
 	toBNStringMap,
 	onError

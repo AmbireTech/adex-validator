@@ -20,10 +20,6 @@ Can be obtained from sentry route `'/channel/:id/validator-messages'`, returns `
 
 ---
 
-**`lastEvAggr`** - Timestamp of the last event aggregation. ISOString format ex. `"2019-02-06T15:36:54.791Z"`
-
----
-
 **`timestamp`** - Timestamp of the heartbeat message.
 - *In messages of type: `Heartbeat`*
 

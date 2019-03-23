@@ -1,7 +1,7 @@
 const fetch = require('node-fetch')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
-const { isValidRootHash, isValidValidatorFees, onError, toBNMap } = require('./lib')
+const { isValidRootHash, onError, toBNMap } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeatIfNothingNew } = require('./heartbeat')
@@ -24,16 +24,11 @@ async function tick(adapter, channel) {
 	return heartbeatIfNothingNew(adapter, channel, res)
 }
 
-async function onNewState(adapter, { channel, balances, newMsg }) {
+async function onNewState(adapter, { channel, balancesAfterFees, newMsg }) {
 	const newBalances = toBNMap(newMsg.balances)
-	const newBalancesAfterFees = toBNMap(newMsg.balancesAfterFees)
-
-	if (!isValidValidatorFees(channel, newBalances, newBalancesAfterFees)) {
-		return onError(adapter, channel, { reason: `InvalidValidatorFees`, newMsg })
-	}
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (!isValidRootHash(adapter, newMsg.stateRoot, channel, newBalancesAfterFees)) {
+	if (!isValidRootHash(adapter, newMsg.stateRoot, channel, newBalances)) {
 		return onError(adapter, channel, { reason: `InvalidRootHash`, newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
@@ -57,7 +52,7 @@ async function onNewState(adapter, { channel, balances, newMsg }) {
 	return persistAndPropagate(adapter, otherValidators, channel, {
 		type: 'ApproveState',
 		stateRoot,
-		isHealthy: isHealthy(balances, newBalances),
+		isHealthy: isHealthy(balancesAfterFees, newBalances),
 		signature
 	})
 }
