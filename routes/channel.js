@@ -105,7 +105,7 @@ function getValidatorMessages(req, res, next) {
 	if (typeof type === 'string') query['msg.type'] = type
 
 	validatorMsgCol
-		.find(query)
+		.find(query, { _id: 0 })
 		.sort({ received: -1 })
 		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
 		.toArray()
