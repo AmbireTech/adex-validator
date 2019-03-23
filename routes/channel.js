@@ -129,12 +129,16 @@ function postValidatorMessages(req, res, next) {
 		return
 	}
 
-	const toInsert = messages.map(function(msg) {
+	const startTime = Date.now()
+	const toInsert = messages.map(function(msg, idx) {
 		return validatorMsgCol.insertOne({
 			channelId: req.channel.id,
 			from: req.session.uid,
 			msg,
-			received: new Date()
+			// This is a hack to help ordering
+			// MongoDB has no notion of auto-increment, so it's not that appropriate
+			// for this but we'll swap it out eventually
+			received: new Date(startTime + idx)
 		})
 	})
 	Promise.all(toInsert)
