@@ -16,12 +16,11 @@ router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 // @TODO get events or at least eventAggregates
 
 // Validator information
-router.get('/:id/validator-messages', getValidatorMessages)
+router.get('/:id/validator-messages', channelIfExists, getValidatorMessages)
 router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
 router.get(
 	'/:id/validator-messages/:uid/:type?',
 	channelIfExists,
-	channelLoad,
 	getValidatorMessages
 )
 
@@ -111,7 +110,7 @@ function getValidatorMessages(req, res, next) {
 		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
 		.toArray()
 		.then(function(validatorMessages) {
-			res.send({ validatorMessages, channel: req.channel })
+			res.send({ validatorMessages })
 		})
 		.catch(next)
 }
