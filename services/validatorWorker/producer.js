@@ -3,8 +3,8 @@ const BN = require('bn.js')
 const { toBNStringMap, toBNMap } = require('./lib')
 const { getBalancesAfterFeesTree } = require('./lib/fees')
 
-async function tick(adapter, iface, channel, force) {
-	const accounting = (await iface.getLatestMsg(adapter.whoami(), 'Accounting')) || {
+async function tick(iface, channel, force) {
+	const accounting = (await iface.getOurLatestMsg('Accounting')) || {
 		balancesBeforeFees: {},
 		balances: {},
 		lastEvAggr: new Date(0)

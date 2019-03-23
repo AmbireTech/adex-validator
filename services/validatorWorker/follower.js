@@ -8,15 +8,15 @@ async function tick(adapter, iface, channel) {
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	const [newMsg, responseMsg] = await Promise.all([
 		iface.getLatestMsg(channel.validators[0], 'NewState'),
-		iface.getLatestMsg(adapter.whoami(), 'ApproveState+RejectState')
+		iface.getOurLatestMsg('ApproveState+RejectState')
 	])
 	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
 
 	// there are no unapproved NewState messages, only merge all eventAggrs
 	if (!newMsg || latestIsRespondedTo) {
-		await producer.tick(adapter, iface, channel)
+		await producer.tick(iface, channel)
 	} else {
-		const { balances } = await producer.tick(adapter, iface, channel, true)
+		const { balances } = await producer.tick(iface, channel, true)
 		await onNewState(adapter, iface, { channel, balances, newMsg })
 	}
 

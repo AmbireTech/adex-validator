@@ -3,7 +3,7 @@ const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
 
 async function tick(adapter, iface, channel) {
-	const res = await producer.tick(adapter, iface, channel)
+	const res = await producer.tick(iface, channel)
 	if (res.newAccounting) {
 		await afterProducer(adapter, iface, res)
 	}

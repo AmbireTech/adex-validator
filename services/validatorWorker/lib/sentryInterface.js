@@ -42,6 +42,10 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 		)
 	}
 
+	this.getOurLatestMsg = function(type) {
+		return this.getLatestMsg(adapter.whoami(), type)
+	}
+
 	this.getLastApproved = function() {
 		const lastApprovedUrl = `${baseUrl}/last-approved`
 		return fetchJson(lastApprovedUrl).then(({ lastApproved }) => lastApproved)

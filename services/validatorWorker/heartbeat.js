@@ -24,7 +24,7 @@ async function sendHeartbeat(adapter, iface, channel) {
 }
 
 async function heartbeat(adapter, iface, channel) {
-	const heartbeatMsg = await iface.getLatestMsg(adapter.whoami(), 'Heartbeat')
+	const heartbeatMsg = await iface.getOurLatestMsg('Heartbeat')
 	const shouldSend =
 		!heartbeatMsg || Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME
 
