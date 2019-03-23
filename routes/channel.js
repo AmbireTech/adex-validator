@@ -17,7 +17,7 @@ router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
 router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessages)
 
 // event aggregates information
-router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad, getEventAggregates)
+router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
