@@ -33,11 +33,11 @@ async function tick(channel, force) {
 
 	// balances should be a sum of eventPayouts
 	//
-	const { balances, balancesAfterFees, newStateTree } = mergeAggrs(stateTree, aggrs, channel)
+	const { balancesAfterFees, newStateTree } = mergeAggrs(stateTree, aggrs, channel)
 
 	await stateTreeCol.updateOne({ _id: channel.id }, { $set: newStateTree }, { upsert: true })
 
-	return { channel, balances, balancesAfterFees, newStateTree }
+	return { channel, balancesAfterFees, newStateTree }
 }
 
 // Pure, should not mutate inputs
@@ -72,7 +72,7 @@ function mergeAggrs(stateTree, aggrs, channel) {
 	const balancesAfterFees = getBalancesAfterFeesTree(balances, channel)
 	newStateTree.balancesAfterFees = toBNStringMap(balancesAfterFees)
 
-	return { balances, balancesAfterFees, newStateTree }
+	return { balancesAfterFees, newStateTree }
 }
 
 // Mutates the balances input
