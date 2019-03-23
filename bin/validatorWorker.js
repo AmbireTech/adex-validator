@@ -35,6 +35,7 @@ adapter
 		}
 	})
 	.catch(function(err) {
+		// eslint-disable-next-line no-console
 		console.error('Fatal error while connecting to the database', err)
 		process.exit(1)
 	})
@@ -66,8 +67,10 @@ function wait(ms) {
 }
 
 function logPostChannelsTick(channels) {
+	// eslint-disable-next-line no-console
 	console.log(`validatorWorker: processed ${channels.length} channels`)
 	if (channels.length >= cfg.MAX_CHANNELS) {
+		// eslint-disable-next-line no-console
 		console.log(
 			`validatorWorker: WARNING: channel limit cfg.MAX_CHANNELS=${cfg.MAX_CHANNELS} reached`
 		)

@@ -97,6 +97,7 @@ function mergePayoutsIntoBalances(balances, events, depositAmount) {
 
 function logMerge(channel, eventAggrs) {
 	if (eventAggrs.length === 0) return
+	// eslint-disable-next-line no-console
 	console.log(
 		`validatorWorker: channel ${channel.id}: processing ${eventAggrs.length} event aggregates`
 	)

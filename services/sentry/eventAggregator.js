@@ -27,6 +27,7 @@ function makeRecorder(channelId) {
 	const persist = function(toSave) {
 		saveQueue = saveQueue.then(function() {
 			return eventAggrCol.insertOne(toSave).catch(function(err) {
+				// eslint-disable-next-line no-console
 				console.error('sentry: eventAggregator fatal error; will re-try', err)
 				persist(toSave)
 			})
@@ -70,6 +71,7 @@ function makeRecorder(channelId) {
 }
 
 function logAggregate(channelId) {
+	// eslint-disable-next-line no-console
 	console.log(`sentry: channel ${channelId}: event aggregate produced`)
 }
 

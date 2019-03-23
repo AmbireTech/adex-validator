@@ -23,6 +23,7 @@ function init(opts) {
 	return readFile(opts.keystoreFile).then(json => {
 		keystoreJson = json
 		address = formatAddress(`0x${JSON.parse(json).address}`)
+		// eslint-disable-next-line no-console
 		console.log(`Ethereum address: ${whoami()}`)
 	})
 }

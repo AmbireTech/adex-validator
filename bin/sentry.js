@@ -29,9 +29,11 @@ db.connect()
 		return adapter.init(argv)
 	})
 	.then(function() {
+		// eslint-disable-next-line no-console
 		app.listen(port, () => console.log(`Sentry listening on port ${port}!`))
 	})
 	.catch(function(err) {
+		// eslint-disable-next-line no-console
 		console.error('Fatal error while connecting to the database', err)
 		process.exit(1)
 	})

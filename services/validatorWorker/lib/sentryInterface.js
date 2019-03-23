@@ -77,6 +77,7 @@ async function fetchJson(url, opts) {
 function onPropagationError(adapter, recv, msgs, e) {
 	// propagating to our own validator is not recoverable
 	if (recv.id === adapter.whoami()) throw e
+	// eslint-disable-next-line no-console
 	console.error(
 		`${LOG_PREFIX}: Unable to propagate ${summarizeMsgs(msgs)} to ${recv.id}: ${e.message || e}`
 	)
@@ -84,6 +85,7 @@ function onPropagationError(adapter, recv, msgs, e) {
 
 function logPropagate(adapter, recvs, channel, msgs) {
 	// @TODO detailed log for some types of messages, e.g. RejectState
+	// eslint-disable-next-line no-console
 	console.log(
 		`${LOG_PREFIX}(${adapter.whoami()}): channel ${channel.id}: propagating ${summarizeMsgs(
 			msgs
