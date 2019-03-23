@@ -1,4 +1,4 @@
-const assert = require('assert')
+const fetch = require('node-fetch')
 const db = require('../../db')
 const { persistAndPropagate } = require('./lib/propagation')
 const { isValidRootHash, isValidValidatorFees, onError, toBNMap } = require('./lib')
@@ -9,31 +9,24 @@ const { heartbeatIfNothingNew } = require('./heartbeat')
 async function tick(adapter, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
-	const [newMsg, approveMsg] = await Promise.all([
+	const [newMsg, responseMsg] = await Promise.all([
 		getLatestMsg(channel.id, channel.validators[0], 'NewState'),
-		getLatestMsg(channel.id, adapter.whoami(), 'ApproveState').then(augmentWithBalances)
+		getLatestMsg(channel.id, adapter.whoami(), { $in: ['ApproveState', 'RejectState'] })
 	])
-	const latestIsApproved = newMsg && approveMsg && newMsg.stateRoot === approveMsg.stateRoot
+	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
 
 	// there are no unapproved NewState messages, only merge all eventAggrs
 	const res =
-		!newMsg || latestIsApproved
+		!newMsg || latestIsRespondedTo
 			? await producer.tick(channel).then(r => ({ nothingNew: !r.newStateTree }))
-			: await producer
-					.tick(channel, true)
-					.then(r => onNewState(adapter, { ...r, newMsg, approveMsg }))
+			: await producer.tick(channel, true).then(r => onNewState(adapter, { ...r, newMsg }))
 
 	return heartbeatIfNothingNew(adapter, channel, res)
 }
 
-async function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
-	const prevBalances = toBNMap(approveMsg ? approveMsg.balances : {})
+async function onNewState(adapter, { channel, balances, newMsg }) {
 	const newBalances = toBNMap(newMsg.balances)
 	const newBalancesAfterFees = toBNMap(newMsg.balancesAfterFees)
-
-	if (!isValidTransition(channel, prevBalances, newBalances)) {
-		return onError(adapter, channel, { reason: 'InvalidTransition', newMsg })
-	}
 
 	if (!isValidValidatorFees(channel, newBalances, newBalancesAfterFees)) {
 		return onError(adapter, channel, { reason: `InvalidValidatorFees`, newMsg })
@@ -50,6 +43,12 @@ async function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
 		return onError(adapter, channel, { reason: `InvalidSignature`, newMsg })
 	}
 
+	const lastApproved = await getLastApproved(adapter, channel)
+	const prevBalances = lastApproved ? toBNMap(lastApproved.newState.msg.balances) : {}
+	if (!isValidTransition(channel, prevBalances, newBalances)) {
+		return onError(adapter, channel, { reason: 'InvalidTransition', newMsg })
+	}
+
 	const { stateRoot } = newMsg
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 	const signature = await adapter.sign(stateRootRaw)
@@ -63,8 +62,7 @@ async function onNewState(adapter, { channel, balances, newMsg, approveMsg }) {
 	})
 }
 
-// @TODO getLatestMsg should be a part of a DB abstraction so we can use it in other places too
-// e.g. validating on POST /validator-messages (to get the previous), and a public API to get the latest msgs of a type
+// @TODO: move into Sentry interface
 function getLatestMsg(channelId, from, type) {
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 
@@ -82,23 +80,15 @@ function getLatestMsg(channelId, from, type) {
 		})
 }
 
-// ApproveState messages do not contain the full `balances`; so augment them
-function augmentWithBalances(approveMsg) {
-	if (!approveMsg) return Promise.resolve()
-
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	return validatorMsgCol
-		.findOne({
-			'msg.type': 'NewState',
-			'msg.stateRoot': approveMsg.stateRoot
-		})
-		.then(function(o) {
-			assert.ok(
-				o && o.msg && o.msg.balances,
-				'cannot find NewState message corresponding to the ApproveState'
-			)
-			return { ...approveMsg, balances: o.msg.balances }
-		})
+// @TODO: move into Sentry interface
+function getLastApproved(adapter, channel) {
+	const whoami = adapter.whoami()
+	const validator = channel.spec.validators.find(v => v.id !== whoami)
+	// assert.ok(validator, 'has validator entry for whomai')
+	const lastApprovedUrl = `${validator.url}/channel/${channel.id}/last-approved`
+	return fetch(lastApprovedUrl)
+		.then(res => res.json())
+		.then(({ lastApproved }) => lastApproved)
 }
 
 module.exports = { tick }
