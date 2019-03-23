@@ -14,9 +14,15 @@ Can be obtained from sentry route `'/channel/:id/validator-messages'`, returns `
 
 ---
 
-**`balances`** - Object with all validators and their balances `{{"validator": "amount"}, ...}`
+**`balances`** - Object with all earners (publishers) and their balances `{{"validator": "amount"}, ...}`
 
-- *In messages of type: `NewState`*
+- *In messages of type: `NewState`, `Accounting`*
+
+---
+
+**`balancesBeforeFees`** - Object with all balances before applying fees
+
+- *In messages of type: `Accounting`*
 
 ---
 
