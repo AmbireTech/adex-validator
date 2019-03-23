@@ -11,10 +11,6 @@ router.get('/list', getList)
 router.get('/:id/status', channelLoad, getStatus.bind(null, false))
 router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
 
-// Channel information: requires auth, cachable
-// router.get('/:id/events/:uid', authRequired, channelIfExists, (req, res) => res.send([]))
-// @TODO get events or at least eventAggregates
-
 // Validator information
 router.get('/:id/validator-messages', channelIfExists, getValidatorMessages)
 router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
