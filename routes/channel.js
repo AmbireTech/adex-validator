@@ -59,6 +59,7 @@ function getEventAggregates(req, res, next) {
 	return eventsCol
 		.find(
 			{
+				channelId: req.channel.id,
 				[key]: { $exists: true }
 			},
 			{ projection: { [key]: 1, _id: 0, created: 1 } }
