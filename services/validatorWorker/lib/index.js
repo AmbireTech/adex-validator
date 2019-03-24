@@ -13,10 +13,6 @@ function getStateRootHash(adapter, channel, balances) {
 	return stateRoot
 }
 
-function isValidRootHash(adapter, leaderRootHash, channel, balances) {
-	return getStateRootHash(adapter, channel, balances) === leaderRootHash
-}
-
 function toBNMap(raw) {
 	assert.ok(raw && typeof raw === 'object', 'raw map is a valid object')
 	const balances = {}
@@ -32,6 +28,7 @@ function toBNStringMap(raw) {
 	assert.ok(raw && typeof raw === 'object', 'raw map is a valid object')
 	const balances = {}
 	Object.entries(raw).forEach(([acc, bal]) => {
+		assert.ok(!bal.isNeg(), 'balance should not be negative')
 		balances[acc] = bal.toString(10)
 	})
 	return balances
@@ -49,7 +46,6 @@ function onError(iface, { reason, newMsg }) {
 
 module.exports = {
 	getStateRootHash,
-	isValidRootHash,
 	toBNMap,
 	toBNStringMap,
 	onError
