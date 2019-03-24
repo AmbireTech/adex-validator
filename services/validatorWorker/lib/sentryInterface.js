@@ -28,7 +28,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 			// We don't apply the timeout if we're sending to our own Sentry
 			return fetcher
 		}
-		return Promise.race([fetcher, getTimeout()])
+		return Promise.race([fetcher, getTimeout(receiver)])
 	}
 
 	// Public
@@ -99,9 +99,13 @@ function logPropagate(adapter, recvs, channel, msgs) {
 	)
 }
 
-// @TODO if there's an easy way to do so, we should at least log a warning
-function getTimeout() {
-	return new Promise((resolve) => setTimeout(resolve, cfg.PROPAGATION_TIMEOUT))
+function getTimeout(recv) {
+	return new Promise((resolve, reject) =>
+		setTimeout(
+			() => reject(new Error(`propagation to ${recv.id} timed out`)),
+			cfg.PROPAGATION_TIMEOUT
+		)
+	)
 }
 
 function summarizeMsgs(messages) {
