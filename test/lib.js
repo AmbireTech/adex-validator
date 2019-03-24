@@ -1,4 +1,3 @@
-const assert = require('assert')
 const fetch = require('node-fetch')
 const childproc = require('child_process')
 const dummyVals = require('./prep-db/mongo')
@@ -29,14 +28,6 @@ function getDummySig(hash, from) {
 	return `Dummy adapter signature for ${hash} by ${from}`
 }
 
-function filterRejectStateMsg(messages, filter) {
-	assert.ok(Array.isArray(messages), 'messages should be array')
-
-	return messages.filter(
-		msg => msg.msg.reason === filter.reason && msg.msg.stateRoot === filter.stateRoot
-	)
-}
-
 function wait(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -65,6 +56,5 @@ module.exports = {
 	genImpressions,
 	getDummySig,
 	forceTick,
-	wait,
-	filterRejectStateMsg
+	wait
 }

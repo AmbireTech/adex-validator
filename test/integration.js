@@ -3,15 +3,9 @@ const tape = require('tape-catch')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
+const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const {
-	forceTick,
-	wait,
-	postEvents,
-	genImpressions,
-	getDummySig,
-	filterRejectStateMsg
-} = require('./lib')
+const { forceTick, wait, postEvents, genImpressions, getDummySig } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -19,6 +13,9 @@ const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
+
+dummyAdapter.init({ dummyIdentity: dummyVals.ids.leader })
+const iface = new SentryInterface(dummyAdapter, dummyVals.channel)
 
 function aggrAndTick() {
 	// If we need to run the production config with AGGR_THROTTLE, then we need to wait for cfg.AGGR_THROTTLE + 500
@@ -218,154 +215,54 @@ tape('heartbeat has been emitted', async function(t) {
 	t.end()
 })
 
-tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
-	let stateRoot = ''
-	let signature = ''
-
-	fetch(
-		`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-			dummyVals.ids.leader
-		}/NewState?limit=1`
+async function testInvalidState(t, expectedReason, makeNewState) {
+	const newState = await iface.getOurLatestMsg('NewState')
+	const maliciousNewState = makeNewState(newState)
+	await iface.propagate([maliciousNewState])
+	await forceTick()
+	const [approve, reject] = await Promise.all([
+		iface.getLatestMsg(dummyVals.ids.follower, 'ApproveState'),
+		iface.getLatestMsg(dummyVals.ids.follower, 'RejectState')
+	])
+	t.notOk(
+		approve && approve.stateRoot === maliciousNewState.stateRoot,
+		'we have not approved the malicious NewState'
 	)
-		.then(res => res.json())
-		.then(function({ validatorMessages }) {
-			// NOTE: we need to generate a new balances tree here, so that we can
-			// force a new NewState
-			// otherwise, we'd just create a NewState with the same hash as the previous one
-			const { balances } = validatorMessages[0].msg
-			balances.someoneElse = '1'
-			stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
-			signature = getDummySig(stateRoot, 'awesomeLeader12')
+	t.ok(
+		reject && reject.stateRoot === maliciousNewState.stateRoot,
+		'we have rejected the malicious NewState'
+	)
+	t.ok(reject && reject.reason === expectedReason, `reason for rejection is ${expectedReason}`)
+}
 
-			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({
-					messages: [
-						{
-							type: 'NewState',
-							stateRoot,
-							balances,
-							lastEvAggr: '2019-01-23T09:09:29.959Z',
-							// sign by awesomeLeader12 rather than awesomeLeader
-							signature
-						}
-					]
-				})
-			})
-		})
-		.then(() => aggrAndTick())
-		.then(function() {
-			return fetch(
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/ApproveState`
-			).then(res => res.json())
-		})
-		.then(function(resp) {
-			const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === stateRoot)
-			t.equal(lastApprove, undefined, 'follower should not sign state with invalid signature')
-		})
-		.then(function() {
-			return fetch(
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/RejectState`
-			).then(res => res.json())
-		})
-		.then(function(resp) {
-			const message = filterRejectStateMsg(resp.validatorMessages, {
-				reason: 'InvalidSignature',
-				stateRoot
-			})[0]
-
-			if (!message) throw new Error('should have an invalid new state')
-			t.equal(message.msg.type, 'RejectState', 'should have an invalid new state')
-			t.equal(message.msg.reason, 'InvalidSignature', 'reason should be invalid root hash')
-			t.equal(message.msg.stateRoot, stateRoot, 'should have state root')
-			t.equal(message.msg.signature, signature, 'should have the invalid signature')
-
-			t.end()
-		})
-		.catch(err => t.fail(err))
+tape('POST /channel/{id}/{validator-messages}: wrong signature', async function(t) {
+	await testInvalidState(t, 'InvalidSignature', function(newState) {
+		// increase the balance, so we effectively end up with a new state
+		const balances = { ...newState.balances, someoneElse: '1' }
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		return {
+			...newState,
+			balances,
+			stateRoot,
+			signature: getDummySig(stateRoot, 'awesomeLeader12')
+		}
+	})
+	t.end()
 })
 
-tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', function(t) {
-	let deceptiveRootHash = ''
-
-	fetch(
-		`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-			dummyVals.ids.leader
-		}/NewState?limit=1`
-	)
-		.then(res => res.json())
-		.then(function(res) {
-			const { balances } = res.validatorMessages[0].msg
-			const fakeBalances = { publisher: '33333' }
-
-			deceptiveRootHash = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances)
-
-			return fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({
-					messages: [
-						{
-							type: 'NewState',
-							stateRoot: deceptiveRootHash,
-							balances,
-							lastEvAggr: '2019-01-23T09:10:29.959Z',
-							signature: `Dummy adapter for ${deceptiveRootHash} by awesomeLeader`
-						}
-					]
-				})
-			})
-		})
-		.then(() => aggrAndTick())
-		// we tick again to test if we'd produce another RejectState
-		// @TODO move into a separate test
-		// @TODO similar test for ApproveState
-		.then(() => forceTick())
-		.then(function() {
-			return fetch(
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/ApproveState`
-			).then(res => res.json())
-		})
-		.then(function(resp) {
-			const lastApprove = resp.validatorMessages.find(x => x.msg.stateRoot === deceptiveRootHash)
-			t.equal(lastApprove, undefined, 'follower should not sign state with wrong root hash')
-		})
-		.then(function() {
-			return fetch(
-				`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-					dummyVals.ids.follower
-				}/RejectState`
-			).then(res => res.json())
-		})
-		.then(function(resp) {
-			const allMsgs = filterRejectStateMsg(resp.validatorMessages, {
-				reason: 'InvalidRootHash',
-				stateRoot: deceptiveRootHash
-			})
-			t.equal(allMsgs.length, 1, 'RejectState is produced only once')
-			const message = allMsgs[0]
-
-			t.ok(message, 'should have an invalid new state')
-			t.equal(message.msg.type, 'RejectState', 'should have an invalid new state')
-			t.equal(message.msg.reason, 'InvalidRootHash', 'reason should be invalid root hash')
-			t.equal(message.msg.stateRoot, deceptiveRootHash, 'should have the deceptive root hash')
-
-			t.end()
-		})
-		.catch(err => t.fail(err))
+tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', async function(t) {
+	await testInvalidState(t, 'InvalidRootHash', function(newState) {
+		// This attack is: we give the follower a valid `balances`,
+		// but a `stateRoot` that represents a totally different tree; with a valid signature
+		const fakeBalances = { publisher: '33333' }
+		const deceptiveStateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances)
+		return {
+			...newState,
+			stateRoot: deceptiveStateRoot,
+			signature: getDummySig(deceptiveStateRoot, dummyVals.ids.leader)
+		}
+	})
+	t.end()
 })
 
 tape('cannot exceed channel deposit', async function(t) {
