@@ -1,4 +1,4 @@
-const { isValidRootHash, onError, toBNMap } = require('./lib')
+const { getStateRootHash, onError, toBNMap } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
@@ -22,10 +22,10 @@ async function tick(adapter, iface, channel) {
 }
 
 async function onNewState(adapter, iface, channel, balances, newMsg) {
-	const newBalances = toBNMap(newMsg.balances)
+	const proposedBalances = toBNMap(newMsg.balances)
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (!isValidRootHash(adapter, newMsg.stateRoot, channel, newBalances)) {
+	if (newMsg.stateRoot !== getStateRootHash(adapter, channel, proposedBalances)) {
 		return onError(iface, { reason: 'InvalidRootHash', newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
@@ -37,7 +37,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 
 	const lastApproved = await iface.getLastApproved()
 	const prevBalances = lastApproved ? toBNMap(lastApproved.newState.msg.balances) : {}
-	if (!isValidTransition(channel, prevBalances, newBalances)) {
+	if (!isValidTransition(channel, prevBalances, proposedBalances)) {
 		return onError(iface, { reason: 'InvalidTransition', newMsg })
 	}
 
@@ -48,7 +48,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		{
 			type: 'ApproveState',
 			stateRoot,
-			isHealthy: isHealthy(balances, newBalances),
+			isHealthy: isHealthy(balances, proposedBalances),
 			signature
 		}
 	])
