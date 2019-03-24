@@ -230,8 +230,8 @@ tape('heartbeat has been emitted', async function(t) {
 })
 
 async function testRejectState(t, expectedReason, makeNewState) {
-	const newState = await iface.getOurLatestMsg('NewState')
-	const maliciousNewState = makeNewState(newState)
+	const lastApproved = await iface.getLastApproved('NewState')
+	const maliciousNewState = makeNewState(lastApproved.newState.msg)
 	await iface.propagate([maliciousNewState])
 	await forceTick()
 	const [approve, reject] = await Promise.all([
@@ -256,7 +256,7 @@ async function testRejectState(t, expectedReason, makeNewState) {
 	}
 }
 
-tape('POST /channel/{id}/{validator-messages}: wrong signature', async function(t) {
+tape('RejectState: wrong signature (InvalidSignature)', async function(t) {
 	await testRejectState(t, 'InvalidSignature', function(newState) {
 		// increase the balance, so we effectively end up with a new state
 		const balances = { ...newState.balances, someoneElse: '1' }
@@ -271,7 +271,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', async function(
 	t.end()
 })
 
-tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', async function(t) {
+tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 	await testRejectState(t, 'InvalidRootHash', function(newState) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
@@ -285,6 +285,40 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', asy
 	})
 	t.end()
 })
+
+tape('RejectState: invalid OUTPACE transition', async function(t) {
+	await testRejectState(t, 'InvalidTransition', function(newState) {
+		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
+		const balances = { ...newState.balances, [defaultPubName]: '0' }
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		return {
+			...newState,
+			balances,
+			stateRoot,
+			signature: getDummySig(stateRoot, dummyVals.ids.leader)
+		}
+	})
+	t.end()
+})
+
+tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t) {
+	await testRejectState(t, 'InvalidTransition', function(newState) {
+		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
+		const balances = {
+			...newState.balances,
+			[defaultPubName]: (dummyVals.channel.depositAmount+1).toString()
+		}
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		return {
+			...newState,
+			balances,
+			stateRoot,
+			signature: getDummySig(stateRoot, dummyVals.ids.leader)
+		}
+	})
+	t.end()
+})
+
 
 tape('cannot exceed channel deposit', async function(t) {
 	const statusResp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`).then(res =>
