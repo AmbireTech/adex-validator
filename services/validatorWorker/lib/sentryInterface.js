@@ -1,5 +1,6 @@
 const fetch = require('node-fetch')
 const assert = require('assert')
+const cfg = require('../../../cfg')
 
 const LOG_PREFIX = 'sentryInterface'
 
@@ -15,7 +16,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 
 	async function propagateTo(receiver, messages) {
 		const authToken = await adapter.getAuthFor(receiver)
-		return fetchJson(`${receiver.url}/channel/${channel.id}/validator-messages`, {
+		const fetcher = fetchJson(`${receiver.url}/channel/${channel.id}/validator-messages`, {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/json',
@@ -23,6 +24,11 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 			},
 			body: JSON.stringify({ messages })
 		})
+		if (receiver.url === ourValidator.url) {
+			// We don't apply the timeout if we're sending to our own Sentry
+			return fetcher
+		}
+		return Promise.race([fetcher, getTimeout()])
 	}
 
 	// Public
@@ -91,6 +97,11 @@ function logPropagate(adapter, recvs, channel, msgs) {
 			msgs
 		)} to ${recvs.length} validators`
 	)
+}
+
+// @TODO if there's an easy way to do so, we should at least log a warning
+function getTimeout() {
+	return new Promise((resolve) => setTimeout(resolve, cfg.PROPAGATION_TIMEOUT))
 }
 
 function summarizeMsgs(messages) {
