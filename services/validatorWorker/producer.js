@@ -17,9 +17,13 @@ async function tick(iface, channel) {
 
 	// mergeAggr will add all eventPayouts from aggrs to the balancesBeforeFees
 	// and produce a new accounting message
-	const { balances, newAccounting } = mergeAggrs(accounting, aggrs, channel)
-	if (aggrs.length) await iface.propagate([newAccounting])
-	return { balances, newAccounting }
+	if (aggrs.length) {
+		const { balances, newAccounting } = mergeAggrs(accounting, aggrs, channel)
+		await iface.propagate([newAccounting])
+		return { balances, newAccounting }
+	} else {
+		return { balances: toBNMap(accounting.balances) }
+	}
 }
 
 // Pure, should not mutate inputs
