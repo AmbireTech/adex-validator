@@ -13,8 +13,7 @@ const followerUrl = dummyVals.channel.spec.validators[1].url
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 tape('/channel/list', async function(t) {
-	const resp = await fetch(`${leaderUrl}/channel/list`)
-		.then(res => res.json())
+	const resp = await fetch(`${leaderUrl}/channel/list`).then(res => res.json())
 	t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
 	t.equal(resp.channels.length, 1, 'resp.channels is the right len')
 	t.end()
@@ -39,36 +38,40 @@ tape('POST /channel/{id}/events: non existant channel', async function(t) {
 })
 
 tape('/channel/{id}/status', async function(t) {
-	const resp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
-		.then(res => res.json())
+	const resp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`).then(res =>
+		res.json()
+	)
 	t.ok(resp.channel, 'has resp.channel')
 	t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
 	t.end()
 })
 
-tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', async function(t) {
-	await Promise.all(
-		[
-			null,
-			{ type: 1 },
-			{ type: 'NewState' },
-			{ type: 'NewState', balances: 'iamobject' },
-			{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' }
-		].map(msg =>
-			fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({ messages: [msg] })
-			}).then(function(resp) {
-				t.equal(resp.status, 400, 'status must be BadRequest')
-			})
+tape(
+	'POST /channel/{id}/validator-messages: malformed messages (leader -> follower)',
+	async function(t) {
+		await Promise.all(
+			[
+				null,
+				{ type: 1 },
+				{ type: 'NewState' },
+				{ type: 'NewState', balances: 'iamobject' },
+				{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' }
+			].map(msg =>
+				fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
+					method: 'POST',
+					headers: {
+						authorization: `Bearer ${dummyVals.auth.leader}`,
+						'content-type': 'application/json'
+					},
+					body: JSON.stringify({ messages: [msg] })
+				}).then(function(resp) {
+					t.equal(resp.status, 400, 'status must be BadRequest')
+				})
+			)
 		)
-	)
-	t.end()
-})
+		t.end()
+	}
+)
 
 tape('POST /channel/{id}/events: malformed events', async function(t) {
 	await Promise.all(
