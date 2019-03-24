@@ -37,11 +37,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 		[leaderUrl, followerUrl].map(url => postEvents(url, dummyVals.channel.id, evs))
 	)
 	await aggrAndTick()
-	const resp = await fetch(
-		`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
-	)
-		.then(res => res.json())
-		.then(({ validatorMessages }) => validatorMessages[0].msg)
+	const resp = await iface.getOurLatestMsg('Accounting')
 
 	t.ok(resp && resp.balances, 'there is a balances tree')
 	const balancesTreePreFees = resp.balancesBeforeFees
@@ -52,9 +48,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// who generated ApproveState and sent back to the leader
 	await aggrAndTick()
 
-	const { lastApproved } = await fetch(
-		`${leaderUrl}/channel/${dummyVals.channel.id}/last-approved`
-	).then(res => res.json())
+	const lastApproved = await iface.getLastApproved()
 
 	t.ok(lastApproved, 'has lastApproved')
 	// ensure NewState is in order
@@ -156,12 +150,10 @@ tape('/channel/{id}/events-aggregates', async function(t) {
 })
 
 tape('health works correctly', async function(t) {
-	const toFollower = 8
+	const toFollower = 10
 	const toLeader = 1
 	const diff = toFollower - toLeader
-	const approveStateUrl = `${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-		dummyVals.ids.follower
-	}/ApproveState?limit=1`
+
 	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
 			postEvents(
@@ -172,59 +164,41 @@ tape('health works correctly', async function(t) {
 		)
 	)
 
-	// postEvents(followerUrl, dummyVals.channel.id, genImpressions(4))
 	// wait for the events to be aggregated and new states to be issued
 	await aggrAndTick()
 	await forceTick()
 
-	const resp = await fetch(approveStateUrl).then(res => res.json())
-	const lastApprove = resp.validatorMessages[0]
+	const lastApprove = await iface.getLatestMsg(dummyVals.ids.follower, 'ApproveState')
 	// @TODO: Should we assert balances numbers?
 	// @TODO assert number of messages; this will be easy once we create a separate channel for each test
-	t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
+	t.equal(lastApprove.isHealthy, false, 'channel is registered as unhealthy')
 
 	// send events to the leader so it catches up
 	await postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
-	// one tick will generate NewState, the other ApproveState
 	await aggrAndTick()
 	await forceTick()
 
 	// check if healthy
-	const { validatorMessages } = await fetch(approveStateUrl).then(res => res.json())
-	const lastApproveHealthy = validatorMessages[0]
-	t.equal(lastApproveHealthy.msg.isHealthy, true, 'channel is registered as healthy')
+	const lastApproveHealthy = await iface.getLatestMsg(dummyVals.ids.follower, 'ApproveState')
+	t.equal(lastApproveHealthy.isHealthy, true, 'channel is registered as healthy')
 	t.end()
 })
 
 tape('heartbeat has been emitted', async function(t) {
+	// This also checks if the propagation works, cause it tries to get the followers
+	// message through the leader Sentry
 	await forceTick()
-	await Promise.all(
-		[
-			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-				dummyVals.ids.follower
-			}/Heartbeat?limit=1`,
-			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-				dummyVals.ids.leader
-			}/Heartbeat?limit=1`,
-			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-				dummyVals.ids.leader
-			}/Heartbeat?limit=1`,
-			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-				dummyVals.ids.follower
-			}/Heartbeat?limit=1`
-		].map(url => {
-			return fetch(url)
-				.then(res => res.json())
-				.then(function({ validatorMessages }) {
-					const hb = validatorMessages.find(x => x.msg.type === 'Heartbeat')
-					if (!hb) throw new Error(`should propagate heartbeat notification for ${url}`)
-					t.ok(hb.msg.signature, 'heartbeat has signature')
-					t.ok(hb.msg.timestamp, 'heartbeat has timestamp')
-					t.ok(hb.msg.stateRoot, 'heartbeat has stateRoot')
-					// @TODO should we test the validity of the signature?
-				})
-		})
-	)
+	const results = await Promise.all([
+		iface.getLatestMsg(dummyVals.ids.leader, 'Heartbeat'),
+		iface.getLatestMsg(dummyVals.ids.follower, 'Heartbeat')
+	])
+	results.forEach((hb, idx) => {
+		if (!hb) throw new Error(`should propagate heartbeat notification for ${idx}`)
+		t.ok(hb.signature, 'heartbeat has signature')
+		t.ok(hb.timestamp, 'heartbeat has timestamp')
+		t.ok(hb.stateRoot, 'heartbeat has stateRoot')
+		// @TODO should we test the validity of the signature?
+	})
 
 	t.end()
 })
@@ -306,7 +280,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
 		const balances = {
 			...newState.balances,
-			[defaultPubName]: (dummyVals.channel.depositAmount+1).toString()
+			[defaultPubName]: (dummyVals.channel.depositAmount + 1).toString()
 		}
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
 		return {
@@ -319,15 +293,10 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 	t.end()
 })
 
-
 tape('cannot exceed channel deposit', async function(t) {
-	const statusResp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`).then(res =>
-		res.json()
-	)
-
 	// 1 event pays 1 token for now
 	// @TODO make this work with a more complex model
-	const evCount = statusResp.channel.depositAmount + 1
+	const evCount = dummyVals.channel.depositAmount + 1
 
 	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
@@ -336,12 +305,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	)
 	await aggrAndTick()
 
-	const { balances } = await fetch(
-		`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
-	)
-		.then(res => res.json())
-		.then(({ validatorMessages }) => validatorMessages[0].msg)
-
+	const { balances } = await iface.getOurLatestMsg('Accounting')
 	const sum = Object.keys(balances)
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
@@ -353,4 +317,3 @@ tape('cannot exceed channel deposit', async function(t) {
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
-// @TODO we can recover from the validator worker crashing
