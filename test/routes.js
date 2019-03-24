@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const tape = require('tape')
+const tape = require('tape-catch')
 const fetch = require('node-fetch')
 const { postEvents } = require('./lib')
 
@@ -12,50 +12,42 @@ const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
-tape('/channel/list', function(t) {
-	fetch(`${leaderUrl}/channel/list`)
+tape('/channel/list', async function(t) {
+	const resp = await fetch(`${leaderUrl}/channel/list`)
 		.then(res => res.json())
-		.then(function(resp) {
-			t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
-			t.equal(resp.channels.length, 1, 'resp.channels is the right len')
-			t.end()
-		})
-		.catch(err => t.fail(err))
+	t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
+	t.equal(resp.channels.length, 1, 'resp.channels is the right len')
+	t.end()
 	// @TODO: test channel list filters if there are any
 })
 
-tape('/channel/{id}/{status,validator-messages}: non existant channel', function(t) {
-	Promise.all(
+tape('/channel/{id}/{status,validator-messages}: non existant channel', async function(t) {
+	await Promise.all(
 		['status', 'validator-messages'].map(path =>
 			fetch(`${leaderUrl}/channel/xxxtentacion/${path}`).then(function(res) {
 				t.equal(res.status, 404, 'status should be 404')
 			})
 		)
 	)
-		.then(() => t.end())
-		.catch(err => t.fail(err))
+	t.end()
 })
 
-tape('POST /channel/{id}/events: non existant channel', function(t) {
-	return postEvents(leaderUrl, 'xxxtentacion', []).then(function(resp) {
-		t.equal(resp.status, 404, 'status should be 404')
-		t.end()
-	})
+tape('POST /channel/{id}/events: non existant channel', async function(t) {
+	const resp = await postEvents(leaderUrl, 'xxxtentacion', [])
+	t.equal(resp.status, 404, 'status should be 404')
+	t.end()
 })
 
-tape('/channel/{id}/status', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
+tape('/channel/{id}/status', async function(t) {
+	const resp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
 		.then(res => res.json())
-		.then(function(resp) {
-			t.ok(resp.channel, 'has resp.channel')
-			t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
-			t.end()
-		})
-		.catch(err => t.fail(err))
+	t.ok(resp.channel, 'has resp.channel')
+	t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
+	t.end()
 })
 
-tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', function(t) {
-	Promise.all(
+tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follower)', async function(t) {
+	await Promise.all(
 		[
 			null,
 			{ type: 1 },
@@ -75,12 +67,11 @@ tape('POST /channel/{id}/validator-messages: malformed messages (leader -> follo
 			})
 		)
 	)
-		.then(() => t.end())
-		.catch(err => t.fail(err))
+	t.end()
 })
 
-tape('POST /channel/{id}/events: malformed events', function(t) {
-	Promise.all(
+tape('POST /channel/{id}/events: malformed events', async function(t) {
+	await Promise.all(
 		[null, { type: 1 }, { type: null }].map(ev =>
 			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
 				method: 'POST',
@@ -94,12 +85,11 @@ tape('POST /channel/{id}/events: malformed events', function(t) {
 			})
 		)
 	)
-		.then(() => t.end())
-		.catch(err => t.fail(err))
+	t.end()
 })
 
-tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', function(t) {
-	Promise.all(
+tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', async function(t) {
+	await Promise.all(
 		['events', 'validator-messages'].map(path =>
 			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, {
 				method: 'POST',
@@ -113,6 +103,5 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 			})
 		)
 	)
-		.then(() => t.end())
-		.catch(err => t.fail(err))
+	t.end()
 })
