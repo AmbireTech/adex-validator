@@ -3,11 +3,25 @@ const tape = require('tape')
 
 const BN = require('bn.js')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
+const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
-const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
+const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
 const dummyAdapter = require('../adapters/dummy')
 
 const dummyChannel = { depositAmount: new BN(100) }
+
+const sum = tree =>
+	Object.values(tree)
+		.map(a => new BN(a, 10))
+		.reduce((a, b) => a.add(b), new BN(0))
+
+const genEvAggr = (count, recepient) => {
+	const IMPRESSION = {
+		eventCounts: { [recepient]: count },
+		eventPayouts: { [recepient]: count*10 },
+	}
+	return { events: { IMPRESSION } }
+}
 
 tape('isValidTransition: empty to empty', function(t) {
 	t.ok(isValidTransition(dummyChannel, {}, {}), 'is valid transition')
@@ -153,10 +167,6 @@ tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(
 })
 
 tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
-	const sum = tree =>
-		Object.values(tree)
-			.map(a => new BN(a, 10))
-			.reduce((a, b) => a.add(b), new BN(0))
 	const channel = {
 		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
 		depositAmount: '10000'
@@ -184,5 +194,45 @@ tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 	t.end()
 })
 
-// @TODO: event aggregator
-// @TODO: producer, possibly leader/follower; mergePayableIntoBalances
+//
+// mergeAggrs
+//
+tape('should merge event aggrs and apply fees', function(t) {
+	// fees: 100
+	// deposit: 10000
+	const channel = {
+		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
+		depositAmount: '10000'
+	}
+	const { balances, newAccounting } = mergeAggrs({
+		balancesBeforeFees: {
+			a: '100',
+			b: '200'
+		}
+	}, [genEvAggr(5, 'a')], channel)
+	t.deepEqual(toBNStringMap(balances), newAccounting.balances, 'balances is the same')
+	t.equal(newAccounting.balancesBeforeFees.a, '150', 'balance of recepient incremented accordingly')
+	t.equal(newAccounting.balances.a, '148', 'balanceAfterFees is ok')
+	t.end()
+})
+
+tape('should never allow exceeding the deposit', function(t) {
+	const channel = {
+		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
+		depositAmount: '10000'
+	}
+	const depositAmount = new BN(channel.depositAmount, 10)
+	const { balances, newAccounting } = mergeAggrs({
+		balancesBeforeFees: {
+			a: '100',
+			b: '200'
+		}
+	}, [genEvAggr(1001, 'a')], channel)
+	t.deepEqual(toBNStringMap(balances), newAccounting.balances, 'balances is the same')
+	t.equal(newAccounting.balancesBeforeFees.a, '9800', 'balance of recepient incremented accordingly')
+	t.equal(newAccounting.balancesBeforeFees.b, '200', 'balances of non-recipient remains the same')
+	t.equal(newAccounting.balances.a, '9702', 'balanceAfterFees is ok')
+	t.deepEqual(sum(toBNMap(newAccounting.balancesBeforeFees)), depositAmount, 'sum(balancesBeforeFees) == depositAmount')
+	t.deepEqual(sum(toBNMap(newAccounting.balances)), depositAmount, 'sum(balances) == depositAmount')
+	t.end()
+})

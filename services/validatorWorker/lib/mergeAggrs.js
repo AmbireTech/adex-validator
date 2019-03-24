@@ -7,13 +7,13 @@ const { getBalancesAfterFeesTree } = require('./fees')
 // mergeAggrs(accounting, aggrs, channel) -> { balances, newAccounting }
 // `balances` is the same as newAccounting.balances, but a BN map
 function mergeAggrs(accounting, aggrs, channel) {
+	const depositAmount = new BN(channel.depositAmount, 10)
 	const newAccounting = {
 		type: 'Accounting',
 		balancesBeforeFees: {},
 		balances: {},
 		lastEvAggr: new Date(accounting.lastEvAggr)
 	}
-	const depositAmount = new BN(channel.depositAmount, 10)
 
 	// Build an intermediary balances representation
 	let balancesBeforeFees = toBNMap(accounting.balancesBeforeFees)
