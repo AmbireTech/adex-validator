@@ -127,9 +127,9 @@ tape('new states are not produced when there are no new aggregates', async funct
 	const { validatorMessages } = await fetch(url).then(res => res.json())
 	t.ok(Array.isArray(validatorMessages), 'has validatorMessages')
 	// Force it two times, which should technically produce two new aggregates,
-	// 100ms apart (by their created timestamp)
+	// 50ms apart (by their created timestamp)
 	await forceTick()
-	await wait(100)
+	await wait(50)
 	await forceTick()
 	const newResp = await fetch(url).then(res => res.json())
 	t.deepEqual(validatorMessages, newResp.validatorMessages, 'validatorMessages should be the same')
