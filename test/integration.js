@@ -122,6 +122,20 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	t.end()
 })
 
+tape('new states are not produced when there are no new aggregates', async function(t) {
+	const url = `${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`
+	const { validatorMessages } = await fetch(url).then(res => res.json())
+	t.ok(Array.isArray(validatorMessages), 'has validatorMessages')
+	// Force it two times, which should technically produce two new aggregates,
+	// 100ms apart (by their created timestamp)
+	await forceTick()
+	await wait(100)
+	await forceTick()
+	const newResp = await fetch(url).then(res => res.json())
+	t.deepEqual(validatorMessages, newResp.validatorMessages, 'validatorMessages should be the same')
+	t.end()
+})
+
 // @TODO filtering tests
 // do we return the aggregates we have access to only?
 // do we return everything if we're a superuser (validator)
@@ -233,7 +247,11 @@ async function testRejectState(t, expectedReason, makeNewState) {
 
 	t.ok(reject, 'has a RejectState')
 	if (reject) {
-		t.equal(reject.stateRoot, maliciousNewState.stateRoot, 'we have rejected the malicious NewState')
+		t.equal(
+			reject.stateRoot,
+			maliciousNewState.stateRoot,
+			'we have rejected the malicious NewState'
+		)
 		t.equal(reject.reason, expectedReason, `reason for rejection is ${expectedReason}`)
 	}
 }
@@ -300,6 +318,5 @@ tape('cannot exceed channel deposit', async function(t) {
 
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
-// @TODO consider separate tests for when/if/how /tree is updated? or unit tests for the event aggregator
 // @TODO tests for the adapters and especially ewt
 // @TODO we can recover from the validator worker crashing
