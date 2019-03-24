@@ -29,111 +29,100 @@ function aggrAndTick() {
 	return forceTick()
 }
 
-tape('submit events and ensure they are accounted for', function(t) {
+tape('submit events and ensure they are accounted for', async function(t) {
 	const evs = genImpressions(3).concat(genImpressions(2, 'anotherPublisher'))
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
 	const channel = dummyVals.channel
-	let balancesTreePreFees
-	let balancesTree
-
-	Promise.all(
+	await Promise.all(
 		// @TODO maybe we should assert that the status is 200 here?
 		[leaderUrl, followerUrl].map(url => postEvents(url, dummyVals.channel.id, evs))
 	)
-		.then(() => aggrAndTick())
-		.then(function() {
-			return fetch(
-				`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
-			)
-				.then(res => res.json())
-				.then(({ validatorMessages }) => validatorMessages[0].msg)
-		})
-		.then(function(resp) {
-			t.ok(resp && resp.balances, 'there is a balances tree')
-			balancesTreePreFees = resp.balancesBeforeFees
-			balancesTree = resp.balances
-			t.equal(balancesTreePreFees[defaultPubName], expectedBal, 'balances is right')
-			// We will check the leader, cause this means this happened:
-			// the NewState was generated, sent to the follower,
-			// who generated ApproveState and sent back to the leader
-			return aggrAndTick().then(function() {
-				return fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/last-approved`).then(res =>
-					res.json()
-				)
-			})
-		})
-		.then(function({ lastApproved }) {
-			t.ok(lastApproved, 'has lastApproved')
-			// ensure NewState is in order
-			const lastNew = lastApproved.newState
-			t.ok(lastNew, 'has NewState')
-			t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
-			t.ok(
-				typeof lastNew.msg.stateRoot === 'string' && lastNew.msg.stateRoot.length === 64,
-				'NewState: stateRoot is sane'
-			)
-			t.equal(
-				lastNew.msg.signature,
-				getDummySig(lastNew.msg.stateRoot, lastNew.from),
-				'NewState: signature is sane'
-			)
-			t.equal(
-				lastNew.msg.balances[defaultPubName],
-				expectedBalAfterFees,
-				'NewState: balance is as expected, after fees'
-			)
-			t.deepEqual(
-				lastNew.msg.balances,
-				balancesTree,
-				'NewState: balances is the same as the one in Accounting'
-			)
+	await aggrAndTick()
+	const resp = await fetch(
+		`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
+	)
+		.then(res => res.json())
+		.then(({ validatorMessages }) => validatorMessages[0].msg)
 
-			// Ensure ApproveState is in order
-			const lastApprove = lastApproved.approveState
-			t.ok(lastApprove, 'has ApproveState')
-			t.equal(lastApprove.from, channel.validators[1], 'ApproveState: is by the follower')
-			t.ok(
-				typeof lastApprove.msg.stateRoot === 'string' && lastApprove.msg.stateRoot.length === 64,
-				'ApproveState: stateRoot is sane'
-			)
-			t.equal(
-				lastApprove.msg.signature,
-				getDummySig(lastApprove.msg.stateRoot, lastApprove.from),
-				'ApproveState: signature is sane'
-			)
-			t.equal(
-				lastNew.msg.stateRoot,
-				lastApprove.msg.stateRoot,
-				'stateRoot is the same between latest NewState and ApproveState'
-			)
-			t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is true')
+	t.ok(resp && resp.balances, 'there is a balances tree')
+	const balancesTreePreFees = resp.balancesBeforeFees
+	const balancesTree = resp.balances
+	t.equal(balancesTreePreFees[defaultPubName], expectedBal, 'balances is right')
+	// We will check the leader, cause this means this happened:
+	// the NewState was generated, sent to the follower,
+	// who generated ApproveState and sent back to the leader
+	await aggrAndTick()
 
-			// Check inclusion proofs of the balance
-			// stateRoot = keccak256(channelId, balanceRoot)
-			const allLeafs = Object.keys(balancesTree).map(k =>
-				Channel.getBalanceLeaf(k, balancesTree[k])
-			)
-			const mTree = new MerkleTree(allLeafs)
-			const stateRootRaw = Channel.getSignableStateRoot(
-				Buffer.from(channel.id),
-				mTree.getRoot()
-			).toString('hex')
-			const { stateRoot } = lastNew.msg
-			t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
+	const { lastApproved } = await fetch(
+		`${leaderUrl}/channel/${dummyVals.channel.id}/last-approved`
+	).then(res => res.json())
 
-			// @TODO: revert this to what it was before the fees, since fees will be moved to a separate test path
-			// this is a bit out of scope, looks like a test of the MerkleTree lib,
-			// but better be safe than sorry
-			const expectedBalanceAfterFees = '2'
-			const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBalanceAfterFees)
-			const proof = mTree.proof(leaf)
-			t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
+	t.ok(lastApproved, 'has lastApproved')
+	// ensure NewState is in order
+	const lastNew = lastApproved.newState
+	t.ok(lastNew, 'has NewState')
+	t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
+	t.ok(
+		typeof lastNew.msg.stateRoot === 'string' && lastNew.msg.stateRoot.length === 64,
+		'NewState: stateRoot is sane'
+	)
+	t.equal(
+		lastNew.msg.signature,
+		getDummySig(lastNew.msg.stateRoot, lastNew.from),
+		'NewState: signature is sane'
+	)
+	t.equal(
+		lastNew.msg.balances[defaultPubName],
+		expectedBalAfterFees,
+		'NewState: balance is as expected, after fees'
+	)
+	t.deepEqual(
+		lastNew.msg.balances,
+		balancesTree,
+		'NewState: balances is the same as the one in Accounting'
+	)
 
-			t.end()
-		})
-		.catch(err => t.fail(err))
+	// Ensure ApproveState is in order
+	const lastApprove = lastApproved.approveState
+	t.ok(lastApprove, 'has ApproveState')
+	t.equal(lastApprove.from, channel.validators[1], 'ApproveState: is by the follower')
+	t.ok(
+		typeof lastApprove.msg.stateRoot === 'string' && lastApprove.msg.stateRoot.length === 64,
+		'ApproveState: stateRoot is sane'
+	)
+	t.equal(
+		lastApprove.msg.signature,
+		getDummySig(lastApprove.msg.stateRoot, lastApprove.from),
+		'ApproveState: signature is sane'
+	)
+	t.equal(
+		lastNew.msg.stateRoot,
+		lastApprove.msg.stateRoot,
+		'stateRoot is the same between latest NewState and ApproveState'
+	)
+	t.equal(lastApprove.msg.isHealthy, true, 'ApproveState: health value is true')
+
+	// Check inclusion proofs of the balance
+	// stateRoot = keccak256(channelId, balanceRoot)
+	const allLeafs = Object.keys(balancesTree).map(k => Channel.getBalanceLeaf(k, balancesTree[k]))
+	const mTree = new MerkleTree(allLeafs)
+	const stateRootRaw = Channel.getSignableStateRoot(
+		Buffer.from(channel.id),
+		mTree.getRoot()
+	).toString('hex')
+	const { stateRoot } = lastNew.msg
+	t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
+
+	// @TODO: revert this to what it was before the fees, since fees will be moved to a separate test path
+	// this is a bit out of scope, looks like a test of the MerkleTree lib,
+	// but better be safe than sorry
+	const expectedBalanceAfterFees = '2'
+	const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBalanceAfterFees)
+	const proof = mTree.proof(leaf)
+	t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
+	t.end()
 })
 
 // @TODO filtering tests
