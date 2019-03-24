@@ -29,8 +29,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		return onError(iface, { reason: 'InvalidRootHash', newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
-	const leader = channel.spec.validators[0]
-	const isValidSig = await adapter.verify(leader.id, newMsg.stateRoot, newMsg.signature)
+	const isValidSig = await adapter.verify(channel.validators[0], newMsg.stateRoot, newMsg.signature)
 	if (!isValidSig) {
 		return onError(iface, { reason: 'InvalidSignature', newMsg })
 	}
@@ -41,7 +40,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		return onError(iface, { reason: 'InvalidTransition', newMsg })
 	}
 
-	const { stateRoot } = newMsg
+	const stateRoot = newMsg.stateRoot
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 	const signature = await adapter.sign(stateRootRaw)
 	return iface.propagate([
