@@ -21,9 +21,8 @@ async function tick(iface, channel) {
 		const { balances, newAccounting } = mergeAggrs(accounting, aggrs, channel)
 		await iface.propagate([newAccounting])
 		return { balances, newAccounting }
-	} else {
-		return { balances: toBNMap(accounting.balances) }
 	}
+	return { balances: toBNMap(accounting.balances) }
 }
 
 // Pure, should not mutate inputs
