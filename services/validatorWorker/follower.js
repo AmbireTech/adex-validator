@@ -13,17 +13,15 @@ async function tick(adapter, iface, channel) {
 	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
 
 	// there are no unapproved NewState messages, only merge all eventAggrs
-	if (!newMsg || latestIsRespondedTo) {
-		await producer.tick(iface, channel)
-	} else {
-		const { balances } = await producer.tick(iface, channel, true)
-		await onNewState(adapter, iface, { channel, balances, newMsg })
+	const { balances } = await producer.tick(iface, channel)
+	if (newMsg && !latestIsRespondedTo) {
+		await onNewState(adapter, iface, channel, balances, newMsg)
 	}
 
 	await heartbeat(adapter, iface, channel)
 }
 
-async function onNewState(adapter, iface, { channel, balances, newMsg }) {
+async function onNewState(adapter, iface, channel, balances, newMsg) {
 	const newBalances = toBNMap(newMsg.balances)
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree

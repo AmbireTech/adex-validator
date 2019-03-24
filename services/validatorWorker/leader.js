@@ -5,12 +5,12 @@ const { heartbeat } = require('./heartbeat')
 async function tick(adapter, iface, channel) {
 	const res = await producer.tick(iface, channel)
 	if (res.newAccounting) {
-		await afterProducer(adapter, iface, res)
+		await onNewAccounting(adapter, iface, channel, res)
 	}
 	await heartbeat(adapter, iface, channel)
 }
 
-async function afterProducer(adapter, iface, { channel, newAccounting, balances }) {
+async function onNewAccounting(adapter, iface, channel, { newAccounting, balances }) {
 	const stateRootRaw = getStateRootHash(adapter, channel, balances)
 	const signature = await adapter.sign(stateRootRaw)
 	const stateRoot = stateRootRaw.toString('hex')

@@ -3,7 +3,7 @@ const BN = require('bn.js')
 const { toBNStringMap, toBNMap } = require('./lib')
 const { getBalancesAfterFeesTree } = require('./lib/fees')
 
-async function tick(iface, channel, force) {
+async function tick(iface, channel) {
 	const accounting = (await iface.getOurLatestMsg('Accounting')) || {
 		balancesBeforeFees: {},
 		balances: {},
@@ -15,17 +15,11 @@ async function tick(iface, channel, force) {
 
 	logMerge(channel, aggrs)
 
-	// @TODO get rid of shouldUpdate, always return a consistent thing
-	const shouldUpdate = force || aggrs.length
-	if (!shouldUpdate) {
-		return { channel }
-	}
-
-	// balances should be a sum of eventPayouts
-	//
+	// mergeAggr will add all eventPayouts from aggrs to the balancesBeforeFees
+	// and produce a new accounting message
 	const { balances, newAccounting } = mergeAggrs(accounting, aggrs, channel)
-	await iface.propagate([newAccounting])
-	return { channel, newAccounting, balances }
+	if (aggrs.length) await iface.propagate([newAccounting])
+	return { balances, newAccounting }
 }
 
 // Pure, should not mutate inputs
