@@ -15,7 +15,7 @@ const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 dummyAdapter.init({ dummyIdentity: dummyVals.ids.leader })
-const iface = new SentryInterface(dummyAdapter, dummyVals.channel)
+const iface = new SentryInterface(dummyAdapter, dummyVals.channel, { logging: false })
 
 function aggrAndTick() {
 	// If we need to run the production config with AGGR_THROTTLE, then we need to wait for cfg.AGGR_THROTTLE + 500
@@ -224,15 +224,18 @@ async function testInvalidState(t, expectedReason, makeNewState) {
 		iface.getLatestMsg(dummyVals.ids.follower, 'ApproveState'),
 		iface.getLatestMsg(dummyVals.ids.follower, 'RejectState')
 	])
-	t.notOk(
-		approve && approve.stateRoot === maliciousNewState.stateRoot,
-		'we have not approved the malicious NewState'
-	)
-	t.ok(
-		reject && reject.stateRoot === maliciousNewState.stateRoot,
-		'we have rejected the malicious NewState'
-	)
-	t.ok(reject && reject.reason === expectedReason, `reason for rejection is ${expectedReason}`)
+	if (approve)
+		t.notEqual(
+			approve.stateRoot,
+			maliciousNewState.stateRoot,
+			'we have not approved the malicious NewState'
+		)
+
+	t.ok(reject, 'has a RejectState')
+	if (reject) {
+		t.equal(reject.stateRoot, maliciousNewState.stateRoot, 'we have rejected the malicious NewState')
+		t.equal(reject.reason, expectedReason, `reason for rejection is ${expectedReason}`)
+	}
 }
 
 tape('POST /channel/{id}/{validator-messages}: wrong signature', async function(t) {
