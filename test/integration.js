@@ -206,40 +206,37 @@ tape('health works correctly', function(t) {
 		.catch(err => t.fail(err))
 })
 
-tape('heartbeat has been emitted', function(t) {
-	Promise.resolve()
-		.then(() => forceTick())
-		.then(function() {
-			return Promise.all(
-				[
-					`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-						dummyVals.ids.follower
-					}/Heartbeat?limit=1`,
-					`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-						dummyVals.ids.leader
-					}/Heartbeat?limit=1`,
-					`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-						dummyVals.ids.leader
-					}/Heartbeat?limit=1`,
-					`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
-						dummyVals.ids.follower
-					}/Heartbeat?limit=1`
-				].map(url => {
-					return fetch(url)
-						.then(res => res.json())
-						.then(function({ validatorMessages }) {
-							const hb = validatorMessages.find(x => x.msg.type === 'Heartbeat')
-							if (!hb) throw new Error(`should propagate heartbeat notification for ${url}`)
-							t.ok(hb.msg.signature, 'heartbeat has signature')
-							t.ok(hb.msg.timestamp, 'heartbeat has timestamp')
-							t.ok(hb.msg.stateRoot, 'heartbeat has stateRoot')
-							// @TODO should we test the validity of the signature?
-						})
+tape('heartbeat has been emitted', async function(t) {
+	await forceTick()
+	await Promise.all(
+		[
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+				dummyVals.ids.follower
+			}/Heartbeat?limit=1`,
+			`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+				dummyVals.ids.leader
+			}/Heartbeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+				dummyVals.ids.leader
+			}/Heartbeat?limit=1`,
+			`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/${
+				dummyVals.ids.follower
+			}/Heartbeat?limit=1`
+		].map(url => {
+			return fetch(url)
+				.then(res => res.json())
+				.then(function({ validatorMessages }) {
+					const hb = validatorMessages.find(x => x.msg.type === 'Heartbeat')
+					if (!hb) throw new Error(`should propagate heartbeat notification for ${url}`)
+					t.ok(hb.msg.signature, 'heartbeat has signature')
+					t.ok(hb.msg.timestamp, 'heartbeat has timestamp')
+					t.ok(hb.msg.stateRoot, 'heartbeat has stateRoot')
+					// @TODO should we test the validity of the signature?
 				})
-			)
 		})
-		.then(() => t.end())
-		.catch(err => t.fail(err))
+	).catch(t.fail)
+
+	t.end()
 })
 
 tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
