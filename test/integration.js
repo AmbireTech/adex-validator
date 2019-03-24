@@ -266,7 +266,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', function(t) {
 						}
 					]
 				})
-			}).then(r => t.equal(r.status, 200, 'response status is right'))
+			})
 		})
 		.then(() => aggrAndTick())
 		.then(function() {
@@ -336,7 +336,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 						}
 					]
 				})
-			}).then(r => t.equal(r.status, 200, 'response status is right'))
+			})
 		})
 		.then(() => aggrAndTick())
 		// we tick again to test if we'd produce another RejectState
@@ -379,38 +379,34 @@ tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', fun
 		.catch(err => t.fail(err))
 })
 
-tape('cannot exceed channel deposit', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`)
+tape('cannot exceed channel deposit', async function(t) {
+	const statusResp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/status`).then(res =>
+		res.json()
+	)
+
+	// 1 event pays 1 token for now
+	// @TODO make this work with a more complex model
+	const evCount = statusResp.channel.depositAmount + 1
+
+	await Promise.all(
+		[leaderUrl, followerUrl].map(url =>
+			postEvents(url, dummyVals.channel.id, genImpressions(evCount))
+		)
+	)
+	await aggrAndTick()
+
+	const { balances } = await fetch(
+		`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
+	)
 		.then(res => res.json())
-		.then(function(resp) {
-			// 1 event pays 1 token for now
-			// @TODO make this work with a more complex model
-			const evCount = resp.channel.depositAmount + 1
+		.then(({ validatorMessages }) => validatorMessages[0].msg)
 
-			return Promise.all(
-				[leaderUrl, followerUrl].map(url =>
-					postEvents(url, dummyVals.channel.id, genImpressions(evCount))
-				)
-			)
-		})
-		.then(() => aggrAndTick())
-		.then(function() {
-			return fetch(
-				`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages/awesomeLeader/Accounting`
-			)
-				.then(res => res.json())
-				.then(({ validatorMessages }) => validatorMessages[0].msg)
-		})
-		.then(function(resp) {
-			const sum = Object.keys(resp.balances)
-				.map(k => parseInt(resp.balances[k], 10))
-				.reduce((a, b) => a + b, 0)
-
-			t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
-			// @TODO state changed to exhausted, unable to take any more events
-			t.end()
-		})
-		.catch(err => t.fail(err))
+	const sum = Object.keys(balances)
+		.map(k => parseInt(balances[k], 10))
+		.reduce((a, b) => a + b, 0)
+	t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
+	// @TODO state changed to exhausted, unable to take any more events
+	t.end()
 })
 
 // @TODO fees are adequately applied to NewState
