@@ -18,7 +18,7 @@ const sum = tree =>
 const genEvAggr = (count, recepient) => {
 	const IMPRESSION = {
 		eventCounts: { [recepient]: count },
-		eventPayouts: { [recepient]: count*10 },
+		eventPayouts: { [recepient]: count * 10 }
 	}
 	return { events: { IMPRESSION } }
 }
@@ -204,12 +204,12 @@ tape('should merge event aggrs and apply fees', function(t) {
 		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
 		depositAmount: '10000'
 	}
-	const { balances, newAccounting } = mergeAggrs({
-		balancesBeforeFees: {
-			a: '100',
-			b: '200'
-		}
-	}, [genEvAggr(5, 'a')], channel)
+	const balancesBeforeFees = { a: '100', b: '200' }
+	const { balances, newAccounting } = mergeAggrs(
+		{ balancesBeforeFees },
+		[genEvAggr(5, 'a')],
+		channel
+	)
 	t.deepEqual(toBNStringMap(balances), newAccounting.balances, 'balances is the same')
 	t.equal(newAccounting.balancesBeforeFees.a, '150', 'balance of recepient incremented accordingly')
 	t.equal(newAccounting.balances.a, '148', 'balanceAfterFees is ok')
@@ -222,17 +222,25 @@ tape('should never allow exceeding the deposit', function(t) {
 		depositAmount: '10000'
 	}
 	const depositAmount = new BN(channel.depositAmount, 10)
-	const { balances, newAccounting } = mergeAggrs({
-		balancesBeforeFees: {
-			a: '100',
-			b: '200'
-		}
-	}, [genEvAggr(1001, 'a')], channel)
+	const balancesBeforeFees = { a: '100', b: '200' }
+	const { balances, newAccounting } = mergeAggrs(
+		{ balancesBeforeFees },
+		[genEvAggr(1001, 'a')],
+		channel
+	)
 	t.deepEqual(toBNStringMap(balances), newAccounting.balances, 'balances is the same')
-	t.equal(newAccounting.balancesBeforeFees.a, '9800', 'balance of recepient incremented accordingly')
+	t.equal(
+		newAccounting.balancesBeforeFees.a,
+		'9800',
+		'balance of recepient incremented accordingly'
+	)
 	t.equal(newAccounting.balancesBeforeFees.b, '200', 'balances of non-recipient remains the same')
 	t.equal(newAccounting.balances.a, '9702', 'balanceAfterFees is ok')
-	t.deepEqual(sum(toBNMap(newAccounting.balancesBeforeFees)), depositAmount, 'sum(balancesBeforeFees) == depositAmount')
+	t.deepEqual(
+		sum(toBNMap(newAccounting.balancesBeforeFees)),
+		depositAmount,
+		'sum(balancesBeforeFees) == depositAmount'
+	)
 	t.deepEqual(sum(toBNMap(newAccounting.balances)), depositAmount, 'sum(balances) == depositAmount')
 	t.end()
 })
