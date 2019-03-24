@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const tape = require('tape')
+const tape = require('tape-catch')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
@@ -139,35 +139,30 @@ tape('submit events and ensure they are accounted for', function(t) {
 // @TODO filtering tests
 // do we return the aggregates we have access to only?
 // do we return everything if we're a superuser (validator)
-tape('/channel/{id}/events-aggregates', function(t) {
-	fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
+tape('/channel/{id}/events-aggregates', async function(t) {
+	const resp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
 		method: 'GET',
 		headers: {
 			authorization: `Bearer ${dummyVals.auth.publisher}`,
 			'content-type': 'application/json'
 		}
-	})
-		.then(res => {
-			return res.json()
-		})
-		.then(function(resp) {
-			t.ok(resp.channel, 'has resp.channel')
-			t.ok(resp.events, 'has resp.events')
-			t.ok(resp.events.length >= 1, 'should have events of min legnth 1')
-			t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
-			t.end()
-		})
-		.catch(err => t.fail(err))
+	}).then(res => res.json())
+
+	t.ok(resp.channel, 'has resp.channel')
+	t.ok(resp.events, 'has resp.events')
+	t.ok(resp.events.length >= 1, 'should have events of min legnth 1')
+	t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
+	t.end()
 })
 
-tape('health works correctly', function(t) {
+tape('health works correctly', async function(t) {
 	const toFollower = 8
 	const toLeader = 1
 	const diff = toFollower - toLeader
 	const approveStateUrl = `${followerUrl}/channel/${dummyVals.channel.id}/validator-messages/${
 		dummyVals.ids.follower
 	}/ApproveState?limit=1`
-	Promise.all(
+	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
 			postEvents(
 				url,
@@ -176,34 +171,29 @@ tape('health works correctly', function(t) {
 			)
 		)
 	)
-		// postEvents(followerUrl, dummyVals.channel.id, genImpressions(4))
-		// wait for the events to be aggregated and new states to be issued
-		.then(() => aggrAndTick())
-		.then(() => forceTick())
-		.then(function() {
-			return fetch(approveStateUrl).then(res => res.json())
-		})
-		.then(function(resp) {
-			const lastApprove = resp.validatorMessages[0]
-			// @TODO: Should we assert balances numbers?
-			// @TODO assert number of messages; this will be easy once we create a separate channel for each test
-			t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
 
-			// send events to the leader so it catches up
-			return postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
-		})
-		// one tick will generate NewState, the other ApproveState
-		.then(() => aggrAndTick())
-		.then(() => forceTick())
-		.then(function() {
-			return fetch(approveStateUrl).then(res => res.json())
-		})
-		.then(function(resp) {
-			const lastApprove = resp.validatorMessages[0]
-			t.equal(lastApprove.msg.isHealthy, true, 'channel is registered as healthy')
-			t.end()
-		})
-		.catch(err => t.fail(err))
+	// postEvents(followerUrl, dummyVals.channel.id, genImpressions(4))
+	// wait for the events to be aggregated and new states to be issued
+	await aggrAndTick()
+	await forceTick()
+
+	const resp = await fetch(approveStateUrl).then(res => res.json())
+	const lastApprove = resp.validatorMessages[0]
+	// @TODO: Should we assert balances numbers?
+	// @TODO assert number of messages; this will be easy once we create a separate channel for each test
+	t.equal(lastApprove.msg.isHealthy, false, 'channel is registered as unhealthy')
+
+	// send events to the leader so it catches up
+	await postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
+	// one tick will generate NewState, the other ApproveState
+	await aggrAndTick()
+	await forceTick()
+
+	// check if healthy
+	const { validatorMessages } = await fetch(approveStateUrl).then(res => res.json())
+	const lastApproveHealthy = validatorMessages[0]
+	t.equal(lastApproveHealthy.msg.isHealthy, true, 'channel is registered as healthy')
+	t.end()
 })
 
 tape('heartbeat has been emitted', async function(t) {
@@ -234,7 +224,7 @@ tape('heartbeat has been emitted', async function(t) {
 					// @TODO should we test the validity of the signature?
 				})
 		})
-	).catch(t.fail)
+	)
 
 	t.end()
 })
