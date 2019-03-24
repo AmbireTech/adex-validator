@@ -215,7 +215,7 @@ tape('heartbeat has been emitted', async function(t) {
 	t.end()
 })
 
-async function testInvalidState(t, expectedReason, makeNewState) {
+async function testRejectState(t, expectedReason, makeNewState) {
 	const newState = await iface.getOurLatestMsg('NewState')
 	const maliciousNewState = makeNewState(newState)
 	await iface.propagate([maliciousNewState])
@@ -239,7 +239,7 @@ async function testInvalidState(t, expectedReason, makeNewState) {
 }
 
 tape('POST /channel/{id}/{validator-messages}: wrong signature', async function(t) {
-	await testInvalidState(t, 'InvalidSignature', function(newState) {
+	await testRejectState(t, 'InvalidSignature', function(newState) {
 		// increase the balance, so we effectively end up with a new state
 		const balances = { ...newState.balances, someoneElse: '1' }
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
@@ -254,7 +254,7 @@ tape('POST /channel/{id}/{validator-messages}: wrong signature', async function(
 })
 
 tape('POST /channel/{id}/{validator-messages}: wrong (deceptive) root hash', async function(t) {
-	await testInvalidState(t, 'InvalidRootHash', function(newState) {
+	await testRejectState(t, 'InvalidRootHash', function(newState) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
 		const fakeBalances = { publisher: '33333' }
