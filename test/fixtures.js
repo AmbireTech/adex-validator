@@ -1,5 +1,5 @@
 const cfg = {
-	CREATORS_WHITELIST: ['0xa95743F561db3618D204C9a7c3ca55cDf0625107'],
+	CREATORS_WHITELIST: null,
 	MINIMAL_DEPOSIT: 1000,
 	TOKEN_ADDRESS_WHITELIST: ['0x0e6BFF21862858a289AB214009d572b4079C8515'],
 	VALIDATORS_WHITELIST: ['0xa95743F561db3618D204C9a7c3ca55cDf0625107']
@@ -104,7 +104,27 @@ module.exports = {
 			},
 			null
 		],
-
+		[
+			{
+				id: 'awesomeChannelTest',
+				depositAsset: '0x0e6BFF21862858a289AB214009d572b4079C8515',
+				depositAmount: 1000,
+				creator: 'awesomeCreator',
+				spec: {
+					validators: [
+						{
+							id: '0xa95743F561db3618D204C9a7c3ca55cDf0625107',
+							url: 'http://localhost:8005',
+							fee: 0
+						}
+					]
+				}
+			},
+			{
+				...cfg
+			},
+			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" must contain 2 items]]`
+		],
 		[
 			{
 				id: 'awesomeChannelTest',

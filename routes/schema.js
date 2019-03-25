@@ -1,5 +1,13 @@
 const { Joi } = require('celebrate')
 
+function creator({ CREATORS_WHITELIST }) {
+	let schema = Joi.string().required()
+	if (CREATORS_WHITELIST && CREATORS_WHITELIST.length > 0) {
+		schema = schema.valid(CREATORS_WHITELIST)
+	}
+	return schema
+}
+
 function depositAsset({ TOKEN_ADDRESS_WHITELIST }) {
 	let schema = Joi.string().required()
 	if (TOKEN_ADDRESS_WHITELIST && TOKEN_ADDRESS_WHITELIST.length > 0) {
@@ -41,7 +49,7 @@ module.exports = {
 		id: Joi.string().required(),
 		depositAsset: depositAsset(cfg),
 		depositAmount: depositAmount(cfg),
-		creator: Joi.string().required(),
+		creator: creator(cfg),
 		spec: Joi.object({
 			validators: validators(cfg)
 		}).required()
