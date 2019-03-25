@@ -108,3 +108,74 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 	)
 	t.end()
 })
+
+tape('POST /channel: create channel', async function(t) {
+	const body = {
+		id: 'awesomeTestChannel',
+		depositAsset: 'DAI',
+		depositAmount: 1000,
+		validators: ['awesomeLeader', 'awesomeFollower'],
+		spec: {
+			validators: [
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+			]
+		}
+	}
+
+	const resp = await fetch(`${followerUrl}/channel`, {
+		method: 'POST',
+		headers: {
+			authorization: `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json'
+		},
+		body: JSON.stringify(body)
+	}).then(res => res.json())
+
+	t.equal(resp.success, true, 'Successfully created channel')
+	t.end()
+})
+
+tape('POST /channel: should not create campaign', async function(t) {
+	await Promise.all(
+		[
+			{
+				depositAsset: 'DAI',
+				depositAmount: 1000,
+				validators: ['awesomeLeader', 'awesomeFollower'],
+				spec: {
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+					]
+				}
+			},
+			{
+				id: 'awesomeTestChannel'
+			},
+			{
+				depositAsset: 'DAI',
+				depositAmount: 1000,
+				validators: ['awesomeFollower'],
+				spec: {
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006' }
+					]
+				}
+			}
+		].map(function(body) {
+			return fetch(`${followerUrl}/channel`, {
+				method: 'POST',
+				headers: {
+					authorization: `Bearer ${dummyVals.auth.leader}`,
+					'content-type': 'application/json'
+				},
+				body: JSON.stringify(body)
+			}).then(function(resp) {
+				t.equal(resp.status, 400, 'status must be BadRequest')
+			})
+		})
+	)
+	t.end()
+})

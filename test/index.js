@@ -2,11 +2,14 @@
 const tape = require('tape')
 
 const BN = require('bn.js')
+const { Joi } = require('celebrate')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
+const schema = require('../routes/schema')
 const dummyAdapter = require('../adapters/dummy')
+const fixtures = require('./fixtures')
 
 const dummyChannel = { depositAmount: new BN(100) }
 
@@ -244,3 +247,21 @@ tape('should never allow exceeding the deposit', function(t) {
 	t.deepEqual(sum(toBNMap(newAccounting.balances)), depositAmount, 'sum(balances) == depositAmount')
 	t.end()
 })
+
+// campaign schema;
+//
+
+tape('create campaign schema', function(t) {
+	fixtures.createChannel.forEach(function([data, conf, expected]) {
+		Joi.validate(data, schema.createChannel(conf), function(err) {
+			let error = null
+			if (err) error = err.toString()
+			t.equal(error, expected, 'Should validate object properly')
+		})
+	})
+
+	t.end()
+})
+
+// @TODO: event aggregator
+// @TODO: producer, possibly leader/follower; mergePayableIntoBalances

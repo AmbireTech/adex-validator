@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const express = require('express')
 const bodyParser = require('body-parser')
+const { errors } = require('celebrate')
 const yargs = require('yargs')
 const db = require('../db')
 const adapters = require('../adapters')
@@ -23,6 +24,7 @@ const port = process.env.PORT || 8005
 app.use(bodyParser.json())
 app.use(authMiddleware.forAdapter(adapter))
 app.use('/channel', channelRoutes)
+app.use(errors())
 
 db.connect()
 	.then(function() {
