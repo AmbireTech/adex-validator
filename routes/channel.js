@@ -141,18 +141,18 @@ async function retrieveLastApproved(channel) {
 }
 
 function createChannel(req, res, next) {
-	const { id, depositAmount, depositAsset, validators, spec } = req.body
-	const channelCol = db.getMongo().collection('channel')
+	const { id, depositAmount, depositAsset, spec } = req.body
+	const channelsCol = db.getMongo().collection('channels')
 	const channel = {
 		_id: id,
+		channelId: id,
 		depositAmount,
 		depositAsset,
-		validators,
 		spec,
 		created: new Date()
 	}
 
-	channelCol
+	channelsCol
 		.insertOne(channel)
 		.then(function() {
 			res.send({ success: true })

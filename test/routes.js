@@ -117,8 +117,8 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 })
 
 tape('POST /channel: create channel', async function(t) {
-	const body = {
-		id: 'awesomeTestChannel',
+	const channel = {
+		id: 'awesomeTestChannel2',
 		creator: 'someone',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
@@ -136,12 +136,20 @@ tape('POST /channel: create channel', async function(t) {
 			authorization: `Bearer ${dummyVals.auth.leader}`,
 			'content-type': 'application/json'
 		},
-		body: JSON.stringify(body)
+		body: JSON.stringify(channel)
 	}).then(res => res.json())
-
 	t.equal(resp.success, true, 'Successfully created channel')
+
+	const channelStatus = await fetch(`${followerUrl}/channel/${channel.id}/status`)
+		.then(res => res.json())
+
+	t.ok(channelStatus.channel, 'has channelStatus.channel')
+	// should we compare other things too?
+	t.deepEqual(channelStatus.channel.spec, channel.spec, 'channel.spec is the same')
 	t.end()
 })
+
+// @TODO cannot submit a channel twice
 
 tape('POST /channel: should not create channel if it is not valid', async function(t) {
 	await Promise.all(
