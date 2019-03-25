@@ -1,8 +1,10 @@
 const express = require('express')
+const { celebrate } = require('celebrate')
 const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
+const schema = require('./schema')
 
 const router = express.Router()
 
@@ -30,6 +32,9 @@ router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad,
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
+
+// campaign
+router.post('/', authRequired, celebrate({ body: schema.createChannel(cfg) }), createChannel)
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -111,6 +116,26 @@ function getValidatorMessages(req, res, next) {
 		.toArray()
 		.then(function(validatorMessages) {
 			res.send({ validatorMessages, channel: req.channel })
+		})
+		.catch(next)
+}
+
+function createChannel(req, res, next) {
+	const { id, depositAmount, depositAsset, validators, spec } = req.body
+	const channelCol = db.getMongo().collection('channel')
+	const channel = {
+		_id: id,
+		depositAmount,
+		depositAsset,
+		validators,
+		spec,
+		created: new Date().getTime()
+	}
+
+	channelCol
+		.insertOne(channel)
+		.then(function() {
+			res.send({ success: true })
 		})
 		.catch(next)
 }

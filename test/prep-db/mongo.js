@@ -18,14 +18,13 @@ const dummyVals = {
 		// @TODO: document schema
 		_id: 'awesomeTestChannel',
 		id: 'awesomeTestChannel',
-		status: 'live',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
 		validators: ['awesomeLeader', 'awesomeFollower'],
 		spec: {
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
 			]
 		}
 	}

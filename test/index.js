@@ -2,10 +2,13 @@
 const tape = require('tape')
 
 const BN = require('bn.js')
+const { Joi } = require('celebrate')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
-const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNStringMap } = require('../services/validatorWorker/lib')
+const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
+const schema = require('../routes/schema')
 const dummyAdapter = require('../adapters/dummy')
+const fixtures = require('./fixtures')
 
 const dummyChannel = { depositAmount: new BN(100) }
 
@@ -180,6 +183,22 @@ tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 	}
 	t.deepEqual(sum(tree2), sum(tree2ExpectedResult))
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, channel)), tree2ExpectedResult)
+
+	t.end()
+})
+
+//
+// campaign schema;
+//
+
+tape('create campaign schema', function(t) {
+	fixtures.createChannel.forEach(function([data, conf, expected]) {
+		Joi.validate(data, schema.createChannel(conf), function(err) {
+			let error = null
+			if (err) error = err.toString()
+			t.equal(error, expected, 'Should validate object properly')
+		})
+	})
 
 	t.end()
 })

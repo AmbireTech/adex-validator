@@ -18,7 +18,6 @@ tape('/channel/list', function(t) {
 		.then(function(resp) {
 			t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
 			t.equal(resp.channels.length, 1, 'resp.channels is the right len')
-			t.equal(resp.channels[0].status, 'live', 'channel is the right status')
 			t.end()
 		})
 		.catch(err => t.fail(err))
@@ -49,7 +48,6 @@ tape('/channel/{id}/status', function(t) {
 		.then(res => res.json())
 		.then(function(resp) {
 			t.ok(resp.channel, 'has resp.channel')
-			t.equal(resp.channel.status, 'live', 'channel has right status')
 			t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
 			t.end()
 		})
@@ -61,7 +59,6 @@ tape('/channel/{id}/tree', function(t) {
 		.then(res => res.json())
 		.then(function(resp) {
 			t.ok(resp.channel, 'has resp.channel')
-			t.equal(resp.channel.status, 'live', 'channel has right status')
 			t.deepEqual(resp.balances, {}, 'channel has balances')
 			t.equal(new Date(resp.lastEvAggr).getTime(0), 0, 'lastEvAggr is 0')
 			t.end()
@@ -127,6 +124,81 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 				t.equal(resp.status, 401, 'status must be Unauthorized')
 			})
 		)
+	)
+		.then(() => t.end())
+		.catch(err => t.fail(err))
+})
+
+tape('POST /channel: create channel', function(t) {
+	const body = {
+		id: 'awesomeTestChannel',
+		depositAsset: 'DAI',
+		depositAmount: 1000,
+		validators: ['awesomeLeader', 'awesomeFollower'],
+		spec: {
+			validators: [
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+			]
+		}
+	}
+
+	fetch(`${followerUrl}/channel`, {
+		method: 'POST',
+		headers: {
+			authorization: `Bearer ${dummyVals.auth.leader}`,
+			'content-type': 'application/json'
+		},
+		body: JSON.stringify(body)
+	})
+		.then(res => res.json())
+		.then(function(resp) {
+			t.equal(resp.success, true, 'Successfully created campaign')
+		})
+		.then(() => t.end())
+		.catch(err => t.fail(err))
+})
+
+tape('POST /channel: should not create campaign', function(t) {
+	Promise.all(
+		[
+			{
+				depositAsset: 'DAI',
+				depositAmount: 1000,
+				validators: ['awesomeLeader', 'awesomeFollower'],
+				spec: {
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+					]
+				}
+			},
+			{
+				id: 'awesomeTestChannel'
+			},
+			{
+				depositAsset: 'DAI',
+				depositAmount: 1000,
+				validators: ['awesomeFollower'],
+				spec: {
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006' }
+					]
+				}
+			}
+		].map(function(body) {
+			return fetch(`${followerUrl}/channel`, {
+				method: 'POST',
+				headers: {
+					authorization: `Bearer ${dummyVals.auth.leader}`,
+					'content-type': 'application/json'
+				},
+				body: JSON.stringify(body)
+			}).then(function(resp) {
+				t.equal(resp.status, 400, 'status must be BadRequest')
+			})
+		})
 	)
 		.then(() => t.end())
 		.catch(err => t.fail(err))
