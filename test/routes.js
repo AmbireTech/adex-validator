@@ -112,6 +112,7 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 tape('POST /channel: create channel', async function(t) {
 	const body = {
 		id: 'awesomeTestChannel',
+		creator: 'someone',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
 		validators: ['awesomeLeader', 'awesomeFollower'],

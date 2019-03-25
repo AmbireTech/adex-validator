@@ -248,10 +248,9 @@ tape('should never allow exceeding the deposit', function(t) {
 	t.end()
 })
 
-// campaign schema;
+// channel schema;
 //
-
-tape('create campaign schema', function(t) {
+tape('create channel schema', function(t) {
 	fixtures.createChannel.forEach(function([data, conf, expected]) {
 		Joi.validate(data, schema.createChannel(conf), function(err) {
 			let error = null
