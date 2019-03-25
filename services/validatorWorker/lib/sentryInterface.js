@@ -75,7 +75,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 async function fetchJson(url, opts) {
 	const resp = await fetch(url, opts)
 	if (resp.status !== 200) {
-		return Promise.reject(new Error(`request failed with status code ${resp.status}`))
+		return Promise.reject(new Error(`request to ${url} failed with status code ${resp.status}`))
 	}
 	return resp.json()
 }
