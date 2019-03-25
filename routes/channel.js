@@ -34,12 +34,7 @@ router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorM
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
 // campaign
-router.post(
-	'/campaign',
-	authRequired,
-	celebrate({ body: schema.createCampaign(cfg) }),
-	createCampaign
-)
+router.post('/', authRequired, celebrate({ body: schema.createChannel(cfg) }), createChannel)
 
 // Implementations
 function getStatus(withTree, req, res) {
@@ -125,7 +120,7 @@ function getValidatorMessages(req, res, next) {
 		.catch(next)
 }
 
-function createCampaign(req, res, next) {
+function createChannel(req, res, next) {
 	const { id, depositAmount, depositAsset, validators, spec, watcher } = req.body
 	const channelCol = db.getMongo().collection('channel')
 	const channel = {

@@ -27,7 +27,7 @@ function creator({ CREATORS_WHITELIST }) {
 	return schema
 }
 
-function validators({ CREATORS_WHITELIST }) {
+function validators({ VALIDATORS_WHITELIST }) {
 	let schema = Joi.array().items(
 		Joi.object({
 			id: Joi.string().required(),
@@ -40,10 +40,10 @@ function validators({ CREATORS_WHITELIST }) {
 		})
 	)
 
-	if (CREATORS_WHITELIST && CREATORS_WHITELIST.length > 0) {
+	if (VALIDATORS_WHITELIST && VALIDATORS_WHITELIST.length > 0) {
 		schema = schema.has(
 			Joi.object({
-				id: Joi.any().valid(CREATORS_WHITELIST),
+				id: Joi.any().valid(VALIDATORS_WHITELIST),
 				url: Joi.string()
 					.uri({
 						scheme: ['http', 'https']
@@ -57,7 +57,7 @@ function validators({ CREATORS_WHITELIST }) {
 	return schema.length(2)
 }
 module.exports = {
-	createCampaign: cfg => ({
+	createChannel: cfg => ({
 		id: Joi.string().required(),
 		depositAsset: depositAsset(cfg),
 		depositAmount: depositAmount(cfg),

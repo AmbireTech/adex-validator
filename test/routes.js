@@ -129,7 +129,7 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', fun
 		.catch(err => t.fail(err))
 })
 
-tape('POST /channel/{id}/campaign: create campaign', function(t) {
+tape('POST /channel: create channel', function(t) {
 	const body = {
 		id: 'awesomeTestChannel',
 		depositAsset: 'DAI',
@@ -148,7 +148,7 @@ tape('POST /channel/{id}/campaign: create campaign', function(t) {
 		}
 	}
 
-	fetch(`${followerUrl}/channel/campaign`, {
+	fetch(`${followerUrl}/channel`, {
 		method: 'POST',
 		headers: {
 			authorization: `Bearer ${dummyVals.auth.leader}`,
@@ -164,7 +164,7 @@ tape('POST /channel/{id}/campaign: create campaign', function(t) {
 		.catch(err => t.fail(err))
 })
 
-tape('POST /channel/{id}/campaign: should not create campaign', function(t) {
+tape('POST /channel: should not create campaign', function(t) {
 	Promise.all(
 		[
 			{
@@ -193,7 +193,7 @@ tape('POST /channel/{id}/campaign: should not create campaign', function(t) {
 				}
 			}
 		].map(function(body) {
-			return fetch(`${followerUrl}/channel/campaign`, {
+			return fetch(`${followerUrl}/channel`, {
 				method: 'POST',
 				headers: {
 					authorization: `Bearer ${dummyVals.auth.leader}`,

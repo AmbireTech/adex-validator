@@ -192,8 +192,8 @@ tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 //
 
 tape('create campaign schema', function(t) {
-	fixtures.createCampaign.forEach(function([data, conf, expected]) {
-		Joi.validate(data, schema.createCampaign(conf), function(err) {
+	fixtures.createChannel.forEach(function([data, conf, expected]) {
+		Joi.validate(data, schema.createChannel(conf), function(err) {
 			let error = null
 			if (err) error = err.toString()
 			t.equal(error, expected, 'Should validate object properly')
