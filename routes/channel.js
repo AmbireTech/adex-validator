@@ -147,7 +147,7 @@ function createChannel(req, res, next) {
 		depositAsset,
 		validators,
 		spec,
-		created: new Date().getTime()
+		created: new Date()
 	}
 
 	channelCol

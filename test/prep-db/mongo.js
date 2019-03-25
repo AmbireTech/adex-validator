@@ -21,6 +21,7 @@ const dummyVals = {
 		depositAsset: 'DAI',
 		depositAmount: 1000,
 		validators: ['awesomeLeader', 'awesomeFollower'],
+		created: new Date(),
 		spec: {
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
