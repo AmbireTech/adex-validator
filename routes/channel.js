@@ -145,7 +145,7 @@ function createChannel(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
 	const channel = {
 		_id: id,
-		id: id,
+		id,
 		depositAmount,
 		depositAsset,
 		spec,

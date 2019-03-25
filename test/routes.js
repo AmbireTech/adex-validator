@@ -123,9 +123,10 @@ tape('POST /channel: create channel', async function(t) {
 		depositAsset: 'DAI',
 		depositAmount: 1000,
 		spec: {
+			// as a mild hack, use different IDs so we don't tick on it
 			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: 100 },
+				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: 100 }
 			]
 		}
 	}
