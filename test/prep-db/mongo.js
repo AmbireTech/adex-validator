@@ -20,7 +20,6 @@ const dummyVals = {
 		id: 'awesomeTestChannel',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
-		validators: ['awesomeLeader', 'awesomeFollower'],
 		created: new Date(),
 		spec: {
 			validators: [

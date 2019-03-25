@@ -16,17 +16,6 @@ function depositAmount({ MINIMAL_DEPOSIT }) {
 	return schema
 }
 
-function validatorsShort({ VALIDATORS_WHITELIST }) {
-	let schema = Joi.array()
-		.items(Joi.string())
-		.required()
-		.length(2)
-	if (VALIDATORS_WHITELIST && VALIDATORS_WHITELIST.length > 0) {
-		schema = schema.has(VALIDATORS_WHITELIST)
-	}
-	return schema
-}
-
 function validators({ VALIDATORS_WHITELIST }) {
 	const schema = Joi.array()
 		.items(
@@ -53,9 +42,8 @@ module.exports = {
 		depositAsset: depositAsset(cfg),
 		depositAmount: depositAmount(cfg),
 		creator: Joi.string().required(),
-		validators: validatorsShort(cfg),
 		spec: Joi.object({
 			validators: validators(cfg)
-		})
+		}).required()
 	})
 }

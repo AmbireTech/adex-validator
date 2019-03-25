@@ -54,7 +54,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// ensure NewState is in order
 	const lastNew = lastApproved.newState
 	t.ok(lastNew, 'has NewState')
-	t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
+	t.equal(lastNew.from, dummyVals.ids.leader, 'NewState: is by the leader')
 	t.ok(
 		typeof lastNew.msg.stateRoot === 'string' && lastNew.msg.stateRoot.length === 64,
 		'NewState: stateRoot is sane'
@@ -78,7 +78,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// Ensure ApproveState is in order
 	const lastApprove = lastApproved.approveState
 	t.ok(lastApprove, 'has ApproveState')
-	t.equal(lastApprove.from, channel.validators[1], 'ApproveState: is by the follower')
+	t.equal(lastApprove.from, dummyVals.ids.follower, 'ApproveState: is by the follower')
 	t.ok(
 		typeof lastApprove.msg.stateRoot === 'string' && lastApprove.msg.stateRoot.length === 64,
 		'ApproveState: stateRoot is sane'

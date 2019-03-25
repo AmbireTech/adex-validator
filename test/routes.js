@@ -115,7 +115,6 @@ tape('POST /channel: create channel', async function(t) {
 		creator: 'someone',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
-		validators: ['awesomeLeader', 'awesomeFollower'],
 		spec: {
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
@@ -145,7 +144,6 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				creator: 'someone',
 				depositAsset: 'DAI',
 				depositAmount: 1000,
-				validators: ['awesomeLeader', 'awesomeFollower'],
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
@@ -163,7 +161,6 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				creator: 'someone',
 				depositAsset: 'DAI',
 				depositAmount: 1000,
-				validators: ['awesomeFollower'],
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005' },

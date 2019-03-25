@@ -54,7 +54,7 @@ function loopChannels() {
 }
 
 function validatorTick(channel) {
-	const validatorIdx = channel.validators.indexOf(adapter.whoami())
+	const validatorIdx = channel.spec.validators.findIndex(v => v.id === adapter.whoami())
 	assert.ok(validatorIdx !== -1, 'validatorTick: processing a channel where we are not validating')
 
 	const isLeader = validatorIdx === 0

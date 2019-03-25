@@ -7,7 +7,7 @@ async function tick(adapter, iface, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	const [newMsg, responseMsg] = await Promise.all([
-		iface.getLatestMsg(channel.validators[0], 'NewState'),
+		iface.getLatestMsg(channel.spec.validators[0].id, 'NewState'),
 		iface.getOurLatestMsg('ApproveState+RejectState')
 	])
 	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
@@ -29,7 +29,11 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		return onError(iface, { reason: 'InvalidRootHash', newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
-	const isValidSig = await adapter.verify(channel.validators[0], newMsg.stateRoot, newMsg.signature)
+	const isValidSig = await adapter.verify(
+		channel.spec.validators[0].id,
+		newMsg.stateRoot,
+		newMsg.signature
+	)
 	if (!isValidSig) {
 		return onError(iface, { reason: 'InvalidSignature', newMsg })
 	}
