@@ -85,11 +85,6 @@ module.exports = {
 							fee: 100
 						}
 					]
-				},
-				watcher: {
-					ethereum: {
-						contract: '0x8A63b2a4AE1A8c3768d020E464B5a83461C260f2'
-					}
 				}
 			},
 			{

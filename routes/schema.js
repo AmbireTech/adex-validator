@@ -64,14 +64,6 @@ module.exports = {
 		validators: creator(cfg),
 		spec: Joi.object({
 			validators: validators(cfg)
-		}),
-		watcher: Joi.object({
-			ethereum: Joi.object({
-				// contract address should be in format 0x...
-				contract: Joi.string()
-					.required()
-					.length(42)
-			})
-		}).required()
+		})
 	})
 }

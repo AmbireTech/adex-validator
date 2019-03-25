@@ -140,11 +140,6 @@ tape('POST /channel: create channel', function(t) {
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
 				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
 			]
-		},
-		watcher: {
-			ethereum: {
-				contract: '0x8A63b2a4AE1A8c3768d020E464B5a83461C260f2'
-			}
 		}
 	}
 

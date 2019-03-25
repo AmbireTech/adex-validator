@@ -121,7 +121,7 @@ function getValidatorMessages(req, res, next) {
 }
 
 function createChannel(req, res, next) {
-	const { id, depositAmount, depositAsset, validators, spec, watcher } = req.body
+	const { id, depositAmount, depositAsset, validators, spec } = req.body
 	const channelCol = db.getMongo().collection('channel')
 	const channel = {
 		_id: id,
@@ -129,7 +129,6 @@ function createChannel(req, res, next) {
 		depositAsset,
 		validators,
 		spec,
-		watcher,
 		created: new Date().getTime()
 	}
 
