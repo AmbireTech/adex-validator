@@ -137,10 +137,12 @@ tape('POST /channel: create channel', async function(t) {
 	t.end()
 })
 
-tape('POST /channel: should not create campaign', async function(t) {
+tape('POST /channel: should not create channel if it is not valid', async function(t) {
 	await Promise.all(
 		[
+			// does not have ID
 			{
+				creator: 'someone',
 				depositAsset: 'DAI',
 				depositAmount: 1000,
 				validators: ['awesomeLeader', 'awesomeFollower'],
@@ -151,10 +153,14 @@ tape('POST /channel: should not create campaign', async function(t) {
 					]
 				}
 			},
+			// does not have anything
 			{
 				id: 'awesomeTestChannel'
 			},
+			// does not have enough validators
 			{
+				id: 'test',
+				creator: 'someone',
 				depositAsset: 'DAI',
 				depositAmount: 1000,
 				validators: ['awesomeFollower'],
