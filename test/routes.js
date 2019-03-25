@@ -15,7 +15,7 @@ const expectedDepositAmnt = dummyVals.channel.depositAmount
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
 	t.ok(resp, 'has resp')
-	t.ok(resp.hasOwnProperty('HEARTBEAT_TIME'), 'has HEARTBEAT_TIME')
+	t.ok(typeof resp.HEARTBEAT_TIME === 'number', 'has HEARTBEAT_TIME')
 	t.end()
 })
 
@@ -140,8 +140,9 @@ tape('POST /channel: create channel', async function(t) {
 	}).then(res => res.json())
 	t.equal(resp.success, true, 'Successfully created channel')
 
-	const channelStatus = await fetch(`${followerUrl}/channel/${channel.id}/status`)
-		.then(res => res.json())
+	const channelStatus = await fetch(`${followerUrl}/channel/${channel.id}/status`).then(res =>
+		res.json()
+	)
 
 	t.ok(channelStatus.channel, 'has channelStatus.channel')
 	// should we compare other things too?
