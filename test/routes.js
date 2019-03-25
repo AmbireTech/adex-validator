@@ -12,6 +12,13 @@ const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
 
+tape('/cfg', async function(t) {
+	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
+	t.ok(resp, 'has resp')
+	t.ok(resp.hasOwnProperty('HEARTBEAT_TIME'), 'has HEARTBEAT_TIME')
+	t.end()
+})
+
 tape('/channel/list', async function(t) {
 	const resp = await fetch(`${leaderUrl}/channel/list`).then(res => res.json())
 	t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
