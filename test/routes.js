@@ -128,8 +128,7 @@ tape('POST /channel: create channel', async function(t) {
 	)
 
 	t.ok(channelStatus.channel, 'has channelStatus.channel')
-	// should we compare other things too?
-	t.deepEqual(channelStatus.channel.spec, channel.spec, 'channel.spec is the same')
+	t.deepEqual(channelStatus.channel, channel, 'channel is the same')
 	t.end()
 })
 
