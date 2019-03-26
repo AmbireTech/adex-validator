@@ -176,19 +176,18 @@ function toEthereumChannel(channel) {
 /*
 const IVO_MM = '0x54122C899013e2c4229e1789CFE5B17446Dae7f9'
 const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
-const FOLLOWER = '0x3209caa2ec897cdee12e859b3b4def9b8421c0ed'
 async function testValidation() {
-	await init({ keystoreFile: './followerKeystore.json' })
+	await init({ keystoreFile: './tom.json' })
 	return validateChannel({
-		id: '0xd075977be2237edb6c5e5a3c687e5005adc5a889b3364bc745711f1b8e950f48',
+		id: '0x078761802067f4e2d46a88437bfd75f30652d22f19252dec5355c1b28c78880f',
 		creator: IVO_MM,
 		depositAsset: GOERLI_TST,
 		depositAmount: (10**17).toString(),
 		validUntil: 1556201147,
 		spec: {
 			validators: [
-				{ id: FOLLOWER, url: 'http://localhost:8005', fee: 0 },
-				{ id: FOLLOWER, url: 'http://localhost:8006', fee: 0 },
+				{ id: '0x2892f6c41e0718eeedd49d98d648c789668ca67d', url: 'https://tom.adex.network', fee: 0 },
+				{ id: '0xce07cbb7e054514d590a0262c93070d838bfba2e', url: 'https://jerry.adex.network', fee: 0 },
 			],
 		}
 	})
