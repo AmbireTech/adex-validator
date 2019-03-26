@@ -5,6 +5,7 @@ const cfg = {
 	VALIDATORS_WHITELIST: ['0xa95743F561db3618D204C9a7c3ca55cDf0625107']
 }
 const dummyVals = require('./prep-db/mongo')
+
 const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
 module.exports = {
 	createChannel: [
