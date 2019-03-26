@@ -2,7 +2,7 @@
 
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
-const { postEvents } = require('./lib')
+const { postEvents, fetchPost } = require('./lib')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -64,16 +64,14 @@ tape(
 				{ type: 'NewState', balances: 'iamobject' },
 				{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' }
 			].map(msg =>
-				fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-					method: 'POST',
-					headers: {
-						authorization: `Bearer ${dummyVals.auth.leader}`,
-						'content-type': 'application/json'
-					},
-					body: JSON.stringify({ messages: [msg] })
-				}).then(function(resp) {
-					t.equal(resp.status, 400, 'status must be BadRequest')
-				})
+				fetchPost(
+					`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`,
+					dummyVals.auth.leader,
+					{ messages: [msg] }
+				)
+					.then(function(resp) {
+						t.equal(resp.status, 400, 'status must be BadRequest')
+					})
 			)
 		)
 		t.end()
@@ -83,14 +81,10 @@ tape(
 tape('POST /channel/{id}/events: malformed events', async function(t) {
 	await Promise.all(
 		[null, { type: 1 }, { type: null }].map(ev =>
-			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.user}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({ events: [ev] })
-			}).then(function(resp) {
+			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
+				dummyVals.auth.user,
+				{ events: [ev] },
+			).then(function(resp) {
 				t.equal(resp.status, 400, 'status is BadRequest')
 			})
 		)
@@ -101,14 +95,10 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', async function(t) {
 	await Promise.all(
 		['events', 'validator-messages'].map(path =>
-			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer WRONG AUTH`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({ messages: [] })
-			}).then(function(resp) {
+			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`,
+				`WRONG AUTH`,
+				{ messages: [] }
+			).then(function(resp) {
 				t.equal(resp.status, 401, 'status must be Unauthorized')
 			})
 		)
@@ -131,14 +121,8 @@ tape('POST /channel: create channel', async function(t) {
 		}
 	}
 
-	const resp = await fetch(`${followerUrl}/channel`, {
-		method: 'POST',
-		headers: {
-			authorization: `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json'
-		},
-		body: JSON.stringify(channel)
-	}).then(res => res.json())
+	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
+		.then(res => res.json())
 	t.equal(resp.success, true, 'Successfully created channel')
 
 	const channelStatus = await fetch(`${followerUrl}/channel/${channel.id}/status`).then(res =>
@@ -185,17 +169,9 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 					]
 				}
 			}
-		].map(function(body) {
-			return fetch(`${followerUrl}/channel`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify(body)
-			}).then(function(resp) {
-				t.equal(resp.status, 400, 'status must be BadRequest')
-			})
+		].map(async function(channel) {
+			const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
+			t.equal(resp.status, 400, 'status must be BadRequest')
 		})
 	)
 	t.end()

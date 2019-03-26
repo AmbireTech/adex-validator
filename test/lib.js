@@ -3,15 +3,22 @@ const childproc = require('child_process')
 const dummyVals = require('./prep-db/mongo')
 
 const defaultPubName = dummyVals.ids.publisher
-function postEvents(url, channelId, events) {
-	return fetch(`${url}/channel/${channelId}/events`, {
+
+// note that the dummy adapter just requires the ID as an auth token
+function fetchPost(url, authToken, body) {
+	return fetch(url, {
 		method: 'POST',
 		headers: {
-			authorization: `Bearer ${dummyVals.auth.user}`,
+			authorization: `Bearer ${authToken}`,
 			'content-type': 'application/json'
 		},
-		body: JSON.stringify({ events })
+		body: JSON.stringify(body)
 	})
+
+}
+
+function postEvents(url, channelId, events) {
+	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.user, { events })
 }
 
 function genImpressions(n, pubName) {
@@ -56,5 +63,6 @@ module.exports = {
 	genImpressions,
 	getDummySig,
 	forceTick,
-	wait
+	wait,
+	fetchPost,
 }
