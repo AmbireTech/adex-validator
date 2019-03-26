@@ -109,8 +109,8 @@ tape('POST /channel: create channel', async function(t) {
 		spec: {
 			// as a mild hack, use different IDs so we don't tick on it
 			validators: [
-				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: 100 }
+				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: '100' },
+				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: '100' }
 			]
 		}
 	}
@@ -145,8 +145,8 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				depositAmount: '1000',
 				spec: {
 					validators: [
-						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
 					]
 				}
 			},

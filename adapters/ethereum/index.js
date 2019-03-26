@@ -147,6 +147,9 @@ async function validateChannel(channel) {
 	// Check the on-chain status
 	const channelStatus = await core.states(ethChannel.hash(core.address))
 	assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
+
+	// Channel is valid
+	return true
 }
 function toEthereumChannel(channel) {
 	const specHash = crypto

@@ -29,7 +29,8 @@ function validators({ VALIDATORS_WHITELIST }) {
 						scheme: ['http', 'https']
 					})
 					.required(),
-				fee: Joi.number().required()
+				// @TODO validate that it can be cast to BN.js and it is not negative
+				fee: Joi.string().required()
 			})
 		)
 		.required()

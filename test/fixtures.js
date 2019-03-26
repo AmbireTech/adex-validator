@@ -60,7 +60,7 @@ module.exports = {
 						{
 							id: '0xa95743F561db3618D204C9a7c3ca55cDf0625107',
 							url: 'http://localhost:8005',
-							fee: 0
+							fee: '0'
 						}
 					]
 				}
