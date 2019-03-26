@@ -54,7 +54,7 @@ function verify(signer, stateRoot, signature) {
 	return Promise.resolve(signer === from)
 }
 
-function validateChannel(channel) {
+function validateChannel(/* channel */) {
 	return Promise.resolve(true)
 }
 
@@ -69,5 +69,5 @@ module.exports = {
 	MerkleTree,
 	verify,
 	getSignableStateRoot,
-	validateChannel,
+	validateChannel
 }
