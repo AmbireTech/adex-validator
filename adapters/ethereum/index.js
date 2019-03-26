@@ -6,6 +6,7 @@ const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
 const crypto = require('crypto')
+const BN = require('bn.js')
 
 const readFile = util.promisify(fs.readFile)
 const cfg = require('../../cfg')
@@ -122,13 +123,10 @@ function getAuthFor(validator) {
 
 async function validateChannel(channel) {
 	const ethChannel = toEthereumChannel(channel)
+	const ourValidator = channel.spec.validators.find(({ id }) => id === address)
+	assert.ok(ourValidator, 'channel is not validated by us')
 	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
 	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
-	// @TODO depositAmount is more than MINIMAL_DEPOSIT
-	assert.ok(
-		channel.spec.validators.some(({ id }) => id === address),
-		'channel is not validated by us'
-	)
 	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
 		assert.ok(
 			channel.spec.validators.every(
@@ -141,6 +139,18 @@ async function validateChannel(channel) {
 		assert.ok(
 			cfg.CREATORS_WHITELIST.includes(channel.creator),
 			'channel.creator is not whitelisted'
+		)
+	}
+	if (cfg.MINIMAL_DEPOSIT) {
+		assert.ok(
+			new BN(channel.depositAmount).gte(new BN(cfg.MINIMAL_DEPOSIT)),
+			'channel.depositAmount is less than MINIMAL_DEPOSIT'
+		)
+	}
+	if (cfg.MINIMAL_FEE) {
+		assert.ok(
+			new BN(ourValidator.fee).gte(new BN(cfg.MINIMAL_FEE)),
+			'channel validator fee is less than MINIMAL_FEE'
 		)
 	}
 
@@ -186,6 +196,7 @@ async function testValidation() {
 }
 testValidation().catch(e => console.error(e))
 */
+
 module.exports = {
 	init,
 	unlock,
