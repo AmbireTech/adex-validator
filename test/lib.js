@@ -14,7 +14,6 @@ function fetchPost(url, authToken, body) {
 		},
 		body: JSON.stringify(body)
 	})
-
 }
 
 function postEvents(url, channelId, events) {
@@ -64,5 +63,5 @@ module.exports = {
 	getDummySig,
 	forceTick,
 	wait,
-	fetchPost,
+	fetchPost
 }

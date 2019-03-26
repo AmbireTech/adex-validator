@@ -5,7 +5,7 @@ const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const { forceTick, wait, postEvents, genImpressions, getDummySig } = require('./lib')
+const { forceTick, wait, postEvents, genImpressions, getDummySig, fetchPost } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -294,23 +294,25 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 })
 
 tape('cannot exceed channel deposit', async function(t) {
-	// 1 event pays 1 token for now
-	// @TODO make this work with a more complex model
-	const evCount = dummyVals.channel.depositAmount + 1
+	const channel = { ...dummyVals.channel, id: 'exceedDepositTest' }
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
-	await Promise.all(
-		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, dummyVals.channel.id, genImpressions(evCount))
-		)
-	)
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
+	const evCount = channel.depositAmount + 1
+	await postEvents(leaderUrl, channel.id, genImpressions(evCount))
 	await aggrAndTick()
 
-	const { balances } = await iface.getOurLatestMsg('Accounting')
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
 	const sum = Object.keys(balances)
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
-	t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
-	// @TODO state changed to exhausted, unable to take any more events
+	t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit, but equals it')
 	t.end()
 })
 
