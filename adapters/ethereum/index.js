@@ -125,21 +125,22 @@ function getAuthFor(validator) {
 // e.g. MINIMAL_DEPOSIT, MINIMAL_FEE, CREATORS_WHITELIST
 async function validateChannel(channel) {
 	const ethChannel = toEthereumChannel(channel)
-	const ourValidator = channel.spec.validators.find(({ id }) => id === address)
+	const addrEq = (a, b) => a.toLowerCase() == b.toLowerCase()
+	const ourValidator = channel.spec.validators.find(({ id }) => addrEq(address, id))
 	assert.ok(ourValidator, 'channel is not validated by us')
 	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
 	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
 	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
 		assert.ok(
 			channel.spec.validators.every(
-				({ id }) => id === address || cfg.VALIDATORS_WHITELIST.includes(id)
+				({ id }) => addrEq(id, address) || cfg.VALIDATORS_WHITELIST.includes(id.toLowerCase())
 			),
 			'validators are not in the whitelist'
 		)
 	}
 	if (cfg.CREATORS_WHITELIST && cfg.CREATORS_WHITELIST.length) {
 		assert.ok(
-			cfg.CREATORS_WHITELIST.includes(channel.creator),
+			cfg.CREATORS_WHITELIST.includes(channel.creator.toLowerCase()),
 			'channel.creator is not whitelisted'
 		)
 	}
@@ -177,11 +178,13 @@ function toEthereumChannel(channel) {
 		spec: specHash
 	})
 }
+
 /*
 const IVO_MM = '0x54122C899013e2c4229e1789CFE5B17446Dae7f9'
 const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
 const FOLLOWER = '0x3209caa2ec897cdee12e859b3b4def9b8421c0ed'
 async function testValidation() {
+	await init({ keystoreFile: './followerKeystore.json' })
 	return validateChannel({
 		id: '0xd075977be2237edb6c5e5a3c687e5005adc5a889b3364bc745711f1b8e950f48',
 		creator: IVO_MM,
