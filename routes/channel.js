@@ -1,10 +1,8 @@
 const express = require('express')
-const { celebrate } = require('celebrate')
 const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
-const schema = require('./channelSchema')
 
 const router = express.Router()
 
@@ -23,9 +21,6 @@ router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregat
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
-
-// campaign
-router.post('/', celebrate({ body: schema.createChannel(cfg) }), createChannel)
 
 // Implementations
 function getStatus(req, res) {
@@ -140,26 +135,6 @@ async function retrieveLastApproved(channel) {
 		return { newState, approveState }
 	}
 	return null
-}
-
-function createChannel(req, res, next) {
-	const channelsCol = db.getMongo().collection('channels')
-	const channel = {
-		...req.body,
-		_id: req.body.id
-	}
-
-	channelsCol
-		.insertOne(channel)
-		.then(() => res.send({ success: true }))
-		.catch(err => {
-			if (err.code === 11000) {
-				res.status(409).send({ message: 'channel already exists' })
-				return
-			}
-			throw err
-		})
-		.catch(next)
 }
 
 function postValidatorMessages(req, res, next) {
