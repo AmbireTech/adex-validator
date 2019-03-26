@@ -25,7 +25,7 @@ function depositAmount({ MINIMAL_DEPOSIT }) {
 }
 
 function validators({ VALIDATORS_WHITELIST }) {
-	const schema = Joi.array()
+	return Joi.array()
 		.items(
 			Joi.object({
 				id:
@@ -41,8 +41,7 @@ function validators({ VALIDATORS_WHITELIST }) {
 			})
 		)
 		.required()
-
-	return schema.length(2)
+		.length(2)
 }
 module.exports = {
 	createChannel: cfg => ({
