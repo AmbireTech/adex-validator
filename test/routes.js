@@ -113,7 +113,7 @@ tape('POST /channel: create channel', async function(t) {
 				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: 100 },
 				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: 100 }
 			]
-		},
+		}
 	}
 
 	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(res =>

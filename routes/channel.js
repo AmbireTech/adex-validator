@@ -61,7 +61,7 @@ function getEventAggregates(req, res, next) {
 function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
 	const query = {
-		validUntil: { $gt: Math.floor(Date.now()/1000) }
+		validUntil: { $gt: Math.floor(Date.now() / 1000) }
 	}
 	if (typeof req.query.validator === 'string') {
 		// This is MongoDB behavior: since validators is an array,
