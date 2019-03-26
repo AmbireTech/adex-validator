@@ -6,7 +6,9 @@ const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
 const crypto = require('crypto')
+
 const readFile = util.promisify(fs.readFile)
+const cfg = require('../../cfg')
 const ewt = require('./ewt')
 
 // @TODO get rid of hardcode
@@ -118,19 +120,37 @@ function getAuthFor(validator) {
 // for (var i=0; i!=100000; i++) p = p.then(work)
 // p.then(() => console.log(Date.now()-start))
 
-
 async function validateChannel(channel) {
 	const ethChannel = toEthereumChannel(channel)
 	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
-	assert.ok(channel.validUntil*1000 > Date.now(), 'channel.validUntil has passed')
-	// @TODO depositAmount is positive
+	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
 	// @TODO depositAmount is more than MINIMAL_DEPOSIT
-	// @TODO validators: each is either === adapter.whoami() or in VALIDATORS_WHITELIST
+	assert.ok(
+		channel.spec.validators.some(({ id }) => id === address),
+		'channel is not validated by us'
+	)
+	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
+		assert.ok(
+			channel.spec.validators.every(
+				({ id }) => id === address || cfg.VALIDATORS_WHITELIST.includes(id)
+			),
+			'validators are not in the whitelist'
+		)
+	}
+	if (cfg.CREATORS_WHITELIST && cfg.CREATORS_WHITELIST.length) {
+		assert.ok(
+			cfg.CREATORS_WHITELIST.includes(channel.creator),
+			'channel.creator is not whitelisted'
+		)
+	}
+
+	// Check the on-chain status
 	const channelStatus = await core.states(ethChannel.hash(core.address))
-	assert.equal(channelStatus, ChannelState.Active, 'channel is active on ethereum')
+	assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
 }
 function toEthereumChannel(channel) {
-	const specHash = crypto.createHash('sha256')
+	const specHash = crypto
+		.createHash('sha256')
 		.update(JSON.stringify(channel.spec))
 		.digest()
 	return new Channel({
@@ -139,7 +159,7 @@ function toEthereumChannel(channel) {
 		tokenAmount: channel.depositAmount,
 		validUntil: channel.validUntil,
 		validators: channel.spec.validators.map(v => v.id),
-		spec: specHash,
+		spec: specHash
 	})
 }
 /*
