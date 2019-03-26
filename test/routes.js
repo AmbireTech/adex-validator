@@ -10,7 +10,6 @@ const dummyVals = require('./prep-db/mongo')
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
-const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
@@ -49,7 +48,7 @@ tape('/channel/{id}/status', async function(t) {
 		res.json()
 	)
 	t.ok(resp.channel, 'has resp.channel')
-	t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
+	t.deepEqual(resp.channel, dummyVals.channel, 'channel is deepEqual')
 	t.end()
 })
 
@@ -143,7 +142,7 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 			{
 				creator: 'someone',
 				depositAsset: 'DAI',
-				depositAmount: 1000,
+				depositAmount: '1000',
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
@@ -160,7 +159,7 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				id: 'test',
 				creator: 'someone',
 				depositAsset: 'DAI',
-				depositAmount: 1000,
+				depositAmount: '1000',
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005' },

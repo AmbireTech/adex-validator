@@ -16,14 +16,6 @@ function depositAsset({ TOKEN_ADDRESS_WHITELIST }) {
 	return schema
 }
 
-function depositAmount({ MINIMAL_DEPOSIT }) {
-	let schema = Joi.number().required()
-	if (MINIMAL_DEPOSIT > 0) {
-		schema = schema.min(MINIMAL_DEPOSIT)
-	}
-	return schema
-}
-
 function validators({ VALIDATORS_WHITELIST }) {
 	return Joi.array()
 		.items(
@@ -47,7 +39,8 @@ module.exports = {
 	createChannel: cfg => ({
 		id: Joi.string().required(),
 		depositAsset: depositAsset(cfg),
-		depositAmount: depositAmount(cfg),
+		// @TODO validate that it can be cast to BN.js and it is not negative
+		depositAmount: Joi.string().required(),
 		// UNIX timestamp; we're not using Jai.date() cause
 		// we want it to be stored in MongoDB as a number
 		validUntil: Joi.number().required(),

@@ -280,7 +280,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
 		const balances = {
 			...newState.balances,
-			[defaultPubName]: (dummyVals.channel.depositAmount + 1).toString()
+			[defaultPubName]: (parseInt(dummyVals.channel.depositAmount, 10) + 1).toString()
 		}
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
 		return {
@@ -304,7 +304,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	])
 
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
-	const evCount = channel.depositAmount + 1
+	const evCount = parseInt(channel.depositAmount, 10) + 1
 	await postEvents(leaderUrl, channel.id, genImpressions(evCount))
 	await aggrAndTick()
 
