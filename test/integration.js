@@ -5,7 +5,7 @@ const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const { forceTick, wait, postEvents, genImpressions, getDummySig } = require('./lib')
+const { forceTick, wait, postEvents, genImpressions, getDummySig, fetchPost } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -54,7 +54,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// ensure NewState is in order
 	const lastNew = lastApproved.newState
 	t.ok(lastNew, 'has NewState')
-	t.equal(lastNew.from, channel.validators[0], 'NewState: is by the leader')
+	t.equal(lastNew.from, dummyVals.ids.leader, 'NewState: is by the leader')
 	t.ok(
 		typeof lastNew.msg.stateRoot === 'string' && lastNew.msg.stateRoot.length === 64,
 		'NewState: stateRoot is sane'
@@ -78,7 +78,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// Ensure ApproveState is in order
 	const lastApprove = lastApproved.approveState
 	t.ok(lastApprove, 'has ApproveState')
-	t.equal(lastApprove.from, channel.validators[1], 'ApproveState: is by the follower')
+	t.equal(lastApprove.from, dummyVals.ids.follower, 'ApproveState: is by the follower')
 	t.ok(
 		typeof lastApprove.msg.stateRoot === 'string' && lastApprove.msg.stateRoot.length === 64,
 		'ApproveState: stateRoot is sane'
@@ -294,23 +294,25 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 })
 
 tape('cannot exceed channel deposit', async function(t) {
-	// 1 event pays 1 token for now
-	// @TODO make this work with a more complex model
-	const evCount = dummyVals.channel.depositAmount + 1
+	const channel = { ...dummyVals.channel, id: 'exceedDepositTest' }
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
-	await Promise.all(
-		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, dummyVals.channel.id, genImpressions(evCount))
-		)
-	)
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
+	const evCount = channel.depositAmount + 1
+	await postEvents(leaderUrl, channel.id, genImpressions(evCount))
 	await aggrAndTick()
 
-	const { balances } = await iface.getOurLatestMsg('Accounting')
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
 	const sum = Object.keys(balances)
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
-	t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit')
-	// @TODO state changed to exhausted, unable to take any more events
+	t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit, but equals it')
 	t.end()
 })
 

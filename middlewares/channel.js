@@ -37,7 +37,7 @@ function channelIfExists(req, res, next) {
 }
 
 function channelIfActive(req, res, next) {
-	channelIfFind({ _id: req.params.id, validators: req.whoami }, req, res, next)
+	channelIfFind({ _id: req.params.id, 'spec.validators.id': req.whoami }, req, res, next)
 }
 
 module.exports = { channelLoad, channelIfExists, channelIfActive }

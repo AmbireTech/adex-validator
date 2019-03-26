@@ -38,7 +38,7 @@ function getEventAggregates(req, res, next) {
 	const channel = req.channel
 	let query = { channelId: channel.id }
 	let projection = { _id: 0 }
-	const isSuperuser = channel.validators.includes(uid)
+	const isSuperuser = channel.spec.validators.find(v => v.id === uid)
 	if (!isSuperuser) {
 		const keyCounts = `events.IMPRESSION.eventCounts.${uid}`
 		const keyPayouts = `events.IMPRESSION.eventPayouts.${uid}`
@@ -62,7 +62,9 @@ function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
 	const query = {}
 	if (typeof req.query.validator === 'string') {
-		query.validators = req.query.validator
+		// This is MongoDB behavior: since validators is an array,
+		// this query will find anything where the array contains an object with this ID
+		query['spec.validators.id'] = req.query.validator
 	}
 	return channelsCol
 		.find(query, { projection: { _id: 0 } })
@@ -111,7 +113,7 @@ async function retrieveLastApproved(channel) {
 		.find(
 			{
 				channelId: channel.id,
-				from: channel.validators[1],
+				from: channel.spec.validators[1].id,
 				'msg.type': 'ApproveState'
 			},
 			{ projection: VALIDATOR_MSGS_PROJ }
@@ -126,7 +128,7 @@ async function retrieveLastApproved(channel) {
 	const newState = await validatorMsgCol.findOne(
 		{
 			channelId: channel.id,
-			from: channel.validators[0],
+			from: channel.spec.validators[0].id,
 			'msg.type': 'NewState',
 			'msg.stateRoot': approveState.msg.stateRoot
 		},
@@ -139,27 +141,27 @@ async function retrieveLastApproved(channel) {
 }
 
 function createChannel(req, res, next) {
-	const { id, depositAmount, depositAsset, validators, spec } = req.body
-	const channelCol = db.getMongo().collection('channel')
+	const channelsCol = db.getMongo().collection('channels')
 	const channel = {
-		_id: id,
-		depositAmount,
-		depositAsset,
-		validators,
-		spec,
-		created: new Date()
+		...req.body,
+		_id: req.body.id,
 	}
 
-	channelCol
+	channelsCol
 		.insertOne(channel)
-		.then(function() {
-			res.send({ success: true })
+		.then(() => res.send({ success: true }))
+		.catch(err => {
+			if (err.code === 11000) {
+				res.sendStatus(409)
+				return
+			}
+			throw err
 		})
 		.catch(next)
 }
 
 function postValidatorMessages(req, res, next) {
-	if (!req.channel.validators.includes(req.session.uid)) {
+	if (!req.channel.spec.validators.find(v => v.id === req.session.uid)) {
 		res.sendStatus(401)
 		return
 	}

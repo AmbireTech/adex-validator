@@ -2,7 +2,7 @@
 
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
-const { postEvents } = require('./lib')
+const { postEvents, fetchPost } = require('./lib')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -11,6 +11,13 @@ const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
 const expectedDepositAmnt = dummyVals.channel.depositAmount
+
+tape('/cfg', async function(t) {
+	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
+	t.ok(resp, 'has resp')
+	t.ok(typeof resp.HEARTBEAT_TIME === 'number', 'has HEARTBEAT_TIME')
+	t.end()
+})
 
 tape('/channel/list', async function(t) {
 	const resp = await fetch(`${leaderUrl}/channel/list`).then(res => res.json())
@@ -57,14 +64,11 @@ tape(
 				{ type: 'NewState', balances: 'iamobject' },
 				{ type: 'ApproveState', stateRoot: 'notlongenough', signature: 'something' }
 			].map(msg =>
-				fetch(`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`, {
-					method: 'POST',
-					headers: {
-						authorization: `Bearer ${dummyVals.auth.leader}`,
-						'content-type': 'application/json'
-					},
-					body: JSON.stringify({ messages: [msg] })
-				}).then(function(resp) {
+				fetchPost(
+					`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`,
+					dummyVals.auth.leader,
+					{ messages: [msg] }
+				).then(function(resp) {
 					t.equal(resp.status, 400, 'status must be BadRequest')
 				})
 			)
@@ -76,13 +80,8 @@ tape(
 tape('POST /channel/{id}/events: malformed events', async function(t) {
 	await Promise.all(
 		[null, { type: 1 }, { type: null }].map(ev =>
-			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.user}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({ events: [ev] })
+			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, dummyVals.auth.user, {
+				events: [ev]
 			}).then(function(resp) {
 				t.equal(resp.status, 400, 'status is BadRequest')
 			})
@@ -94,13 +93,8 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', async function(t) {
 	await Promise.all(
 		['events', 'validator-messages'].map(path =>
-			fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer WRONG AUTH`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify({ messages: [] })
+			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, `WRONG AUTH`, {
+				messages: []
 			}).then(function(resp) {
 				t.equal(resp.status, 401, 'status must be Unauthorized')
 			})
@@ -110,39 +104,48 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 })
 
 tape('POST /channel: create channel', async function(t) {
-	const body = {
-		id: 'awesomeTestChannel',
+	const channel = {
+		id: 'awesomeTestChannel2',
+		creator: 'someone',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
-		validators: ['awesomeLeader', 'awesomeFollower'],
 		spec: {
+			// as a mild hack, use different IDs so we don't tick on it
 			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: 100 },
+				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: 100 }
 			]
 		}
 	}
 
-	const resp = await fetch(`${followerUrl}/channel`, {
-		method: 'POST',
-		headers: {
-			authorization: `Bearer ${dummyVals.auth.leader}`,
-			'content-type': 'application/json'
-		},
-		body: JSON.stringify(body)
-	}).then(res => res.json())
-
+	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(res =>
+		res.json()
+	)
 	t.equal(resp.success, true, 'Successfully created channel')
+
+	const channelStatus = await fetch(`${followerUrl}/channel/${channel.id}/status`).then(res =>
+		res.json()
+	)
+
+	t.ok(channelStatus.channel, 'has channelStatus.channel')
+	t.deepEqual(channelStatus.channel, channel, 'channel is the same')
+
+	const respFail = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
+	t.equal(respFail.status, 409, 'cannot submit the same channel twice')
+
 	t.end()
 })
 
-tape('POST /channel: should not create campaign', async function(t) {
+// @TODO cannot submit a channel twice
+
+tape('POST /channel: should not create channel if it is not valid', async function(t) {
 	await Promise.all(
 		[
+			// does not have ID
 			{
+				creator: 'someone',
 				depositAsset: 'DAI',
 				depositAmount: 1000,
-				validators: ['awesomeLeader', 'awesomeFollower'],
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
@@ -150,13 +153,16 @@ tape('POST /channel: should not create campaign', async function(t) {
 					]
 				}
 			},
+			// does not have anything
 			{
 				id: 'awesomeTestChannel'
 			},
+			// does not have enough validators
 			{
+				id: 'test',
+				creator: 'someone',
 				depositAsset: 'DAI',
 				depositAmount: 1000,
-				validators: ['awesomeFollower'],
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
@@ -164,17 +170,9 @@ tape('POST /channel: should not create campaign', async function(t) {
 					]
 				}
 			}
-		].map(function(body) {
-			return fetch(`${followerUrl}/channel`, {
-				method: 'POST',
-				headers: {
-					authorization: `Bearer ${dummyVals.auth.leader}`,
-					'content-type': 'application/json'
-				},
-				body: JSON.stringify(body)
-			}).then(function(resp) {
-				t.equal(resp.status, 400, 'status must be BadRequest')
-			})
+		].map(async function(channel) {
+			const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
+			t.equal(resp.status, 400, 'status must be BadRequest')
 		})
 	)
 	t.end()

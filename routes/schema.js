@@ -1,5 +1,13 @@
 const { Joi } = require('celebrate')
 
+function creator({ CREATORS_WHITELIST }) {
+	let schema = Joi.string().required()
+	if (CREATORS_WHITELIST && CREATORS_WHITELIST.length > 0) {
+		schema = schema.valid(CREATORS_WHITELIST)
+	}
+	return schema
+}
+
 function depositAsset({ TOKEN_ADDRESS_WHITELIST }) {
 	let schema = Joi.string().required()
 	if (TOKEN_ADDRESS_WHITELIST && TOKEN_ADDRESS_WHITELIST.length > 0) {
@@ -16,34 +24,14 @@ function depositAmount({ MINIMAL_DEPOSIT }) {
 	return schema
 }
 
-function creator({ CREATORS_WHITELIST }) {
-	let schema = Joi.array()
-		.items(Joi.string())
-		.required()
-		.length(2)
-	if (CREATORS_WHITELIST && CREATORS_WHITELIST.length > 0) {
-		schema = schema.has(CREATORS_WHITELIST)
-	}
-	return schema
-}
-
 function validators({ VALIDATORS_WHITELIST }) {
-	let schema = Joi.array().items(
-		Joi.object({
-			id: Joi.string().required(),
-			url: Joi.string()
-				.uri({
-					scheme: ['http', 'https']
-				})
-				.required(),
-			fee: Joi.number().required()
-		})
-	)
-
-	if (VALIDATORS_WHITELIST && VALIDATORS_WHITELIST.length > 0) {
-		schema = schema.has(
+	const schema = Joi.array()
+		.items(
 			Joi.object({
-				id: Joi.any().valid(VALIDATORS_WHITELIST),
+				id:
+					VALIDATORS_WHITELIST && VALIDATORS_WHITELIST.length > 0
+						? Joi.any().valid(VALIDATORS_WHITELIST)
+						: Joi.string().required(),
 				url: Joi.string()
 					.uri({
 						scheme: ['http', 'https']
@@ -52,7 +40,7 @@ function validators({ VALIDATORS_WHITELIST }) {
 				fee: Joi.number().required()
 			})
 		)
-	}
+		.required()
 
 	return schema.length(2)
 }
@@ -61,9 +49,9 @@ module.exports = {
 		id: Joi.string().required(),
 		depositAsset: depositAsset(cfg),
 		depositAmount: depositAmount(cfg),
-		validators: creator(cfg),
+		creator: creator(cfg),
 		spec: Joi.object({
 			validators: validators(cfg)
-		})
+		}).required()
 	})
 }
