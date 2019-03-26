@@ -28,9 +28,9 @@ function init(opts) {
 	assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
 	return readFile(opts.keystoreFile).then(json => {
 		keystoreJson = json
-		address = formatAddress(`0x${JSON.parse(json).address}`)
+		address = `0x${JSON.parse(json).address}`.toLowerCase()
 		// eslint-disable-next-line no-console
-		console.log(`Ethereum address: ${whoami()}`)
+		console.log(`Ethereum address: ${formatAddress(whoami())}`)
 	})
 }
 
@@ -179,15 +179,15 @@ const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
 async function testValidation() {
 	await init({ keystoreFile: './tom.json' })
 	return validateChannel({
-		id: '0x078761802067f4e2d46a88437bfd75f30652d22f19252dec5355c1b28c78880f',
+		id: '0xe7755cebbe472d393cb1136543b4fe58e8122d283e14c85327737e7ecb2f75ed',
 		creator: IVO_MM,
 		depositAsset: GOERLI_TST,
 		depositAmount: (10**17).toString(),
 		validUntil: 1556201147,
 		spec: {
 			validators: [
-				{ id: '0x2892f6c41e0718eeedd49d98d648c789668ca67d', url: 'https://tom.adex.network', fee: 0 },
-				{ id: '0xce07cbb7e054514d590a0262c93070d838bfba2e', url: 'https://jerry.adex.network', fee: 0 },
+				{ id: '0x2892f6c41e0718eeedd49d98d648c789668ca67d', url: 'https://tom.adex.network', fee: '0' },
+				{ id: '0xce07cbb7e054514d590a0262c93070d838bfba2e', url: 'https://jerry.adex.network', fee: '0' },
 			],
 		}
 	})
