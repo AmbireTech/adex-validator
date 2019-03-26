@@ -4,7 +4,7 @@ const cfg = {
 	TOKEN_ADDRESS_WHITELIST: ['0x0e6BFF21862858a289AB214009d572b4079C8515'],
 	VALIDATORS_WHITELIST: ['0xa95743F561db3618D204C9a7c3ca55cDf0625107']
 }
-const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000)
+const validUntil = Math.floor(Date.now()/1000) + 24 * 60 * 60 * 1000
 module.exports = {
 	createChannel: [
 		[

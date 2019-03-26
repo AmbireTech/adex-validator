@@ -60,7 +60,9 @@ function getEventAggregates(req, res, next) {
 
 function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
-	const query = {}
+	const query = {
+		validUntil: { $gt: Math.floor(Date.now()/1000) }
+	}
 	if (typeof req.query.validator === 'string') {
 		// This is MongoDB behavior: since validators is an array,
 		// this query will find anything where the array contains an object with this ID
