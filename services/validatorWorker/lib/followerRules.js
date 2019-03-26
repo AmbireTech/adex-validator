@@ -8,9 +8,10 @@ const ZERO = new BN(0)
 function isValidTransition(channel, prev, next) {
 	const sumPrev = sumMap(prev)
 	const sumNext = sumMap(next)
+	const depositAmount = new BN(channel.depositAmount, 10)
 	return (
 		sumNext.gte(sumPrev) &&
-		sumNext.lte(new BN(channel.depositAmount)) &&
+		sumNext.lte(depositAmount) &&
 		Object.entries(prev).every(([acc, bal]) => {
 			const nextBal = next[acc]
 			if (!nextBal) return false
