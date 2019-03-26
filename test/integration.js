@@ -12,7 +12,6 @@ const dummyVals = require('./prep-db/mongo')
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
-const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 dummyAdapter.init({ dummyIdentity: dummyVals.ids.leader })
 const iface = new SentryInterface(dummyAdapter, dummyVals.channel, { logging: false })
