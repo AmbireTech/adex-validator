@@ -133,8 +133,6 @@ tape('POST /channel: create channel', async function(t) {
 	t.end()
 })
 
-// @TODO cannot submit a channel twice
-
 tape('POST /channel: should not create channel if it is not valid', async function(t) {
 	await Promise.all(
 		[
@@ -170,6 +168,8 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 		].map(async function(channel) {
 			const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
 			t.equal(resp.status, 400, 'status must be BadRequest')
+			const err = await resp.json()
+			t.ok(err.message, 'has error message')
 		})
 	)
 	t.end()
