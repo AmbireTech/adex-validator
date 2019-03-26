@@ -154,7 +154,9 @@ function createChannel(req, res, next) {
 		.then(() => res.send({ success: true }))
 		.catch(err => {
 			if (err.code === 11000) {
-				res.sendStatus(409)
+				res
+					.status(409)
+					.send({ message: 'channel already exists' })
 				return
 			}
 			throw err
