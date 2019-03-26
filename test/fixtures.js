@@ -5,7 +5,7 @@ const cfg = {
 	VALIDATORS_WHITELIST: ['0xa95743F561db3618D204C9a7c3ca55cDf0625107']
 }
 const dummyVals = require('./prep-db/mongo')
-
+const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
 module.exports = {
 	createChannel: [
 		[
@@ -15,9 +15,9 @@ module.exports = {
 			},
 			{
 				...cfg,
-				TOKEN_ADDRESS_WHITELIST: ['0x0e6BFF21862858a289AB214009d572b4079C8515']
+				TOKEN_ADDRESS_WHITELIST: [GOERLI_TST]
 			},
-			`ValidationError: child "depositAsset" fails because ["depositAsset" must be one of [0x0e6BFF21862858a289AB214009d572b4079C8515]]`
+			`ValidationError: child "depositAsset" fails because ["depositAsset" must be one of [${GOERLI_TST}]]`
 		],
 		[
 			{
