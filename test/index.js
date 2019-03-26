@@ -169,6 +169,20 @@ tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(
 	t.end()
 })
 
+tape('getBalancesAfterFeesTree: fees larger than deposit handled correctly', function(t) {
+	const tree1 = { a: '10', b: '10' }
+	const maliciousFeeChannel = {
+		spec: { validators: [{ id: 'one', fee: '600' }, { id: 'two', fee: '600' }] },
+		depositAmount: '1000'
+	}
+	t.throws(
+		() => getBalancesAfterFeesTree(tree1, maliciousFeeChannel),
+		/fee constraint violated/,
+		'should not allow fees sum to exceed the deposit'
+	)
+	t.end()
+})
+
 tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 	const channel = {
 		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
