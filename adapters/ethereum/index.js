@@ -4,6 +4,7 @@ const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
+const crypto = require('crypto')
 
 const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
@@ -113,6 +114,22 @@ function getAuthFor(validator) {
 // for (var i=0; i!=100000; i++) p = p.then(work)
 // p.then(() => console.log(Date.now()-start))
 
+
+async function validateChannel(channel) {
+	const specHash = crypto.createHash('sha256')
+		.update(JSON.stringify(channel.spec))
+		.digest()
+	const ethChannel = new Channel({
+		creator: channel.creator,
+		tokenAddr: channel.depositAsset,
+		tokenAmount: channel.depositAmount,
+		validators: channel.spec.validators.map(v => v.id),
+		spec: specHash,
+	})
+	return true
+}
+//validateChannel()
+
 module.exports = {
 	init,
 	unlock,
@@ -123,5 +140,6 @@ module.exports = {
 	getAuthFor,
 	MerkleTree,
 	verify,
-	getSignableStateRoot
+	getSignableStateRoot,
+	validateChannel
 }
