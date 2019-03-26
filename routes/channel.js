@@ -141,15 +141,10 @@ async function retrieveLastApproved(channel) {
 }
 
 function createChannel(req, res, next) {
-	const { id, depositAmount, depositAsset, spec } = req.body
 	const channelsCol = db.getMongo().collection('channels')
 	const channel = {
-		_id: id,
-		id,
-		depositAmount,
-		depositAsset,
-		spec,
-		created: new Date()
+		...req.body,
+		_id: req.body.id,
 	}
 
 	channelsCol
