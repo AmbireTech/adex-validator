@@ -54,8 +54,8 @@ function verify(signer, stateRoot, signature) {
 	return Promise.resolve(signer === from)
 }
 
-function validateChannel(/* channel */) {
-	return Promise.resolve(true)
+function validateChannel(channel) {
+	return Promise.resolve(parseInt(channel.depositAmount, 10) > 0)
 }
 
 module.exports = {

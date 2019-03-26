@@ -174,3 +174,18 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 	)
 	t.end()
 })
+
+tape(
+	'POST /channel: should not create channel if it does not pass adapter validation',
+	async function(t) {
+		const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, {
+			...dummyVals.channel,
+			id: 'zeroDepositChannel',
+			depositAmount: '0'
+		})
+		t.equal(resp.status, 400, 'status must be BadRequest')
+		const err = await resp.json()
+		t.equal(err.message, 'adapter validation not successful')
+		t.end()
+	}
+)
