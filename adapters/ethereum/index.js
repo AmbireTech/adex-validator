@@ -12,9 +12,7 @@ const readFile = util.promisify(fs.readFile)
 const cfg = require('../../cfg')
 const ewt = require('./ewt')
 
-// @TODO get rid of hardcode
-const coreAddr = '0x333420fc6a897356e69b62417cd17ff012177d2b'
-const core = new Contract(coreAddr, coreABI, getDefaultProvider('goerli'))
+const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, getDefaultProvider(cfg.ETHEREUM_NETWORK))
 
 // Auth tokens that we have verified (tokenId => session)
 const tokensVerified = new Map()
