@@ -129,6 +129,10 @@ tape('POST /channel: create channel', async function(t) {
 
 	t.ok(channelStatus.channel, 'has channelStatus.channel')
 	t.deepEqual(channelStatus.channel, channel, 'channel is the same')
+
+	const respFail = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
+	t.equal(respFail.status, 409, 'cannot submit the same channel twice')
+
 	t.end()
 })
 
