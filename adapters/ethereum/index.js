@@ -144,18 +144,14 @@ async function validateChannel(channel) {
 			'channel.creator is not whitelisted'
 		)
 	}
-	if (cfg.MINIMAL_DEPOSIT) {
-		assert.ok(
-			new BN(channel.depositAmount).gte(new BN(cfg.MINIMAL_DEPOSIT)),
-			'channel.depositAmount is less than MINIMAL_DEPOSIT'
-		)
-	}
-	if (cfg.MINIMAL_FEE) {
-		assert.ok(
-			new BN(ourValidator.fee).gte(new BN(cfg.MINIMAL_FEE)),
-			'channel validator fee is less than MINIMAL_FEE'
-		)
-	}
+	assert.ok(
+		new BN(channel.depositAmount).gte(new BN(cfg.MINIMAL_DEPOSIT || 0)),
+		'channel.depositAmount is less than MINIMAL_DEPOSIT'
+	)
+	assert.ok(
+		new BN(ourValidator.fee).gte(new BN(cfg.MINIMAL_FEE || 0)),
+		'channel validator fee is less than MINIMAL_FEE'
+	)
 
 	// Check the on-chain status
 	const channelStatus = await core.states(ethChannel.hash(core.address))
