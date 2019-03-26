@@ -23,9 +23,7 @@ module.exports = {
 			{
 				id: 'awesomeTestChannel'
 			},
-			{
-				...cfg
-			},
+			cfg,
 			`ValidationError: child "depositAsset" fails because ["depositAsset" is required]`
 		],
 		[
@@ -33,9 +31,7 @@ module.exports = {
 				...dummyVals.channel,
 				id: undefined
 			},
-			{
-				...cfg
-			},
+			cfg,
 			`ValidationError: child "id" fails because ["id" is required]`
 		],
 		[
@@ -43,9 +39,7 @@ module.exports = {
 				...dummyVals.channel,
 				creator: 8
 			},
-			{
-				...cfg
-			},
+			cfg,
 			`ValidationError: child "creator" fails because ["creator" must be a string]`
 		],
 		[
@@ -71,9 +65,7 @@ module.exports = {
 					]
 				}
 			},
-			{
-				...cfg
-			},
+			cfg,
 			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" must contain 2 items]]`
 		],
 		[
@@ -81,18 +73,14 @@ module.exports = {
 				...dummyVals.channel,
 				spec: undefined
 			},
-			{
-				...cfg
-			},
+			cfg,
 			`ValidationError: child "spec" fails because ["spec" is required]`
 		],
 		[
 			{
 				...dummyVals.channel
 			},
-			{
-				...cfg
-			},
+			cfg,
 			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" at position 0 fails because [child "id" fails because ["id" must be one of [0xa95743F561db3618D204C9a7c3ca55cDf0625107]]]]]`
 		]
 	]
