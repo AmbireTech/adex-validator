@@ -1,18 +1,22 @@
-const { MerkleTree, Channel } = require('adex-protocol-eth/js')
-const { Wallet, utils } = require('ethers')
+const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
+const { Wallet, Contract, utils, getDefaultProvider } = require('ethers')
+const coreABI = require('adex-protocol-eth/abi/AdExCore')
 const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
 const crypto = require('crypto')
-
 const readFile = util.promisify(fs.readFile)
 const ewt = require('./ewt')
 
-// Tokens that we have verified (tokenId => session)
+// @TODO get rid of hardcode
+const coreAddr = '0x333420fc6a897356e69b62417cd17ff012177d2b'
+const core = new Contract(coreAddr, coreABI, getDefaultProvider('goerli'))
+
+// Auth tokens that we have verified (tokenId => session)
 const tokensVerified = new Map()
 
-// Tokens that we've generated to authenticate with someone (address => token)
+// AUth tokens that we've generated to authenticate with someone (address => token)
 const tokensForAuth = new Map()
 
 let address = null
@@ -116,20 +120,49 @@ function getAuthFor(validator) {
 
 
 async function validateChannel(channel) {
+	const ethChannel = toEthereumChannel(channel)
+	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
+	assert.ok(channel.validUntil*1000 > Date.now(), 'channel.validUntil has passed')
+	// @TODO depositAmount is positive
+	// @TODO depositAmount is more than MINIMAL_DEPOSIT
+	// @TODO validators: each is either === adapter.whoami() or in VALIDATORS_WHITELIST
+	const channelStatus = await core.states(ethChannel.hash(core.address))
+	assert.equal(channelStatus, ChannelState.Active, 'channel is active on ethereum')
+}
+function toEthereumChannel(channel) {
 	const specHash = crypto.createHash('sha256')
 		.update(JSON.stringify(channel.spec))
 		.digest()
-	const ethChannel = new Channel({
+	return new Channel({
 		creator: channel.creator,
 		tokenAddr: channel.depositAsset,
 		tokenAmount: channel.depositAmount,
+		validUntil: channel.validUntil,
 		validators: channel.spec.validators.map(v => v.id),
 		spec: specHash,
 	})
-	return true
 }
-//validateChannel()
-
+/*
+const IVO_MM = '0x54122C899013e2c4229e1789CFE5B17446Dae7f9'
+const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
+const FOLLOWER = '0x3209caa2ec897cdee12e859b3b4def9b8421c0ed'
+async function testValidation() {
+	return validateChannel({
+		id: '0xd075977be2237edb6c5e5a3c687e5005adc5a889b3364bc745711f1b8e950f48',
+		creator: IVO_MM,
+		depositAsset: GOERLI_TST,
+		depositAmount: (10**17).toString(),
+		validUntil: 1556201147,
+		spec: {
+			validators: [
+				{ id: FOLLOWER, url: 'http://localhost:8005', fee: 0 },
+				{ id: FOLLOWER, url: 'http://localhost:8006', fee: 0 },
+			],
+		}
+	})
+}
+testValidation().catch(e => console.error(e))
+*/
 module.exports = {
 	init,
 	unlock,
