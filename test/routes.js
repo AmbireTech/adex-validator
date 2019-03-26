@@ -68,10 +68,9 @@ tape(
 					`${followerUrl}/channel/${dummyVals.channel.id}/validator-messages`,
 					dummyVals.auth.leader,
 					{ messages: [msg] }
-				)
-					.then(function(resp) {
-						t.equal(resp.status, 400, 'status must be BadRequest')
-					})
+				).then(function(resp) {
+					t.equal(resp.status, 400, 'status must be BadRequest')
+				})
 			)
 		)
 		t.end()
@@ -81,10 +80,9 @@ tape(
 tape('POST /channel/{id}/events: malformed events', async function(t) {
 	await Promise.all(
 		[null, { type: 1 }, { type: null }].map(ev =>
-			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
-				dummyVals.auth.user,
-				{ events: [ev] },
-			).then(function(resp) {
+			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, dummyVals.auth.user, {
+				events: [ev]
+			}).then(function(resp) {
 				t.equal(resp.status, 400, 'status is BadRequest')
 			})
 		)
@@ -95,10 +93,9 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', async function(t) {
 	await Promise.all(
 		['events', 'validator-messages'].map(path =>
-			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`,
-				`WRONG AUTH`,
-				{ messages: [] }
-			).then(function(resp) {
+			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, `WRONG AUTH`, {
+				messages: []
+			}).then(function(resp) {
 				t.equal(resp.status, 401, 'status must be Unauthorized')
 			})
 		)
@@ -121,8 +118,9 @@ tape('POST /channel: create channel', async function(t) {
 		}
 	}
 
-	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
-		.then(res => res.json())
+	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(res =>
+		res.json()
+	)
 	t.equal(resp.success, true, 'Successfully created channel')
 
 	const channelStatus = await fetch(`${followerUrl}/channel/${channel.id}/status`).then(res =>
