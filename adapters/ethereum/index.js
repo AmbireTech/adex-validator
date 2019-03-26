@@ -77,7 +77,7 @@ function sessionFromToken(token) {
 		return Promise.resolve(tokensVerified.get(tokenId))
 	}
 	return ewt.verify(token).then(function({ from, payload }) {
-		if (payload.id !== whoami()) {
+		if (payload.id.toLowerCase() !== whoami()) {
 			return Promise.reject(
 				new Error('token payload.id !== whoami(): token was not intended for us')
 			)
