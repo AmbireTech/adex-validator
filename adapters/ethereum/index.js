@@ -125,7 +125,7 @@ function getAuthFor(validator) {
 // e.g. MINIMAL_DEPOSIT, MINIMAL_FEE, CREATORS_WHITELIST
 async function validateChannel(channel) {
 	const ethChannel = toEthereumChannel(channel)
-	const addrEq = (a, b) => a.toLowerCase() == b.toLowerCase()
+	const addrEq = (a, b) => a.toLowerCase() === b.toLowerCase()
 	const ourValidator = channel.spec.validators.find(({ id }) => addrEq(address, id))
 	assert.ok(ourValidator, 'channel is not validated by us')
 	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
