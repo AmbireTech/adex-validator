@@ -4,7 +4,7 @@ const cfg = {
 	TOKEN_ADDRESS_WHITELIST: ['0x0e6BFF21862858a289AB214009d572b4079C8515'],
 	VALIDATORS_WHITELIST: ['0xa95743F561db3618D204C9a7c3ca55cDf0625107']
 }
-
+const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000)
 module.exports = {
 	createChannel: [
 		[
@@ -13,6 +13,7 @@ module.exports = {
 				depositAsset: 'DAI',
 				depositAmount: 900,
 				creator: 'awesomeCreator',
+				validUntil,
 				spec: {
 					validators: [
 						{
@@ -47,6 +48,7 @@ module.exports = {
 				depositAsset: 'DAI',
 				depositAmount: 1000,
 				creator: 'awesomeCreator',
+				validUntil,
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
@@ -65,6 +67,7 @@ module.exports = {
 				depositAsset: '0x0e6BFF21862858a289AB214009d572b4079C8515',
 				depositAmount: 1000,
 				creator: 8,
+				validUntil,
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
@@ -83,6 +86,7 @@ module.exports = {
 				depositAsset: '0x0e6BFF21862858a289AB214009d572b4079C8515',
 				depositAmount: 1000,
 				creator: 'awesomeCreator',
+				validUntil,
 				spec: {
 					validators: [
 						{
@@ -110,6 +114,7 @@ module.exports = {
 				depositAsset: '0x0e6BFF21862858a289AB214009d572b4079C8515',
 				depositAmount: 1000,
 				creator: 'awesomeCreator',
+				validUntil,
 				spec: {
 					validators: [
 						{
@@ -130,6 +135,7 @@ module.exports = {
 				id: 'awesomeChannelTest',
 				depositAsset: '0x0e6BFF21862858a289AB214009d572b4079C8515',
 				depositAmount: 1000,
+				validUntil,
 				creator: 'awesomeCreator'
 			},
 			{
@@ -143,6 +149,7 @@ module.exports = {
 				depositAsset: '0x0e6BFF21862858a289AB214009d572b4079C8515',
 				depositAmount: 1000,
 				creator: 'awesomeCreator',
+				validUntil,
 				spec: {
 					validators: [
 						{

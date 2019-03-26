@@ -19,6 +19,7 @@ const dummyVals = {
 		depositAsset: 'DAI',
 		depositAmount: 1000,
 		creator: 'awesomeCreator',
+		validUntil: new Date(Date.now() + 86400000).toISOString(),
 		spec: {
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },

@@ -105,17 +105,15 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 
 tape('POST /channel: create channel', async function(t) {
 	const channel = {
+		...dummyVals.channel,
 		id: 'awesomeTestChannel2',
-		creator: 'someone',
-		depositAsset: 'DAI',
-		depositAmount: 1000,
 		spec: {
 			// as a mild hack, use different IDs so we don't tick on it
 			validators: [
 				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: 100 },
 				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: 100 }
 			]
-		}
+		},
 	}
 
 	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(res =>

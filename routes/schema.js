@@ -48,6 +48,9 @@ module.exports = {
 		id: Joi.string().required(),
 		depositAsset: depositAsset(cfg),
 		depositAmount: depositAmount(cfg),
+		validUntil: Joi.date()
+			.min('now')
+			.required(),
 		creator: creator(cfg),
 		spec: Joi.object({
 			validators: validators(cfg)
