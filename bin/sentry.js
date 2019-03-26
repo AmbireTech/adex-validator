@@ -40,6 +40,6 @@ db.connect()
 	})
 	.catch(function(err) {
 		// eslint-disable-next-line no-console
-		console.error('Fatal error while connecting to the database', err)
+		console.error(err)
 		process.exit(1)
 	})
