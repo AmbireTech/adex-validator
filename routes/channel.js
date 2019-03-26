@@ -60,13 +60,13 @@ function getEventAggregates(req, res, next) {
 
 function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
-	const query = {
+	let query = {
 		validUntil: { $gt: Math.floor(Date.now() / 1000) }
 	}
 	if (typeof req.query.validator === 'string') {
 		// This is MongoDB behavior: since validators is an array,
 		// this query will find anything where the array contains an object with this ID
-		query['spec.validators.id'] = req.query.validator
+		query = { ...query, 'spec.validators.id': req.query.validator }
 	}
 	return channelsCol
 		.find(query, { projection: { _id: 0 } })
@@ -86,10 +86,10 @@ function getValidatorMessages(req, res, next) {
 	const { limit } = req.query
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	const query = { channelId: id }
-	if (typeof uid === 'string') query.from = uid
+	let query = { channelId: id }
+	if (typeof uid === 'string') query = { ...query, from: uid }
 	if (typeof type === 'string') {
-		query['msg.type'] = { $in: type.split('+') }
+		query = { ...query, 'msg.type': { $in: type.split('+') } }
 	}
 
 	validatorMsgCol
