@@ -35,9 +35,9 @@ sleep 2
 if [ -n "$RUN_EXTERNAL" ]; then
 	echo "Running external tests"
 	cd ./node_modules/adex-validator-stack-test
-	LEADER_DATABASE=$LEAD_MONGO FOLLOWER_DATABASE=$FOLLOW_MONGO npm run test-local
+	npm run test-local
 else 
-	./test/routes.js && LEADER_DATABASE=$LEAD_MONGO FOLLOWER_DATABASE=$FOLLOW_MONGO ./test/integration.js
+	./test/routes.js && ./test/integration.js
 fi
 
 exitCode=$?

@@ -1,16 +1,7 @@
-const assert = require('assert')
-const { persistAndPropagate } = require('./lib/propagation')
+const cfg = require('../../cfg')
 
-function heartbeat(adapter, channel) {
-	const whoami = adapter.whoami()
-	const validatorIdx = channel.validators.indexOf(whoami)
-	assert.ok(
-		validatorIdx !== -1,
-		'validatorTick: sending heartbeat for a channel where we are not validating'
-	)
-	const otherValidators = channel.spec.validators.filter(v => v.id !== whoami)
-
-	let timestamp = Buffer.alloc(32)
+async function sendHeartbeat(adapter, iface, channel) {
+	const timestamp = Buffer.alloc(32)
 	timestamp.writeUIntBE(Date.now(), 26, 6)
 
 	// in the future, we can add more information to this tree,
@@ -20,26 +11,26 @@ function heartbeat(adapter, channel) {
 	const infoRootRaw = tree.getRoot()
 
 	const stateRootRaw = adapter.getSignableStateRoot(Buffer.from(channel.id), infoRootRaw)
-
-	return adapter.sign(stateRootRaw).then(function(signature) {
-		const stateRoot = stateRootRaw.toString('hex')
-		timestamp = timestamp.toString('hex')
-
-		return persistAndPropagate(adapter, otherValidators, channel, {
+	const signature = await adapter.sign(stateRootRaw)
+	const stateRoot = stateRootRaw.toString('hex')
+	return iface.propagate([
+		{
 			type: 'Heartbeat',
-			timestampHash: timestamp,
-			timestamp: Date.now(),
+			timestamp: new Date(),
 			signature,
 			stateRoot
-		})
-	})
+		}
+	])
 }
 
-function heartbeatIfNothingNew(adapter, channel, res) {
-	if (res && res.nothingNew) {
-		return heartbeat(adapter, channel).then(() => res)
+async function heartbeat(adapter, iface, channel) {
+	const heartbeatMsg = await iface.getOurLatestMsg('Heartbeat')
+	const shouldSend =
+		!heartbeatMsg || Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME
+
+	if (shouldSend) {
+		await sendHeartbeat(adapter, iface, channel)
 	}
-	return Promise.resolve(res)
 }
 
-module.exports = { heartbeat, heartbeatIfNothingNew }
+module.exports = { heartbeat }

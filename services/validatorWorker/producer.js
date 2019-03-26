@@ -1,126 +1,30 @@
-const assert = require('assert')
-const BN = require('bn.js')
-const db = require('../../db')
-const cfg = require('../../cfg')
-const { toBNStringMap } = require('./lib')
-const { getBalancesAfterFeesTree } = require('./lib/fees')
+const { mergeAggrs } = require('./lib/mergeAggrs')
+const { toBNMap } = require('./lib')
 
-function tick(channel, force) {
-	const eventAggrCol = db.getMongo().collection('eventAggregates')
-	const stateTreeCol = db.getMongo().collection('channelStateTrees')
-
-	return stateTreeCol
-		.findOne({ _id: channel.id })
-		.then(function(stateTree) {
-			return stateTree || { balances: {}, lastEvAggr: new Date(0) }
-		})
-		.then(function(stateTree) {
-			// Process eventAggregates, from old to new, newer than the lastEvAggr time
-			return eventAggrCol
-				.find({
-					channelId: channel.id,
-					created: { $gt: stateTree.lastEvAggr }
-				})
-				.sort({ created: 1 })
-				.limit(cfg.PRODUCER_MAX_AGGR_PER_TICK)
-				.toArray()
-				.then(function(aggrs) {
-					logMerge(channel, aggrs)
-
-					const shouldUpdate = force || aggrs.length
-					if (!shouldUpdate) {
-						return { channel }
-					}
-
-					// balances should be a sum of eventPayouts
-					//
-					const { balances, balancesAfterFees, newStateTree } = mergeAggrs(
-						stateTree,
-						aggrs,
-						channel
-					)
-
-					return stateTreeCol
-						.updateOne({ _id: channel.id }, { $set: newStateTree }, { upsert: true })
-						.then(function() {
-							return { channel, balances, balancesAfterFees, newStateTree }
-						})
-				})
-		})
-}
-
-// Pure, should not mutate inputs
-// @TODO isolate those pure functions into a separate file
-function mergeAggrs(stateTree, aggrs, channel) {
-	const newStateTree = {
+async function tick(iface, channel) {
+	const accounting = (await iface.getOurLatestMsg('Accounting')) || {
+		balancesBeforeFees: {},
 		balances: {},
-		balancesAfterFees: {},
-		lastEvAggr: stateTree.lastEvAggr
+		lastEvAggr: new Date(0)
 	}
-	const depositAmount = new BN(channel.depositAmount, 10)
 
-	// Build an intermediary balances representation
-	let balances = {}
-	Object.keys(stateTree.balances).forEach(function(acc) {
-		balances[acc] = new BN(stateTree.balances[acc], 10)
-		assert.ok(!balances[acc].isNeg(), 'balance should not be negative')
-	})
+	// Process eventAggregates, from old to new, newer than the lastEvAggr time
+	const aggrs = await iface.getEventAggrs({ after: accounting.lastEvAggr })
 
-	// Merge in all the aggrs
-	aggrs.forEach(function(evAggr) {
-		newStateTree.lastEvAggr = new Date(
-			Math.max(newStateTree.lastEvAggr.getTime(), evAggr.created.getTime())
-		)
-		// @TODO do something about this hardcoded event type assumption
-		balances = mergePayoutsIntoBalances(balances, evAggr.events.IMPRESSION, depositAmount)
-	})
-
-	newStateTree.balances = toBNStringMap(balances)
-
-	// apply fees
-	const balancesAfterFees = getBalancesAfterFeesTree(balances, channel)
-	newStateTree.balancesAfterFees = toBNStringMap(balancesAfterFees)
-
-	return { balances, balancesAfterFees, newStateTree }
+	// mergeAggr will add all eventPayouts from aggrs to the balancesBeforeFees
+	// and produce a new accounting message
+	if (aggrs.length) {
+		logMerge(aggrs, channel)
+		const { balances, newAccounting } = mergeAggrs(accounting, aggrs, channel)
+		await iface.propagate([newAccounting])
+		return { balances, newAccounting }
+	}
+	return { balances: toBNMap(accounting.balances) }
 }
 
-// Mutates the balances input
-// It does not allow the sum of all balances to exceed the depositAmount
-// it will do nothing after the depositAmount is exhausted
-function mergePayoutsIntoBalances(balances, events, depositAmount) {
-	// new tree that will be generated
-	const newBalances = { ...balances }
-
-	if (!events) return newBalances
-
-	// total of state tree balance
-	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
-	// remaining of depositAmount
-	let remaining = depositAmount.sub(total)
-
-	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
-
-	const { eventPayouts } = events
-	// take the eventPayouts key
-	Object.keys(eventPayouts).forEach(function(acc) {
-		if (!newBalances[acc]) newBalances[acc] = new BN(0, 10)
-
-		const eventPayout = new BN(eventPayouts[acc])
-		const toAdd = BN.min(remaining, eventPayout)
-		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
-
-		newBalances[acc] = newBalances[acc].add(toAdd)
-		remaining = remaining.sub(toAdd)
-		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
-	})
-	return newBalances
-}
-
-function logMerge(channel, eventAggrs) {
-	if (eventAggrs.length === 0) return
-	console.log(
-		`validatorWorker: channel ${channel.id}: processing ${eventAggrs.length} event aggregates`
-	)
+function logMerge(aggrs, channel) {
+	// eslint-disable-next-line no-console
+	console.log(`validatorWorker: channel ${channel.id}: processing ${aggrs.length} event aggregates`)
 }
 
 module.exports = { tick }

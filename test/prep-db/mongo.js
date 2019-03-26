@@ -15,12 +15,10 @@ const dummyVals = {
 		publisher: 'testing'
 	},
 	channel: {
-		// @TODO: document schema
-		_id: 'awesomeTestChannel',
 		id: 'awesomeTestChannel',
 		depositAsset: 'DAI',
 		depositAmount: 1000,
-		validators: ['awesomeLeader', 'awesomeFollower'],
+		creator: 'awesomeCreator',
 		spec: {
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
@@ -32,5 +30,8 @@ const dummyVals = {
 
 if (typeof module !== 'undefined') module.exports = dummyVals
 if (typeof db !== 'undefined') {
-	db.channels.insert(dummyVals.channel)
+	db.channels.insert(Object.assign({
+		_id: dummyVals.channel.id,
+		created: new Date(),
+	}, dummyVals.channel))
 }

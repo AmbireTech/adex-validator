@@ -10,24 +10,15 @@ const router = express.Router()
 
 // Channel information: public, cachable
 router.get('/list', getList)
-router.get('/:id/status', channelLoad, getStatus.bind(null, false))
-router.get('/:id/tree', channelLoad, getStatus.bind(null, true))
-
-// Channel information: requires auth, cachable
-// router.get('/:id/events/:uid', authRequired, channelIfExists, (req, res) => res.send([]))
-// @TODO get events or at least eventAggregates
+router.get('/:id/status', channelLoad, getStatus)
 
 // Validator information
-router.get('/:id/validator-messages', getValidatorMessages)
-router.get(
-	'/:id/validator-messages/:uid/:type?',
-	channelIfExists,
-	channelLoad,
-	getValidatorMessages
-)
+router.get('/:id/validator-messages', channelIfExists, getValidatorMessages)
+router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
+router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessages)
 
 // event aggregates information
-router.get('/:id/events-aggregates', authRequired, channelIfExists, channelLoad, getEventAggregates)
+router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
@@ -37,58 +28,46 @@ router.post('/:id/events', authRequired, channelIfActive, postEvents)
 router.post('/', authRequired, celebrate({ body: schema.createChannel(cfg) }), createChannel)
 
 // Implementations
-function getStatus(withTree, req, res) {
-	const resp = { channel: req.channel }
-
-	Promise.resolve()
-		.then(function() {
-			if (withTree) {
-				const channelStateTreesCol = db.getMongo().collection('channelStateTrees')
-				return channelStateTreesCol.findOne({ _id: req.channel.id }).then(function(tree) {
-					if (tree) {
-						resp.balances = tree.balances
-						resp.balancesAfterFees = tree.balancesAfterFees
-						resp.lastEvAggr = tree.lastEvAggr
-					} else {
-						resp.balances = {}
-						resp.lastEvAggr = new Date(0)
-					}
-				})
-			}
-			return Promise.resolve()
-		})
-		.then(function() {
-			res.send(resp)
-		})
+function getStatus(req, res) {
+	res.send({ channel: req.channel })
 }
 
 function getEventAggregates(req, res, next) {
-	const { uid } = req.session
-	const resp = { channel: req.channel }
-
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const key = `events.IMPRESSION.eventCounts.${uid}`
-
+	const { uid } = req.session
+	const channel = req.channel
+	let query = { channelId: channel.id }
+	let projection = { _id: 0 }
+	const isSuperuser = channel.spec.validators.find(v => v.id === uid)
+	if (!isSuperuser) {
+		const keyCounts = `events.IMPRESSION.eventCounts.${uid}`
+		const keyPayouts = `events.IMPRESSION.eventPayouts.${uid}`
+		query = { ...query, [keyCounts]: { $exists: true } }
+		projection = { ...projection, created: 1, [keyCounts]: 1, [keyPayouts]: 1 }
+	}
+	if (typeof req.query.after === 'string') {
+		const after = parseInt(req.query.after, 10)
+		query = { ...query, created: { $gt: new Date(after) } }
+	}
 	return eventsCol
-		.find(
-			{
-				[key]: { $exists: true }
-			},
-			{ projection: { [key]: 1, _id: 0, created: 1 } }
-		)
+		.find(query, { projection })
 		.limit(cfg.EVENTS_FIND_LIMIT)
+		.sort({ created: 1 })
 		.toArray()
-		.then(function(events) {
-			res.send({ ...resp, events })
-		})
+		.then(events => res.send({ channel, events }))
 		.catch(next)
 }
 
 function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
-
+	const query = {}
+	if (typeof req.query.validator === 'string') {
+		// This is MongoDB behavior: since validators is an array,
+		// this query will find anything where the array contains an object with this ID
+		query['spec.validators.id'] = req.query.validator
+	}
 	return channelsCol
-		.find({}, { projection: { _id: 0 } })
+		.find(query, { projection: { _id: 0 } })
 		.limit(cfg.CHANNELS_FIND_LIMIT)
 		.toArray()
 		.then(function(channels) {
@@ -97,51 +76,92 @@ function getList(req, res, next) {
 		.catch(next)
 }
 
-// Implementation of getValidatorMessagesDetailed
-// It retrieves the last recent N
-// validator messages
+// Implementation of getValidatorMessages
+// It retrieves the last N validator messages
+const VALIDATOR_MSGS_PROJ = { _id: 0, channelId: 0 }
 function getValidatorMessages(req, res, next) {
 	const { type, id, uid } = req.params
 	const { limit } = req.query
 
-	const validatorCol = db.getMongo().collection('validatorMessages')
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const query = { channelId: id }
 	if (typeof uid === 'string') query.from = uid
-	if (typeof type === 'string') query['msg.type'] = type
+	if (typeof type === 'string') {
+		query['msg.type'] = { $in: type.split('+') }
+	}
 
-	validatorCol
-		.find(query)
-		.sort({ _id: -1 })
+	validatorMsgCol
+		.find(query, { projection: VALIDATOR_MSGS_PROJ })
+		.sort({ received: -1 })
 		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
 		.toArray()
 		.then(function(validatorMessages) {
-			res.send({ validatorMessages, channel: req.channel })
+			res.send({ validatorMessages })
 		})
 		.catch(next)
 }
 
+function getLastApprovedMessages(req, res, next) {
+	retrieveLastApproved(req.channel)
+		.then(lastApproved => res.send({ lastApproved }))
+		.catch(next)
+}
+
+async function retrieveLastApproved(channel) {
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	const approveStateMsgs = await validatorMsgCol
+		.find(
+			{
+				channelId: channel.id,
+				from: channel.spec.validators[1].id,
+				'msg.type': 'ApproveState'
+			},
+			{ projection: VALIDATOR_MSGS_PROJ }
+		)
+		.sort({ received: -1 })
+		.limit(1)
+		.toArray()
+	if (!approveStateMsgs.length) {
+		return null
+	}
+	const approveState = approveStateMsgs[0]
+	const newState = await validatorMsgCol.findOne(
+		{
+			channelId: channel.id,
+			from: channel.spec.validators[0].id,
+			'msg.type': 'NewState',
+			'msg.stateRoot': approveState.msg.stateRoot
+		},
+		{ projection: VALIDATOR_MSGS_PROJ }
+	)
+	if (newState) {
+		return { newState, approveState }
+	}
+	return null
+}
+
 function createChannel(req, res, next) {
-	const { id, depositAmount, depositAsset, validators, spec } = req.body
-	const channelCol = db.getMongo().collection('channel')
+	const channelsCol = db.getMongo().collection('channels')
 	const channel = {
-		_id: id,
-		depositAmount,
-		depositAsset,
-		validators,
-		spec,
-		created: new Date().getTime()
+		...req.body,
+		_id: req.body.id,
 	}
 
-	channelCol
+	channelsCol
 		.insertOne(channel)
-		.then(function() {
-			res.send({ success: true })
+		.then(() => res.send({ success: true }))
+		.catch(err => {
+			if (err.code === 11000) {
+				res.sendStatus(409)
+				return
+			}
+			throw err
 		})
 		.catch(next)
 }
 
 function postValidatorMessages(req, res, next) {
-	if (!req.channel.validators.includes(req.session.uid)) {
+	if (!req.channel.spec.validators.find(v => v.id === req.session.uid)) {
 		res.sendStatus(401)
 		return
 	}
@@ -154,14 +174,18 @@ function postValidatorMessages(req, res, next) {
 		return
 	}
 
-	const toInsert = messages.map(function(msg) {
-		return validatorMsgCol.insertOne({
+	const startTime = Date.now()
+	const toInsert = messages.map((msg, idx) =>
+		validatorMsgCol.insertOne({
 			channelId: req.channel.id,
-			from: req.session.uid, // @TODO recover sig
-			submittedBy: req.session.uid,
-			msg
+			from: req.session.uid,
+			msg,
+			// This is a hack to help ordering
+			// MongoDB has no notion of auto-increment, so it's not that appropriate
+			// for this but we'll swap it out eventually
+			received: new Date(startTime + idx)
 		})
-	})
+	)
 	Promise.all(toInsert)
 		.then(function() {
 			res.send({ success: true })
@@ -187,17 +211,28 @@ function postEvents(req, res, next) {
 
 // Helpers
 function isValidatorMsgValid(msg) {
+	if (!msg) return false
 	// @TODO either make this more sophisticated, or rewrite this in a type-safe lang
 	// for example, we should validate if every value in balances is a positive integer
-	return (
-		msg &&
-		((typeof msg.stateRoot === 'string' && msg.stateRoot.length === 64) ||
-			typeof msg.timestamp === 'string') &&
-		typeof msg.signature === 'string' &&
-		((msg.type === 'NewState' && typeof msg.balances === 'object') ||
-			msg.type === 'ApproveState' ||
-			msg.type === 'Heartbeat')
-	)
+	const acceptedType = [
+		'NewState',
+		'ApproveState',
+		'RejectState',
+		'Heartbeat',
+		'Accounting'
+	].includes(msg.type)
+	if (!acceptedType) return false
+
+	if (msg.type === 'ApproveState' || msg.type === 'NewState') {
+		if (!(typeof msg.stateRoot === 'string' && msg.stateRoot.length === 64)) return false
+	}
+	if (msg.type === 'NewState') {
+		return msg.balances && typeof msg.balances === 'object'
+	}
+	if (msg.type === 'Heartbeat') {
+		return typeof msg.timestamp === 'string'
+	}
+	return true
 }
 
 function isEventValid(ev) {

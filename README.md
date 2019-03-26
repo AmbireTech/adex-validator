@@ -6,19 +6,20 @@ Components:
 
 * Sentry
 * Validator worker
-* Watcher
 
 ## Validator worker
 
 The validator worker has two modes: `leader` and `follower`, which refer to the validator types described in [adex-protocol/OUTPACE](https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification).
 
-Both of them run something we call a producer tick, which updates a state tree (stored in `channelStateTrees`) based on the events they receive - so essentially each runs their own independent accounting.
+Both of them run something we call a producer tick, which updates the balances (and emits an `Accounting` message) based on the events they receive - so essentially each runs their own independent accounting.
 
 The leader will use the latest state tree to produce a `stateRoot` and sign it.
 
 The follower will sign any new states that the leader signs, as long as they're valid and adhere to the state transition constraints. Furthermore, it will compare them to it's own latest state tree. If the leader's state tree represents significantly lower balances, the follower will mark that channel (campaign) as unhealthy (see [campaign health](https://github.com/AdExNetwork/adex-protocol#campaign-health)).
 
 The validator worker is the only component that actually needs to access the private key used by the validator for signing. With the Ethereum adapter, both the Sentry and the validator worker need access to the keystore file (to access the address), but only the worker needs the keystore file passphrase in order to decrypt it.
+
+The validator worker connects to the Sentry to pull the latest event aggregates and submit the resulting validator messages.
 
 ## Sentry: API
 
@@ -113,7 +114,7 @@ node bin/sentry --adapter=dummy --dummyIdentity=awesomeLeader
 #### Validator Worker
 
 ```
-node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeLeader
+node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeLeader --sentryUrl=http://localhost:8005
 ```
 
 
@@ -128,7 +129,7 @@ DB_MONGO_NAME=adexValidatorFollower PORT=8006 node bin/sentry --adapter=dummy --
 
 #### Validator Worker
 ```
-DB_MONGO_NAME=adexValidatorFollower node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeFollower
+node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeFollower --sentryUrl=http://localhost:8006
 ```
 
 

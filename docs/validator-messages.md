@@ -14,22 +14,19 @@ Can be obtained from sentry route `'/channel/:id/validator-messages'`, returns `
 
 ---
 
-**`balances`** - Object with all validators and their balances `{{"validator": "amount"}, ...}`
+**`balances`** - Object with all earners (publishers) and their balances `{{"validator": "amount"}, ...}`
 
-- *In messages of type: `NewState`*
+- *In messages of type: `NewState`, `Accounting`*
 
 ---
 
-**`lastEvAggr`** - Timestamp of the last event aggregation. ISOString format ex. `"2019-02-06T15:36:54.791Z"`
+**`balancesBeforeFees`** - Object with all balances before applying fees
+
+- *In messages of type: `Accounting`*
 
 ---
 
 **`timestamp`** - Timestamp of the heartbeat message.
-- *In messages of type: `Heartbeat`*
-
----
-
-**`timestampHash`** - Hash of timestamp of the heartbeat message.
 - *In messages of type: `Heartbeat`*
 
 ---

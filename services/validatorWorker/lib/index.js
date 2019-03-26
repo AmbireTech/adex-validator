@@ -1,8 +1,5 @@
 const assert = require('assert')
 const BN = require('bn.js')
-const isEqual = require('lodash.isequal')
-const { persist } = require('./propagation')
-const { getBalancesAfterFeesTree } = require('./fees')
 
 function getStateRootHash(adapter, channel, balances) {
 	// Note: MerkleTree takes care of deduplicating and sorting
@@ -16,20 +13,13 @@ function getStateRootHash(adapter, channel, balances) {
 	return stateRoot
 }
 
-function isValidRootHash(adapter, leaderRootHash, channel, balances) {
-	return getStateRootHash(adapter, channel, balances) === leaderRootHash
-}
-
-function isValidValidatorFees(channel, balances, balancesAfterFees) {
-	const calcBalancesAfterFees = getBalancesAfterFeesTree(balances, channel)
-	return isEqual(calcBalancesAfterFees, balancesAfterFees)
-}
-
 function toBNMap(raw) {
 	assert.ok(raw && typeof raw === 'object', 'raw map is a valid object')
 	const balances = {}
 	Object.entries(raw).forEach(([acc, bal]) => {
-		balances[acc] = new BN(bal, 10)
+		const bnBal = new BN(bal, 10)
+		assert.ok(!bnBal.isNeg(), 'balance should not be negative')
+		balances[acc] = bnBal
 	})
 	return balances
 }
@@ -38,37 +28,24 @@ function toBNStringMap(raw) {
 	assert.ok(raw && typeof raw === 'object', 'raw map is a valid object')
 	const balances = {}
 	Object.entries(raw).forEach(([acc, bal]) => {
+		assert.ok(!bal.isNeg(), 'balance should not be negative')
 		balances[acc] = bal.toString(10)
 	})
 	return balances
 }
 
-function invalidNewState(adapter, channel, { reason, newMsg }) {
-	// quirk: type is overiding type in newMsg
-	return persist(adapter, channel, {
-		...newMsg,
-		type: 'InvalidNewState',
-		reason
-	})
-}
-
-function onError(adapter, channel, { reason, newMsg }) {
-	const errMsg = getErrorMsg(reason, channel)
-
-	return invalidNewState(adapter, channel, { reason, newMsg }).then(function() {
-		console.error(errMsg)
-		return { nothingNew: true }
-	})
-}
-
-function getErrorMsg(reason, channel) {
-	return `validatatorWorker: ${channel.id}: ${reason} error in NewState`
+function onError(iface, { reason, newMsg }) {
+	return iface.propagate([
+		{
+			...newMsg,
+			type: 'RejectState',
+			reason
+		}
+	])
 }
 
 module.exports = {
 	getStateRootHash,
-	isValidRootHash,
-	isValidValidatorFees,
 	toBNMap,
 	toBNStringMap,
 	onError
