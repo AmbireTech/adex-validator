@@ -304,7 +304,8 @@ tape('cannot exceed channel deposit', async function(t) {
 	])
 
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
-	const evCount = parseInt(channel.depositAmount, 10) + 1
+	const expectDeposit = parseInt(channel.depositAmount, 10)
+	const evCount = expectDeposit + 1
 	await postEvents(leaderUrl, channel.id, genImpressions(evCount))
 	await aggrAndTick()
 
@@ -312,7 +313,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	const sum = Object.keys(balances)
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
-	t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit, but equals it')
+	t.equal(sum, expectDeposit, 'balance does not exceed the deposit, but equals it')
 	t.end()
 })
 
