@@ -149,8 +149,13 @@ function createChannel(req, res, next) {
 
 	channelsCol
 		.insertOne(channel)
-		.then(function() {
-			res.send({ success: true })
+		.then(() => res.send({ success: true }))
+		.catch(err => {
+			if (err.code === 11000) {
+				res.sendStatus(409)
+				return
+			}
+			throw err
 		})
 		.catch(next)
 }
