@@ -17,7 +17,7 @@ const dummyVals = {
 	channel: {
 		id: 'awesomeTestChannel',
 		depositAsset: 'DAI',
-		depositAmount: 1000,
+		depositAmount: '1000',
 		creator: 'awesomeCreator',
 		validUntil: Math.floor(Date.now()/1000) + 86400,
 		spec: {
@@ -31,8 +31,5 @@ const dummyVals = {
 
 if (typeof module !== 'undefined') module.exports = dummyVals
 if (typeof db !== 'undefined') {
-	db.channels.insert(Object.assign({
-		_id: dummyVals.channel.id,
-		created: new Date(),
-	}, dummyVals.channel))
+	db.channels.insert(Object.assign({ _id: dummyVals.channel.id }, dummyVals.channel))
 }
