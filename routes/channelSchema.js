@@ -104,6 +104,10 @@ module.exports = {
 							.required()
 					}),
 				created: Joi.number(),
+				reason: Joi.string().when('type', {
+					is: 'RejectState',
+					then: Joi.string().required()
+				}),
 				isHealthy: Joi.boolean().when('type', {
 					is: 'ApproveState',
 					then: Joi.boolean().required()
