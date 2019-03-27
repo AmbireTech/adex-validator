@@ -57,12 +57,8 @@ function verify(signer, stateRoot, signature) {
 	assert.ok(signature, 'valid signature must be provided')
 	assert.ok(signer, 'valid signer is required')
 
-	try {
-		const from = utils.verifyMessage(stateRoot, signature)
-		return Promise.resolve(signer === from)
-	} catch (e) {
-		return Promise.resolve(false)
-	}
+	const from = utils.verifyMessage(stateRoot, signature)
+	return Promise.resolve(signer === from)
 }
 
 function getBalanceLeaf(acc, bal) {
