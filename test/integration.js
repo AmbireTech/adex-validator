@@ -246,7 +246,11 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
 		const fakeBalances = { publisher: '33333' }
-		const deceptiveStateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances).toString('hex')
+		const deceptiveStateRoot = getStateRootHash(
+			dummyAdapter,
+			dummyVals.channel,
+			fakeBalances
+		).toString('hex')
 		return {
 			...newState,
 			stateRoot: deceptiveStateRoot,
