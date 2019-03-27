@@ -7,7 +7,7 @@
 | AGGR_THROTTLE | The time invertal between persisting events  | 5000 |
 | HEARTBEAT_TIME | The time invertal between sending heartbeat messages | 30000 |
 | CHANNELS_FIND_LIMIT | Limit on number of channels to return | 100 |
-| EVENTS_FIND_LIMIT | Soft limit on number of events to return | 100 |
+| EVENTS_FIND_LIMIT | Limit on number of events to return | 100 |
 | MSGS_FIND_LIMIT | Limit on number of validator messages to return | 10 |
 | HEALTH_THRESHOLD_PROMILLES | The margin of error allowed before a channel is marked unhealthy | 950 |
 | PROPAGATION_TIMEOUT | HTTP request propagation timeout | 3000 |

@@ -103,7 +103,6 @@ module.exports = {
 							.pattern(/./, Joi.string())
 							.required()
 					}),
-				created: Joi.number(),
 				reason: Joi.string().when('type', {
 					is: 'RejectState',
 					then: Joi.string().required()
