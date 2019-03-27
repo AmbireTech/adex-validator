@@ -28,9 +28,9 @@ function init(opts) {
 	assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
 	return readFile(opts.keystoreFile).then(json => {
 		keystoreJson = json
-		address = `0x${JSON.parse(json).address}`.toLowerCase()
+		address = formatAddress(`0x${JSON.parse(json).address}`)
 		// eslint-disable-next-line no-console
-		console.log(`Ethereum address: ${formatAddress(whoami())}`)
+		console.log(`Ethereum address: ${whoami()}`)
 	})
 }
 
@@ -77,7 +77,7 @@ function sessionFromToken(token) {
 		return Promise.resolve(tokensVerified.get(tokenId))
 	}
 	return ewt.verify(token).then(function({ from, payload }) {
-		if (payload.id.toLowerCase() !== whoami()) {
+		if (payload.id !== whoami()) {
 			return Promise.reject(
 				new Error('token payload.id !== whoami(): token was not intended for us')
 			)
@@ -128,6 +128,10 @@ async function validateChannel(channel) {
 	assert.ok(ourValidator, 'channel is not validated by us')
 	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
 	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
+	assert.ok(
+		channel.spec.validators.every(({ id }) => id === formatAddress(id)),
+		'channel.validators: all addresses are checksummed'
+	)
 	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
 		assert.ok(
 			channel.spec.validators.every(
@@ -179,16 +183,24 @@ const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
 async function testValidation() {
 	await init({ keystoreFile: './tom.json' })
 	return validateChannel({
-		id: '0xe7755cebbe472d393cb1136543b4fe58e8122d283e14c85327737e7ecb2f75ed',
+		id: '0x26f82d679740571f0b399d2ab8dfcba844c4c16dc797f837791ffee0d42447bb',
 		creator: IVO_MM,
 		depositAsset: GOERLI_TST,
-		depositAmount: (10**17).toString(),
+		depositAmount: (10 ** 17).toString(),
 		validUntil: 1556201147,
 		spec: {
 			validators: [
-				{ id: '0x2892f6c41e0718eeedd49d98d648c789668ca67d', url: 'https://tom.adex.network', fee: '0' },
-				{ id: '0xce07cbb7e054514d590a0262c93070d838bfba2e', url: 'https://jerry.adex.network', fee: '0' },
-			],
+				{
+					id: '0x2892f6C41E0718eeeDd49D98D648C789668cA67d',
+					url: 'https://tom.adex.network',
+					fee: '0'
+				},
+				{
+					id: '0xce07CbB7e054514D590a0262C93070D838bFBA2e',
+					url: 'https://jerry.adex.network',
+					fee: '0'
+				}
+			]
 		}
 	})
 }
