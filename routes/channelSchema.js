@@ -49,6 +49,26 @@ module.exports = {
 		spec: Joi.object({
 			minPerImpression: Joi.string().default('1'),
 			validators: validators(cfg)
-		}).required()
-	})
+		})
+	}),
+	validatorMessage: {
+		messages: Joi.array()
+		.items(
+			Joi.object({
+				type: Joi.string().valid(['NewState', 'AccoutingState', 'ApproveState']).required(),
+				stateRoot: Joi.string().length(64).required(),
+				signature: Joi.string().required(),
+				balances: Joi.object({
+					
+				})
+			})
+		)
+	}
 }
+
+{ 
+"type" : "NewState", 
+"balances" : { "myAwesomePublisher" : "4", "anotherPublisher" : "2" }, 
+"lastEvAggr" : "2019-01-31T12:43:49.319Z", 
+"stateRoot" : "0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951",
+"signature" : "Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader" }
