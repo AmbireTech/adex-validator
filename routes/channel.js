@@ -19,7 +19,13 @@ router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorM
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 
 // Submitting events/messages: requires auth
-router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
+router.post(
+	'/:id/validator-messages',
+	authRequired,
+	celebrate({ body: schema.validatorMessage }),
+	channelLoad,
+	postValidatorMessages
+)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
 // Implementations
@@ -153,9 +159,9 @@ function postValidatorMessages(req, res, next) {
 		res.sendStatus(401)
 		return
 	}
-
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const { messages } = req.body
+
 	const isValid = Array.isArray(messages) && messages.every(isValidatorMsgValid)
 	if (!isValid) {
 		res.sendStatus(400)

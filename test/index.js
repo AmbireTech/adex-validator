@@ -276,5 +276,19 @@ tape('create channel schema', function(t) {
 	t.end()
 })
 
+// validator Message schema;
+//
+tape('validator message schema', function(t) {
+	fixtures.validatorMessages.forEach(function([data, expected]) {
+		Joi.validate(JSON.stringify(data), schema.validatorMessage, function(err) {
+			let error = null
+			if (err) error = err.toString()
+			t.equal(error, expected, 'Should validate validator schema properly')
+		})
+	})
+
+	t.end()
+})
+
 // @TODO: event aggregator
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances

@@ -49,26 +49,66 @@ module.exports = {
 		spec: Joi.object({
 			minPerImpression: Joi.string().default('1'),
 			validators: validators(cfg)
-		})
+		}).required()
 	}),
 	validatorMessage: {
-		messages: Joi.array()
-		.items(
+		messages: Joi.array().items(
 			Joi.object({
-				type: Joi.string().valid(['NewState', 'AccoutingState', 'ApproveState']).required(),
-				stateRoot: Joi.string().length(64).required(),
-				signature: Joi.string().required(),
-				balances: Joi.object({
-					
+				type: Joi.string()
+					.valid(['NewState', 'ApproveState', 'Heartbeat', 'Accounting', 'RejectState'])
+					.required(),
+				stateRoot: Joi.string()
+					.length(64)
+					.when('type', {
+						is: ['NewState', 'ApproveState', 'Heartbeat'],
+						then: Joi.string().required()
+					}),
+				signature: Joi.string().when('type', {
+					is: ['NewState', 'ApproveState', 'Heartbeat'],
+					then: Joi.string().required()
+				}),
+				lastEvAggr: Joi.string()
+					.isoDate()
+					.when('type', {
+						is: ['Accounting'],
+						then: Joi.string()
+							.isoDate()
+							.required()
+					}),
+				balances: Joi.object()
+					.keys()
+					.pattern(/./, Joi.string())
+					.when('type', {
+						is: ['NewState', 'Accounting'],
+						then: Joi.object()
+							.keys()
+							.pattern(/./, Joi.string())
+							.required()
+					}),
+				timestamp: Joi.string()
+					.isoDate()
+					.when('type', {
+						is: 'Heartbeat',
+						then: Joi.string()
+							.isoDate()
+							.required()
+					}),
+				balancesBeforeFees: Joi.object()
+					.keys()
+					.pattern(/./, Joi.string())
+					.when('type', {
+						is: 'Accounting',
+						then: Joi.object()
+							.keys()
+							.pattern(/./, Joi.string())
+							.required()
+					}),
+				created: Joi.number(),
+				isHealthy: Joi.boolean().when('type', {
+					is: 'ApproveState',
+					then: Joi.boolean().required()
 				})
 			})
 		)
 	}
 }
-
-{ 
-"type" : "NewState", 
-"balances" : { "myAwesomePublisher" : "4", "anotherPublisher" : "2" }, 
-"lastEvAggr" : "2019-01-31T12:43:49.319Z", 
-"stateRoot" : "0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951",
-"signature" : "Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader" }
