@@ -7,6 +7,13 @@ const cfg = {
 const dummyVals = require('./prep-db/mongo')
 
 const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
+const validatorMessage = {
+	type: 'NewState',
+	stateRoot: '0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951',
+	signature:
+		'Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader'
+}
+
 module.exports = {
 	createChannel: [
 		[
@@ -90,12 +97,8 @@ module.exports = {
 			{
 				messages: [
 					{
-						type: 'NewState',
-						balances: { myAwesomePublisher: '4', anotherPublisher: '2' },
-						lastEvAggr: '2019-01-31T12:43:49.319Z',
-						stateRoot: '0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951',
-						signature:
-							'Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader'
+						...validatorMessage,
+						balances: { myAwesomePublisher: '4', anotherPublisher: '2' }
 					}
 				]
 			},
@@ -105,11 +108,20 @@ module.exports = {
 			{
 				messages: [
 					{
+						...validatorMessage,
+						balances: { myAwesomePublisher: 4, anotherPublisher: '2' }
+					}
+				]
+			},
+			'ValidationError: child "messages" fails because ["messages" at position 0 fails because [child "balances" fails because [child "myAwesomePublisher" fails because ["myAwesomePublisher" must be a string]]]]'
+		],
+		[
+			{
+				messages: [
+					{
+						...validatorMessage,
 						type: 'Heartbeat',
-						timestamp: '2019-03-27T08:24:22.527Z',
-						signature:
-							'Dummy adapter signature for dcfe1cea1ab9689a87251c159175030f17210c76f4e0351dfa6803161b394c45 by awesomeFollower',
-						stateRoot: 'dcfe1cea1ab9689a87251c159175030f17210c76f4e0351dfa6803161b394c45'
+						timestamp: '2019-03-27T08:24:22.527Z'
 					}
 				]
 			},
@@ -119,6 +131,18 @@ module.exports = {
 			{
 				messages: [
 					{
+						...validatorMessage,
+						type: 'Heartbeat'
+					}
+				]
+			},
+			'ValidationError: child "messages" fails because ["messages" at position 0 fails because [child "timestamp" fails because ["timestamp" is required]]]'
+		],
+		[
+			{
+				messages: [
+					{
+						...validatorMessage,
 						type: 'Accounting',
 						balancesBeforeFees: { test: '1' },
 						balances: { test: '1' },
@@ -132,11 +156,8 @@ module.exports = {
 			{
 				messages: [
 					{
-						type: 'NewState',
-						balances: { test: '1' },
-						stateRoot: '3d277e1c11cd858bf0033499fdc91f02f425ed2041408265eb8fbffd3bf4f7e1',
-						signature:
-							'Dummy adapter signature for 3d277e1c11cd858bf0033499fdc91f02f425ed2041408265eb8fbffd3bf4f7e1 by awesomeLeader'
+						type: 'RejectState',
+						reason: 'wrong signature (InvalidSignature)'
 					}
 				]
 			},
@@ -146,15 +167,24 @@ module.exports = {
 			{
 				messages: [
 					{
+						...validatorMessage,
 						type: 'ApproveState',
-						stateRoot: '3d277e1c11cd858bf0033499fdc91f02f425ed2041408265eb8fbffd3bf4f7e1',
-						isHealthy: true,
-						signature:
-							'Dummy adapter signature for 3d277e1c11cd858bf0033499fdc91f02f425ed2041408265eb8fbffd3bf4f7e1 by awesomeFollower'
+						isHealthy: true
 					}
 				]
 			},
 			null
+		],
+		[
+			{
+				messages: [
+					{
+						...validatorMessage,
+						type: 'ApproveState'
+					}
+				]
+			},
+			'ValidationError: child "messages" fails because ["messages" at position 0 fails because [child "isHealthy" fails because ["isHealthy" is required]]]'
 		]
 	]
 }

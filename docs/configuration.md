@@ -13,5 +13,5 @@
 | PROPAGATION_TIMEOUT | HTTP request propagation timeout | 3000 |
 | CREATORS_WHITELIST | List of accepted channel creators | [] |
 | MINIMAL_DEPOSIT | Least amount a channel is required to have to be accepted | 0 |
-| TOKEN_ADDRESS_WHITELIST | List of address of accepted valid payment tokens | 0 |
-| VALIDATORS_WHITELIST | List of accepted possible channel validators  | [] |
+| TOKEN_ADDRESS_WHITELIST | List of valid payment tokens address  | 0 |
+| VALIDATORS_WHITELIST | List of accepted channel validators  | [] |
