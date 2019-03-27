@@ -7,7 +7,7 @@ const { isValidTransition, isHealthy } = require('../services/validatorWorker/li
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
-const schema = require('../routes/channelSchema')
+const schema = require('../routes/schemas')
 const dummyAdapter = require('../adapters/dummy')
 const fixtures = require('./fixtures')
 
