@@ -25,7 +25,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 	const proposedBalances = toBNMap(newMsg.balances)
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (newMsg.stateRoot !== getStateRootHash(adapter, channel, proposedBalances)) {
+	if (newMsg.stateRoot !== getStateRootHash(adapter, channel, proposedBalances).toString('hex')) {
 		return onError(iface, { reason: 'InvalidRootHash', newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator

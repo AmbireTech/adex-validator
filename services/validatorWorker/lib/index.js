@@ -7,8 +7,7 @@ function getStateRootHash(adapter, channel, balances) {
 	const tree = new adapter.MerkleTree(elems)
 	const balanceRoot = tree.getRoot()
 	// keccak256(channelId, balanceRoot)
-	const stateRoot = adapter.getSignableStateRoot(channel.id, balanceRoot).toString('hex')
-	return stateRoot
+	return adapter.getSignableStateRoot(channel.id, balanceRoot)
 }
 
 function toBNMap(raw) {

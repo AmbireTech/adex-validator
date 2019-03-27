@@ -230,7 +230,7 @@ tape('RejectState: wrong signature (InvalidSignature)', async function(t) {
 	await testRejectState(t, 'InvalidSignature', function(newState) {
 		// increase the balance, so we effectively end up with a new state
 		const balances = { ...newState.balances, someoneElse: '1' }
-		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
 			balances,
@@ -246,7 +246,7 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
 		const fakeBalances = { publisher: '33333' }
-		const deceptiveStateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances)
+		const deceptiveStateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances).toString('hex')
 		return {
 			...newState,
 			stateRoot: deceptiveStateRoot,
@@ -260,7 +260,7 @@ tape('RejectState: invalid OUTPACE transition', async function(t) {
 	await testRejectState(t, 'InvalidTransition', function(newState) {
 		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
 		const balances = { ...newState.balances, [defaultPubName]: '0' }
-		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
 			balances,
@@ -278,7 +278,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 			...newState.balances,
 			[defaultPubName]: (parseInt(dummyVals.channel.depositAmount, 10) + 1).toString()
 		}
-		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
 			balances,
