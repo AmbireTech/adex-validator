@@ -17,12 +17,15 @@ const dummyVals = {
 	channel: {
 		id: 'awesomeTestChannel',
 		depositAsset: 'DAI',
-		depositAmount: 1000,
+		depositAmount: '1000',
 		creator: 'awesomeCreator',
+		// UNIX timestamp for 2100-01-01
+		validUntil: 4102444800,
 		spec: {
+			minPerImpression: '1',
 			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 },
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' },
 			]
 		}
 	}
@@ -30,8 +33,5 @@ const dummyVals = {
 
 if (typeof module !== 'undefined') module.exports = dummyVals
 if (typeof db !== 'undefined') {
-	db.channels.insert(Object.assign({
-		_id: dummyVals.channel.id,
-		created: new Date(),
-	}, dummyVals.channel))
+	db.channels.insert(Object.assign({ _id: dummyVals.channel.id }, dummyVals.channel))
 }

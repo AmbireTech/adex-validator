@@ -12,7 +12,6 @@ const dummyVals = require('./prep-db/mongo')
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
-const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 dummyAdapter.init({ dummyIdentity: dummyVals.ids.leader })
 const iface = new SentryInterface(dummyAdapter, dummyVals.channel, { logging: false })
@@ -99,10 +98,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// stateRoot = keccak256(channelId, balanceRoot)
 	const allLeafs = Object.keys(balancesTree).map(k => Channel.getBalanceLeaf(k, balancesTree[k]))
 	const mTree = new MerkleTree(allLeafs)
-	const stateRootRaw = Channel.getSignableStateRoot(
-		Buffer.from(channel.id),
-		mTree.getRoot()
-	).toString('hex')
+	const stateRootRaw = Channel.getSignableStateRoot(channel.id, mTree.getRoot()).toString('hex')
 	const { stateRoot } = lastNew.msg
 	t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 
@@ -234,7 +230,7 @@ tape('RejectState: wrong signature (InvalidSignature)', async function(t) {
 	await testRejectState(t, 'InvalidSignature', function(newState) {
 		// increase the balance, so we effectively end up with a new state
 		const balances = { ...newState.balances, someoneElse: '1' }
-		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
 			balances,
@@ -250,7 +246,11 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
 		const fakeBalances = { publisher: '33333' }
-		const deceptiveStateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, fakeBalances)
+		const deceptiveStateRoot = getStateRootHash(
+			dummyAdapter,
+			dummyVals.channel,
+			fakeBalances
+		).toString('hex')
 		return {
 			...newState,
 			stateRoot: deceptiveStateRoot,
@@ -264,7 +264,7 @@ tape('RejectState: invalid OUTPACE transition', async function(t) {
 	await testRejectState(t, 'InvalidTransition', function(newState) {
 		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
 		const balances = { ...newState.balances, [defaultPubName]: '0' }
-		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
 			balances,
@@ -280,9 +280,9 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
 		const balances = {
 			...newState.balances,
-			[defaultPubName]: (dummyVals.channel.depositAmount + 1).toString()
+			[defaultPubName]: (parseInt(dummyVals.channel.depositAmount, 10) + 1).toString()
 		}
-		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances)
+		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
 			balances,
@@ -304,7 +304,8 @@ tape('cannot exceed channel deposit', async function(t) {
 	])
 
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
-	const evCount = channel.depositAmount + 1
+	const expectDeposit = parseInt(channel.depositAmount, 10)
+	const evCount = expectDeposit + 1
 	await postEvents(leaderUrl, channel.id, genImpressions(evCount))
 	await aggrAndTick()
 
@@ -312,7 +313,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	const sum = Object.keys(balances)
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
-	t.ok(sum === expectedDepositAmnt, 'balance does not exceed the deposit, but equals it')
+	t.equal(sum, expectDeposit, 'balance does not exceed the deposit, but equals it')
 	t.end()
 })
 

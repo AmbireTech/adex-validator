@@ -1,17 +1,23 @@
-const { MerkleTree, Channel } = require('adex-protocol-eth/js')
-const { Wallet, utils } = require('ethers')
+const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
+const { Wallet, Contract, utils, getDefaultProvider } = require('ethers')
+const coreABI = require('adex-protocol-eth/abi/AdExCore')
 const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
+const crypto = require('crypto')
+const BN = require('bn.js')
 
 const readFile = util.promisify(fs.readFile)
+const cfg = require('../../cfg')
 const ewt = require('./ewt')
 
-// Tokens that we have verified (tokenId => session)
+const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, getDefaultProvider(cfg.ETHEREUM_NETWORK))
+
+// Auth tokens that we have verified (tokenId => session)
 const tokensVerified = new Map()
 
-// Tokens that we've generated to authenticate with someone (address => token)
+// AUth tokens that we've generated to authenticate with someone (address => token)
 const tokensForAuth = new Map()
 
 let address = null
@@ -51,12 +57,8 @@ function verify(signer, stateRoot, signature) {
 	assert.ok(signature, 'valid signature must be provided')
 	assert.ok(signer, 'valid signer is required')
 
-	try {
-		const from = utils.verifyMessage(stateRoot, signature)
-		return Promise.resolve(signer === from)
-	} catch (e) {
-		return Promise.resolve(false)
-	}
+	const from = utils.verifyMessage(stateRoot, signature)
+	return Promise.resolve(signer === from)
 }
 
 function getBalanceLeaf(acc, bal) {
@@ -113,6 +115,96 @@ function getAuthFor(validator) {
 // for (var i=0; i!=100000; i++) p = p.then(work)
 // p.then(() => console.log(Date.now()-start))
 
+// Note: some of this validation can be made generic and shared between adapters if needed
+// e.g. MINIMAL_DEPOSIT, MINIMAL_FEE, CREATORS_WHITELIST
+async function validateChannel(channel) {
+	const ethChannel = toEthereumChannel(channel)
+	const addrEq = (a, b) => a.toLowerCase() === b.toLowerCase()
+	const ourValidator = channel.spec.validators.find(({ id }) => addrEq(address, id))
+	assert.ok(ourValidator, 'channel is not validated by us')
+	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
+	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
+	assert.ok(
+		channel.spec.validators.every(({ id }) => id === formatAddress(id)),
+		'channel.validators: all addresses are checksummed'
+	)
+	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
+		assert.ok(
+			channel.spec.validators.every(
+				({ id }) => addrEq(id, address) || cfg.VALIDATORS_WHITELIST.includes(id.toLowerCase())
+			),
+			'validators are not in the whitelist'
+		)
+	}
+	if (cfg.CREATORS_WHITELIST && cfg.CREATORS_WHITELIST.length) {
+		assert.ok(
+			cfg.CREATORS_WHITELIST.includes(channel.creator.toLowerCase()),
+			'channel.creator is not whitelisted'
+		)
+	}
+	assert.ok(
+		new BN(channel.depositAmount).gte(new BN(cfg.MINIMAL_DEPOSIT || 0)),
+		'channel.depositAmount is less than MINIMAL_DEPOSIT'
+	)
+	assert.ok(
+		new BN(ourValidator.fee).gte(new BN(cfg.MINIMAL_FEE || 0)),
+		'channel validator fee is less than MINIMAL_FEE'
+	)
+
+	// Check the on-chain status
+	const channelStatus = await core.states(ethChannel.hash(core.address))
+	assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
+
+	// Channel is valid
+	return true
+}
+function toEthereumChannel(channel) {
+	const specHash = crypto
+		.createHash('sha256')
+		.update(JSON.stringify(channel.spec))
+		.digest()
+	return new Channel({
+		creator: channel.creator,
+		tokenAddr: channel.depositAsset,
+		tokenAmount: channel.depositAmount,
+		validUntil: channel.validUntil,
+		validators: channel.spec.validators.map(v => v.id),
+		spec: specHash
+	})
+}
+
+/*
+const IVO_MM = '0x54122C899013e2c4229e1789CFE5B17446Dae7f9'
+const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
+async function testValidation() {
+	await init({ keystoreFile: './tom.json' })
+	return validateChannel({
+		id: '0xe3c4974fb77453a6ca13854a17c691098bc4d590e915c32a646c97a6016e3338',
+		creator: IVO_MM,
+		depositAsset: GOERLI_TST,
+		depositAmount: (2 * 10 ** 17).toString(),
+		validUntil: 1556201147,
+		spec: {
+			// ((10**18) * 5) / 1000
+			minPerImpression: '5000000000000000',
+			validators: [
+				{
+					id: '0x2892f6C41E0718eeeDd49D98D648C789668cA67d',
+					url: 'https://tom.adex.network',
+					fee: '0'
+				},
+				{
+					id: '0xce07CbB7e054514D590a0262C93070D838bFBA2e',
+					url: 'https://jerry.adex.network',
+					fee: '0'
+				}
+			]
+		}
+	})
+}
+testValidation().catch(e => console.error(e))
+*/
+
 module.exports = {
 	init,
 	unlock,
@@ -123,5 +215,6 @@ module.exports = {
 	getAuthFor,
 	MerkleTree,
 	verify,
-	getSignableStateRoot
+	getSignableStateRoot,
+	validateChannel
 }

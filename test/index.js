@@ -7,7 +7,7 @@ const { isValidTransition, isHealthy } = require('../services/validatorWorker/li
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
-const schema = require('../routes/schema')
+const schema = require('../routes/channelSchema')
 const dummyAdapter = require('../adapters/dummy')
 const fixtures = require('./fixtures')
 
@@ -142,7 +142,7 @@ tape('getStateRootHash: returns correct result', function(t) {
 			expectedHash: '0b64767e909e9f36ab9574e6b93921390c40a0d899c3587db3b2df077b8e87d7'
 		}
 	].forEach(({ expectedHash, channel, balances }) => {
-		const actualHash = getStateRootHash(dummyAdapter, channel, balances)
+		const actualHash = getStateRootHash(dummyAdapter, channel, balances).toString('hex')
 		t.equal(actualHash, expectedHash, 'correct root hash')
 	})
 
@@ -166,6 +166,20 @@ tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, zeroFeeChannel)), tree2)
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree3, zeroFeeChannel)), tree3)
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree4, zeroFeeChannel)), tree4)
+	t.end()
+})
+
+tape('getBalancesAfterFeesTree: fees larger than deposit handled correctly', function(t) {
+	const tree1 = { a: '10', b: '10' }
+	const maliciousFeeChannel = {
+		spec: { validators: [{ id: 'one', fee: '600' }, { id: 'two', fee: '600' }] },
+		depositAmount: '1000'
+	}
+	t.throws(
+		() => getBalancesAfterFeesTree(tree1, maliciousFeeChannel),
+		/fee constraint violated/,
+		'should not allow fees sum to exceed the deposit'
+	)
 	t.end()
 })
 

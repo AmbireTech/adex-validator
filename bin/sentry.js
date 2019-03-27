@@ -8,6 +8,7 @@ const cfg = require('../cfg')
 const adapters = require('../adapters')
 const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
+const channelCreate = require('../routes/channelCreate')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -25,6 +26,7 @@ const port = process.env.PORT || 8005
 app.use(bodyParser.json())
 app.use(authMiddleware.forAdapter(adapter))
 app.use('/channel', channelRoutes)
+app.use('/channel', channelCreate.forAdapter(adapter))
 app.use('/cfg', (_, res) => res.send(cfg))
 app.use(errors())
 
@@ -38,6 +40,6 @@ db.connect()
 	})
 	.catch(function(err) {
 		// eslint-disable-next-line no-console
-		console.error('Fatal error while connecting to the database', err)
+		console.error(err)
 		process.exit(1)
 	})

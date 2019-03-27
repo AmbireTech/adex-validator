@@ -1,10 +1,8 @@
 const express = require('express')
-const { celebrate } = require('celebrate')
 const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
-const schema = require('./schema')
 
 const router = express.Router()
 
@@ -23,9 +21,6 @@ router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregat
 // Submitting events/messages: requires auth
 router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
-
-// campaign
-router.post('/', authRequired, celebrate({ body: schema.createChannel(cfg) }), createChannel)
 
 // Implementations
 function getStatus(req, res) {
@@ -53,6 +48,7 @@ function getEventAggregates(req, res, next) {
 		.find(query, { projection })
 		.limit(cfg.EVENTS_FIND_LIMIT)
 		.sort({ created: 1 })
+		.hint({ channelId: 1, created: 1 })
 		.toArray()
 		.then(events => res.send({ channel, events }))
 		.catch(next)
@@ -60,15 +56,20 @@ function getEventAggregates(req, res, next) {
 
 function getList(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
-	const query = {}
+	const skip = req.query.skip && parseInt(req.query.skip, 10)
+	let query = {
+		validUntil: { $gt: Math.floor(Date.now() / 1000) }
+	}
 	if (typeof req.query.validator === 'string') {
 		// This is MongoDB behavior: since validators is an array,
 		// this query will find anything where the array contains an object with this ID
-		query['spec.validators.id'] = req.query.validator
+		query = { ...query, 'spec.validators.id': req.query.validator }
 	}
 	return channelsCol
 		.find(query, { projection: { _id: 0 } })
 		.limit(cfg.CHANNELS_FIND_LIMIT)
+		.skip(skip || 0)
+		.hint({ validUntil: 1, 'spec.validators.id': 1 })
 		.toArray()
 		.then(function(channels) {
 			res.send({ channels })
@@ -84,16 +85,17 @@ function getValidatorMessages(req, res, next) {
 	const { limit } = req.query
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	const query = { channelId: id }
-	if (typeof uid === 'string') query.from = uid
+	let query = { channelId: id }
+	if (typeof uid === 'string') query = { ...query, from: uid }
 	if (typeof type === 'string') {
-		query['msg.type'] = { $in: type.split('+') }
+		query = { ...query, 'msg.type': { $in: type.split('+') } }
 	}
 
 	validatorMsgCol
 		.find(query, { projection: VALIDATOR_MSGS_PROJ })
 		.sort({ received: -1 })
 		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
+		.hint({ channnelId: 1, from: 1, 'msg.type': 1, received: 1 })
 		.toArray()
 		.then(function(validatorMessages) {
 			res.send({ validatorMessages })
@@ -116,7 +118,10 @@ async function retrieveLastApproved(channel) {
 				from: channel.spec.validators[1].id,
 				'msg.type': 'ApproveState'
 			},
-			{ projection: VALIDATOR_MSGS_PROJ }
+			{
+				projection: VALIDATOR_MSGS_PROJ,
+				hint: { channnelId: 1, from: 1, 'msg.type': 1, received: 1 }
+			}
 		)
 		.sort({ received: -1 })
 		.limit(1)
@@ -132,32 +137,15 @@ async function retrieveLastApproved(channel) {
 			'msg.type': 'NewState',
 			'msg.stateRoot': approveState.msg.stateRoot
 		},
-		{ projection: VALIDATOR_MSGS_PROJ }
+		{
+			projection: VALIDATOR_MSGS_PROJ,
+			hint: { 'msg.type': 1, 'msg.stateRoot': 1 }
+		}
 	)
 	if (newState) {
 		return { newState, approveState }
 	}
 	return null
-}
-
-function createChannel(req, res, next) {
-	const channelsCol = db.getMongo().collection('channels')
-	const channel = {
-		...req.body,
-		_id: req.body.id,
-	}
-
-	channelsCol
-		.insertOne(channel)
-		.then(() => res.send({ success: true }))
-		.catch(err => {
-			if (err.code === 11000) {
-				res.sendStatus(409)
-				return
-			}
-			throw err
-		})
-		.catch(next)
 }
 
 function postValidatorMessages(req, res, next) {

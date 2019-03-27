@@ -10,7 +10,6 @@ const dummyVals = require('./prep-db/mongo')
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
-const expectedDepositAmnt = dummyVals.channel.depositAmount
 
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
@@ -49,7 +48,7 @@ tape('/channel/{id}/status', async function(t) {
 		res.json()
 	)
 	t.ok(resp.channel, 'has resp.channel')
-	t.equal(resp.channel.depositAmount, expectedDepositAmnt, 'depositAmount is as expected')
+	t.deepEqual(resp.channel, dummyVals.channel, 'channel is deepEqual')
 	t.end()
 })
 
@@ -105,15 +104,14 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 
 tape('POST /channel: create channel', async function(t) {
 	const channel = {
+		...dummyVals.channel,
 		id: 'awesomeTestChannel2',
-		creator: 'someone',
-		depositAsset: 'DAI',
-		depositAmount: 1000,
 		spec: {
+			minPerImpression: '1',
 			// as a mild hack, use different IDs so we don't tick on it
 			validators: [
-				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: 100 },
-				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: 100 }
+				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: '100' },
+				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: '100' }
 			]
 		}
 	}
@@ -136,8 +134,6 @@ tape('POST /channel: create channel', async function(t) {
 	t.end()
 })
 
-// @TODO cannot submit a channel twice
-
 tape('POST /channel: should not create channel if it is not valid', async function(t) {
 	await Promise.all(
 		[
@@ -145,11 +141,11 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 			{
 				creator: 'someone',
 				depositAsset: 'DAI',
-				depositAmount: 1000,
+				depositAmount: '1000',
 				spec: {
 					validators: [
-						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: 100 },
-						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: 100 }
+						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
 					]
 				}
 			},
@@ -162,7 +158,7 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				id: 'test',
 				creator: 'someone',
 				depositAsset: 'DAI',
-				depositAmount: 1000,
+				depositAmount: '1000',
 				spec: {
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
@@ -173,7 +169,24 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 		].map(async function(channel) {
 			const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)
 			t.equal(resp.status, 400, 'status must be BadRequest')
+			const err = await resp.json()
+			t.ok(err.message, 'has error message')
 		})
 	)
 	t.end()
 })
+
+tape(
+	'POST /channel: should not create channel if it does not pass adapter validation',
+	async function(t) {
+		const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, {
+			...dummyVals.channel,
+			id: 'zeroDepositChannel',
+			depositAmount: '0'
+		})
+		t.equal(resp.status, 400, 'status must be BadRequest')
+		const err = await resp.json()
+		t.equal(err.message, 'adapter validation not successful')
+		t.end()
+	}
+)

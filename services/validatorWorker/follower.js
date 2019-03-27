@@ -23,15 +23,17 @@ async function tick(adapter, iface, channel) {
 
 async function onNewState(adapter, iface, channel, balances, newMsg) {
 	const proposedBalances = toBNMap(newMsg.balances)
+	const stateRoot = newMsg.stateRoot
+	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 
 	// verify the stateRoot hash of newMsg: whether the stateRoot really represents this balance tree
-	if (newMsg.stateRoot !== getStateRootHash(adapter, channel, proposedBalances)) {
+	if (stateRoot !== getStateRootHash(adapter, channel, proposedBalances).toString('hex')) {
 		return onError(iface, { reason: 'InvalidRootHash', newMsg })
 	}
 	// verify the signature of newMsg: whether it was signed by the leader validator
 	const isValidSig = await adapter.verify(
 		channel.spec.validators[0].id,
-		newMsg.stateRoot,
+		stateRootRaw,
 		newMsg.signature
 	)
 	if (!isValidSig) {
@@ -44,8 +46,6 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		return onError(iface, { reason: 'InvalidTransition', newMsg })
 	}
 
-	const stateRoot = newMsg.stateRoot
-	const stateRootRaw = Buffer.from(stateRoot, 'hex')
 	const signature = await adapter.sign(stateRootRaw)
 	return iface.propagate([
 		{

@@ -9,9 +9,11 @@ function getBalancesAfterFeesTree(balances, channel) {
 	const totalValidatorFee = channel.spec.validators
 		.map(v => new BN(v.fee, 10))
 		.reduce((a, b) => a.add(b), new BN(0))
-	const depositToDistribute = depositAmount.sub(totalValidatorFee)
 
+	assert.ok(totalValidatorFee.lte(depositAmount), 'total fees <= deposit: fee constraint violated')
 	assert.ok(totalDistributed.lte(depositAmount), 'distributed <= deposit: OUTPACE rule #4')
+
+	const depositToDistribute = depositAmount.sub(totalValidatorFee)
 
 	// the sum of all validator fees / totalValidatorFee is always equal to
 	// the sum of all balances / total deposit
