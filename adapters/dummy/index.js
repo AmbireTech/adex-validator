@@ -27,7 +27,7 @@ function getBalanceLeaf(acc, bal) {
 }
 
 function getSignableStateRoot(channelId, balanceRoot) {
-	return Channel.getSignableStateRoot(channelId, balanceRoot)
+	return Channel.getSignableStateRoot(Buffer.from(channelId), balanceRoot)
 }
 
 // Authentication tokens

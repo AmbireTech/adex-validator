@@ -10,7 +10,7 @@ async function sendHeartbeat(adapter, iface, channel) {
 	const tree = new adapter.MerkleTree([timestamp])
 	const infoRootRaw = tree.getRoot()
 
-	const stateRootRaw = adapter.getSignableStateRoot(Buffer.from(channel.id), infoRootRaw)
+	const stateRootRaw = adapter.getSignableStateRoot(channel.id, infoRootRaw)
 	const signature = await adapter.sign(stateRootRaw)
 	const stateRoot = stateRootRaw.toString('hex')
 	return iface.propagate([
