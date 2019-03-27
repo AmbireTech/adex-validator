@@ -14,4 +14,6 @@
 | CREATORS_WHITELIST | List of accepted channel creators | [] |
 | MINIMAL_DEPOSIT | Least amount a channel is required to have to be accepted | 0 |
 | TOKEN_ADDRESS_WHITELIST | List of valid payment tokens address  | 0 |
+| ETHEREUM_CORE_ADDR | On chain contract address   | 0x333420fc6a897356e69b62417cd17ff012177d2b |
+| ETHEREUM_NETWORK | Ethereum network id | homestead |,
 | VALIDATORS_WHITELIST | List of accepted channel validators  | [] |
