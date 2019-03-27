@@ -179,12 +179,14 @@ const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
 async function testValidation() {
 	await init({ keystoreFile: './tom.json' })
 	return validateChannel({
-		id: '0x26f82d679740571f0b399d2ab8dfcba844c4c16dc797f837791ffee0d42447bb',
+		id: '0xe3c4974fb77453a6ca13854a17c691098bc4d590e915c32a646c97a6016e3338',
 		creator: IVO_MM,
 		depositAsset: GOERLI_TST,
-		depositAmount: (10 ** 17).toString(),
+		depositAmount: (2 * 10 ** 17).toString(),
 		validUntil: 1556201147,
 		spec: {
+			// ((10**18) * 5) / 1000
+			minPerImpression: '5000000000000000',
 			validators: [
 				{
 					id: '0x2892f6C41E0718eeeDd49D98D648C789668cA67d',

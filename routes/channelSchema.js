@@ -47,6 +47,7 @@ module.exports = {
 		validUntil: Joi.number().required(),
 		creator: creator(cfg),
 		spec: Joi.object({
+			minPerImpression: Joi.string().default('1'),
 			validators: validators(cfg)
 		}).required()
 	})
