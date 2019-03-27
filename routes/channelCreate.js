@@ -1,7 +1,7 @@
 const express = require('express')
 const { celebrate } = require('celebrate')
 const cfg = require('../cfg')
-const schema = require('./channelSchema')
+const schema = require('./schemas')
 const db = require('../db')
 
 function forAdapter(adapter) {

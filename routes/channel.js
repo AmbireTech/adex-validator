@@ -1,4 +1,6 @@
 const express = require('express')
+const { celebrate } = require('celebrate')
+const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
@@ -19,7 +21,13 @@ router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorM
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 
 // Submitting events/messages: requires auth
-router.post('/:id/validator-messages', authRequired, channelLoad, postValidatorMessages)
+router.post(
+	'/:id/validator-messages',
+	authRequired,
+	celebrate({ body: schema.validatorMessage }),
+	channelLoad,
+	postValidatorMessages
+)
 router.post('/:id/events', authRequired, channelIfActive, postEvents)
 
 // Implementations
@@ -153,14 +161,8 @@ function postValidatorMessages(req, res, next) {
 		res.sendStatus(401)
 		return
 	}
-
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	const { messages } = req.body
-	const isValid = Array.isArray(messages) && messages.every(isValidatorMsgValid)
-	if (!isValid) {
-		res.sendStatus(400)
-		return
-	}
 
 	const startTime = Date.now()
 	const toInsert = messages.map((msg, idx) =>
@@ -198,30 +200,6 @@ function postEvents(req, res, next) {
 }
 
 // Helpers
-function isValidatorMsgValid(msg) {
-	if (!msg) return false
-	// @TODO either make this more sophisticated, or rewrite this in a type-safe lang
-	// for example, we should validate if every value in balances is a positive integer
-	const acceptedType = [
-		'NewState',
-		'ApproveState',
-		'RejectState',
-		'Heartbeat',
-		'Accounting'
-	].includes(msg.type)
-	if (!acceptedType) return false
-
-	if (msg.type === 'ApproveState' || msg.type === 'NewState') {
-		if (!(typeof msg.stateRoot === 'string' && msg.stateRoot.length === 64)) return false
-	}
-	if (msg.type === 'NewState') {
-		return msg.balances && typeof msg.balances === 'object'
-	}
-	if (msg.type === 'Heartbeat') {
-		return typeof msg.timestamp === 'string'
-	}
-	return true
-}
 
 function isEventValid(ev) {
 	return ev && typeof ev.type === 'string'
