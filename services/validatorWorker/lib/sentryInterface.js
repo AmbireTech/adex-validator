@@ -24,10 +24,6 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 			},
 			body: JSON.stringify({ messages })
 		})
-		if (receiver.url === ourValidator.url) {
-			// We don't apply the timeout if we're sending to our own Sentry
-			return fetcher
-		}
 		return Promise.race([fetcher, getTimeout(receiver)])
 	}
 
@@ -81,8 +77,6 @@ async function fetchJson(url, opts) {
 }
 
 function onPropagationError(adapter, recv, msgs, e) {
-	// propagating to our own validator is not recoverable
-	if (recv.id === adapter.whoami()) throw e
 	// eslint-disable-next-line no-console
 	console.error(
 		`${LOG_PREFIX}: Unable to propagate ${summarizeMsgs(msgs)} to ${recv.id}: ${e.message || e}`
