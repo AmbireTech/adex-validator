@@ -45,6 +45,42 @@ module.exports = {
 		[
 			{
 				...dummyVals.channel,
+				spec: {
+					minPerImpression: '1acb',
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
+					]
+				}
+			},
+			cfg,
+			'ValidationError: child "spec" fails because [child "minPerImpression" fails because ["minPerImpression" with value "1acb" fails to match the required pattern: /^\\d+$/]]'
+		],
+		[
+			{
+				...dummyVals.channel,
+				spec: {
+					minPerImpression: '1',
+					validators: [
+						{
+							id: '0xa95743F561db3618D204C9a7c3ca55cDf0625107',
+							url: 'http://localhost:8005',
+							fee: '-100'
+						},
+						{
+							id: '0xa95743F561db3618D204C9a7c3ca55cDf0625107',
+							url: 'http://localhost:8006',
+							fee: '100'
+						}
+					]
+				}
+			},
+			cfg,
+			'ValidationError: child "spec" fails because [child "validators" fails because ["validators" at position 0 fails because [child "fee" fails because ["fee" with value "-100" fails to match the required pattern: /^\\d+$/]]]]'
+		],
+		[
+			{
+				...dummyVals.channel,
 				creator: 8
 			},
 			cfg,
@@ -98,11 +134,35 @@ module.exports = {
 				messages: [
 					{
 						...validatorMessage,
-						balances: { myAwesomePublisher: '4', anotherPublisher: '2' }
+						balances: { myAwesomePublisher: '214000000000000000000000', anotherPublisher: '2' }
 					}
 				]
 			},
 			null
+		],
+		// incorrect big number
+		[
+			{
+				messages: [
+					{
+						...validatorMessage,
+						balances: { myAwesomePublisher: '4000abc', anotherPublisher: '4' }
+					}
+				]
+			},
+			'ValidationError: child "messages" fails because ["messages" at position 0 fails because [child "balances" fails because [child "myAwesomePublisher" fails because ["myAwesomePublisher" with value "4000abc" fails to match the required pattern: /^\\d+$/]]]]'
+		],
+		// negative amount
+		[
+			{
+				messages: [
+					{
+						...validatorMessage,
+						balances: { myAwesomePublisher: '-4000000', anotherPublisher: '4' }
+					}
+				]
+			},
+			'ValidationError: child "messages" fails because ["messages" at position 0 fails because [child "balances" fails because [child "myAwesomePublisher" fails because ["myAwesomePublisher" with value "-4000000" fails to match the required pattern: /^\\d+$/]]]]'
 		],
 		[
 			{
