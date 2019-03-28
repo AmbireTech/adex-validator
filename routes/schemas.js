@@ -16,6 +16,8 @@ function depositAsset({ TOKEN_ADDRESS_WHITELIST }) {
 	return schema
 }
 
+const numericString = Joi.string().regex(/^\d+$/)
+
 function validators({ VALIDATORS_WHITELIST }) {
 	return Joi.array()
 		.items(
@@ -30,24 +32,25 @@ function validators({ VALIDATORS_WHITELIST }) {
 					})
 					.required(),
 				// @TODO validate that it can be cast to BN.js and it is not negative
-				fee: Joi.string().required()
+				fee: numericString.required()
 			})
 		)
 		.required()
 		.length(2)
 }
+
 module.exports = {
 	createChannel: cfg => ({
 		id: Joi.string().required(),
 		depositAsset: depositAsset(cfg),
 		// @TODO validate that it can be cast to BN.js and it is not negative
-		depositAmount: Joi.string().required(),
+		depositAmount: numericString.required(),
 		// UNIX timestamp; we're not using Jai.date() cause
 		// we want it to be stored in MongoDB as a number
 		validUntil: Joi.number().required(),
 		creator: creator(cfg),
 		spec: Joi.object({
-			minPerImpression: Joi.string().default('1'),
+			minPerImpression: numericString.default('1'),
 			validators: validators(cfg)
 		}).required()
 	}),
@@ -77,12 +80,12 @@ module.exports = {
 					}),
 				balances: Joi.object()
 					.keys()
-					.pattern(/./, Joi.string())
+					.pattern(/./, numericString)
 					.when('type', {
 						is: ['NewState', 'Accounting'],
 						then: Joi.object()
 							.keys()
-							.pattern(/./, Joi.string())
+							.pattern(/./, numericString)
 							.required()
 					}),
 				timestamp: Joi.string()
@@ -95,12 +98,12 @@ module.exports = {
 					}),
 				balancesBeforeFees: Joi.object()
 					.keys()
-					.pattern(/./, Joi.string())
+					.pattern(/./, numericString)
 					.when('type', {
 						is: 'Accounting',
 						then: Joi.object()
 							.keys()
-							.pattern(/./, Joi.string())
+							.pattern(/./, numericString)
 							.required()
 					}),
 				reason: Joi.string().when('type', {

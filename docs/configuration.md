@@ -9,7 +9,7 @@
 | CHANNELS_FIND_LIMIT | Limit on number of channels to return | 100 |
 | EVENTS_FIND_LIMIT | Limit on number of events to return | 100 |
 | MSGS_FIND_LIMIT | Limit on number of validator messages to return | 10 |
-| HEALTH_THRESHOLD_PROMILLES | The margin of error allowed before a channel is marked unhealthy | 950 |
+| HEALTH_THRESHOLD_PROMILLES | Threshold of correctness allowed before a channel is marked unhealthy | 950 |
 | PROPAGATION_TIMEOUT | HTTP request propagation timeout | 3000 |
 | CREATORS_WHITELIST | List of accepted channel creators; leave empty for all | [] |
 | MINIMAL_DEPOSIT | Least amount a channel is required to have to be accepted | 0 |
