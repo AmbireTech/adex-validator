@@ -9,6 +9,7 @@ const adapters = require('../adapters')
 const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
 const channelCreate = require('../routes/channelCreate')
+const { logger } = require('../services/lib')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -36,10 +37,9 @@ db.connect()
 	})
 	.then(function() {
 		// eslint-disable-next-line no-console
-		app.listen(port, () => console.log(`Sentry listening on port ${port}!`))
+		app.listen(port, () => logger.info(`Sentry listening on port ${port}!`))
 	})
 	.catch(function(err) {
-		// eslint-disable-next-line no-console
-		console.error(err)
+		logger.error(err)
 		process.exit(1)
 	})
