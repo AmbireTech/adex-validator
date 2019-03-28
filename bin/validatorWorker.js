@@ -41,7 +41,7 @@ adapter
 	})
 
 function allChannelsTick() {
-	return fetch(`${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`)
+	return fetch(`${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`, { timeout: cfg.LIST_TIMEOUT })
 		.then(res => res.json())
 		.then(({ channels }) => Promise.all(channels.map(validatorTick)))
 }
