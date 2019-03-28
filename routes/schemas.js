@@ -31,7 +31,6 @@ function validators({ VALIDATORS_WHITELIST }) {
 						scheme: ['http', 'https']
 					})
 					.required(),
-				// @TODO validate that it can be cast to BN.js and it is not negative
 				fee: numericString.required()
 			})
 		)
@@ -43,7 +42,6 @@ module.exports = {
 	createChannel: cfg => ({
 		id: Joi.string().required(),
 		depositAsset: depositAsset(cfg),
-		// @TODO validate that it can be cast to BN.js and it is not negative
 		depositAmount: numericString.required(),
 		// UNIX timestamp; we're not using Jai.date() cause
 		// we want it to be stored in MongoDB as a number
