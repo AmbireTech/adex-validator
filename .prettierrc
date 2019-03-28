@@ -4,7 +4,6 @@
   'semi': false,
   'useTabs': true,
   'tabWidth': 2,
-  'no-console': false,
   'prefer-destructuring': false,
   'consistent-return': false,
 }

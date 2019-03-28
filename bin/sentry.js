@@ -36,7 +36,6 @@ db.connect()
 		return adapter.init(argv)
 	})
 	.then(function() {
-		// eslint-disable-next-line no-console
 		app.listen(port, () => logger.info(`Sentry listening on port ${port}!`))
 	})
 	.catch(function(err) {
