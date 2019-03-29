@@ -228,10 +228,10 @@ function authRequired(req, res, next) {
 }
 
 function allowOnlyCreator(req, res, next) {
-	const {
-		channel: { creator },
-		session: { uid }
-	} = req
+	const containsCloseChannel = req.body.events.filter(event => event.type === 'CLOSE')
+	if (containsCloseChannel.length === 0) return
+	const creator = req.channel.creator
+	const uid = req.session.uid
 
 	if (creator !== uid) {
 		res.sendStatus(401)
