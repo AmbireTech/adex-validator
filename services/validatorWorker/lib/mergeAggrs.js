@@ -17,26 +17,57 @@ function mergeAggrs(accounting, aggrs, channel) {
 
 	// Build an intermediary balances representation
 	let balancesBeforeFees = toBNMap(accounting.balancesBeforeFees)
+	let remaining = getRemainingDepositAmount(depositAmount, balancesBeforeFees)
+	let shouldCloseChannel = false
 
 	// Merge in all the aggrs
 	aggrs.forEach(function(evAggr) {
+		if (evAggr.events.CLOSE_CHANNEL) {
+			shouldCloseChannel = true
+			return
+		}
 		newAccounting.lastEvAggr = new Date(
 			Math.max(newAccounting.lastEvAggr.getTime(), new Date(evAggr.created).getTime())
 		)
 		// @TODO do something about this hardcoded event type assumption
-		balancesBeforeFees = mergePayoutsIntoBalances(
+		const result = mergePayoutsIntoBalances(
 			balancesBeforeFees,
 			evAggr.events.IMPRESSION,
 			depositAmount
 		)
+		balancesBeforeFees = result.balancesBeforeFees
+		remaining = result.remaining
 	})
+
+	// check if should close channel
+	balancesBeforeFees = closeChannel(shouldCloseChannel, balancesBeforeFees, channel, remaining)
+
 	newAccounting.balancesBeforeFees = toBNStringMap(balancesBeforeFees)
 
 	// apply fees
 	const balances = getBalancesAfterFeesTree(balancesBeforeFees, channel)
 	newAccounting.balances = toBNStringMap(balances)
-
 	return { balances, newAccounting }
+}
+
+function closeChannel(close, balancesBeforeFees, channel, remaining) {
+	if (!close) return balancesBeforeFees
+
+	const newBalances = { ...balancesBeforeFees }
+	const { creator } = channel
+
+	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
+
+	// assign the reamining amount to the channel creator
+	newBalances[creator] = remaining
+	return newBalances
+}
+
+function getRemainingDepositAmount(depositAmount, balances) {
+	// total of state tree balance
+	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
+	// remaining of depositAmount
+	return depositAmount.sub(total)
 }
 
 // mergePayoutsIntoBalances: pure, (balances, events, depositAmount) -> newBalances
@@ -48,10 +79,7 @@ function mergePayoutsIntoBalances(balances, events, depositAmount) {
 
 	if (!events) return newBalances
 
-	// total of state tree balance
-	const total = Object.values(balances).reduce((a, b) => a.add(b), new BN(0))
-	// remaining of depositAmount
-	let remaining = depositAmount.sub(total)
+	let remaining = getRemainingDepositAmount(depositAmount, balances)
 
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
 
@@ -68,7 +96,7 @@ function mergePayoutsIntoBalances(balances, events, depositAmount) {
 		remaining = remaining.sub(toAdd)
 		assert.ok(!remaining.isNeg(), 'remaining must never be negative')
 	})
-	return newBalances
+	return { balancesBeforeFees: newBalances, remaining }
 }
 
 module.exports = { mergeAggrs }

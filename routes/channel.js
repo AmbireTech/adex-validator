@@ -28,7 +28,21 @@ router.post(
 	channelLoad,
 	postValidatorMessages
 )
-router.post('/:id/events', authRequired, channelIfActive, postEvents)
+router.post(
+	'/:id/events',
+	authRequired,
+	celebrate({ body: schema.events }),
+	channelIfActive,
+	postEvents
+)
+router.post(
+	'/:id/events/close',
+	authRequired,
+	channelIfActive,
+	channelLoad,
+	allowOnlyCreator,
+	postEvents
+)
 
 // Implementations
 function getStatus(req, res) {
@@ -207,6 +221,19 @@ function isEventValid(ev) {
 
 function authRequired(req, res, next) {
 	if (!req.session) {
+		res.sendStatus(401)
+		return
+	}
+	next()
+}
+
+function allowOnlyCreator(req, res, next) {
+	const {
+		channel: { creator },
+		session: { uid }
+	} = req
+
+	if (creator !== uid) {
 		res.sendStatus(401)
 		return
 	}

@@ -10,6 +10,16 @@ function reduce(userId, channel, initialAggr, ev) {
 	// @TODO: this is one of the places to add other ev types
 	if (ev.type === 'IMPRESSION') {
 		aggr.events.IMPRESSION = mergeImpressionEv(initialAggr.events.IMPRESSION, ev, channel)
+	} else if (ev.type === 'CLOSE_CHANNEL') {
+		const { creator, depositAmount } = channel
+		aggr.events.CLOSE_CHANNEL = {
+			eventCounts: {
+				[creator]: new BN(1)
+			},
+			eventPayouts: {
+				[creator]: depositAmount
+			}
+		}
 	}
 
 	return aggr

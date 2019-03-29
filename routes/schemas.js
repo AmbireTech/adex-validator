@@ -114,5 +114,15 @@ module.exports = {
 				})
 			})
 		)
+	},
+	events: {
+		events: Joi.array().items(
+			Joi.object({
+				type: Joi.string()
+					.invalid(['CLOSE_CHANNEL'])
+					.required(),
+				publisher: Joi.string()
+			})
+		)
 	}
 }

@@ -6,13 +6,15 @@ const dummyVals = {
 		leader: 'awesomeLeader',
 		follower: 'awesomeFollower',
 		user: 'awesomeTestUser',
-		publisher: 'myAwesomePublisher'
+		publisher: 'myAwesomePublisher',
+		creator: 'awesomeCreator',
 	},
 	auth: {
 		leader: 'AUTH_awesomeLeader',
 		follower: 'AUTH_awesomeFollower',
 		user: 'x8c9v1b2',
-		publisher: 'testing'
+		publisher: 'testing',
+		creator: 'awesomeCreator',
 	},
 	channel: {
 		id: 'awesomeTestChannel',

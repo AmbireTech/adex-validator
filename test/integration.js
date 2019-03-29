@@ -5,7 +5,15 @@ const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const { forceTick, wait, postEvents, genImpressions, getDummySig, fetchPost } = require('./lib')
+const {
+	forceTick,
+	wait,
+	postEvents,
+	genImpressions,
+	genCloseChannel,
+	getDummySig,
+	fetchPost
+} = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -310,6 +318,41 @@ tape('cannot exceed channel deposit', async function(t) {
 	await aggrAndTick()
 
 	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	const sum = Object.keys(balances)
+		.map(k => parseInt(balances[k], 10))
+		.reduce((a, b) => a + b, 0)
+	t.equal(sum, expectDeposit, 'balance does not exceed the deposit, but equals it')
+	t.end()
+})
+
+tape.only('should close channel', async function(t) {
+	const channel = { ...dummyVals.channel, id: 'exceedDepositTest2' }
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
+	const expectDeposit = parseInt(channel.depositAmount, 10)
+	await postEvents(leaderUrl, channel.id, genImpressions(10))
+	await aggrAndTick()
+
+	// send close channel event
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events/close`, dummyVals.auth.creator, {
+		events: genCloseChannel()
+	})
+	await aggrAndTick()
+
+	// check the creator is awarded the remaining token balance
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	t.equal(
+		balances[dummyVals.auth.creator],
+		'792',
+		'creator balance should be remaining channel deposit minus fees'
+	)
 	const sum = Object.keys(balances)
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
