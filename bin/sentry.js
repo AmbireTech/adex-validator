@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const express = require('express')
 const bodyParser = require('body-parser')
+const cors = require('cors')
 const { errors } = require('celebrate')
 const yargs = require('yargs')
 const db = require('../db')
@@ -23,6 +24,7 @@ const adapter = adapters[argv.adapter]
 const app = express()
 const port = process.env.PORT || 8005
 
+app.use(cors())
 app.use(bodyParser.json())
 app.use(authMiddleware.forAdapter(adapter))
 app.use('/channel', channelRoutes)
