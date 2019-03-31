@@ -23,12 +23,7 @@ function mergeAggrs(accounting, aggrs, channel) {
 		newAccounting.lastEvAggr = new Date(
 			Math.max(newAccounting.lastEvAggr.getTime(), new Date(evAggr.created).getTime())
 		)
-		// @TODO do something about this hardcoded event type assumption
-		balancesBeforeFees = mergePayoutsIntoBalances(
-			balancesBeforeFees,
-			evAggr.events.IMPRESSION,
-			depositAmount
-		)
+		balancesBeforeFees = mergePayoutsIntoBalances(balancesBeforeFees, evAggr.events, depositAmount)
 	})
 	newAccounting.balancesBeforeFees = toBNStringMap(balancesBeforeFees)
 
@@ -55,13 +50,14 @@ function mergePayoutsIntoBalances(balances, events, depositAmount) {
 
 	assert.ok(!remaining.isNeg(), 'remaining starts negative: total>depositAmount')
 
-	const { eventPayouts } = events
-	// take the eventPayouts key
-	Object.keys(eventPayouts).forEach(function(acc) {
+	// events is a map of type => ( eventPayouts | eventCounts ) -> acc -> amount
+	const allPayouts = Object.values(events)
+		.map(x => Object.entries(x.eventPayouts))
+		.reduce((a, b) => a.concat(b), [])
+	Object.values(allPayouts).forEach(function([acc, payout]) {
 		if (!newBalances[acc]) newBalances[acc] = new BN(0, 10)
 
-		const eventPayout = new BN(eventPayouts[acc])
-		const toAdd = BN.min(remaining, eventPayout)
+		const toAdd = BN.min(remaining, new BN(payout, 10))
 		assert.ok(!toAdd.isNeg(), 'toAdd must never be negative')
 
 		newBalances[acc] = newBalances[acc].add(toAdd)
