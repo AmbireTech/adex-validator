@@ -7,6 +7,7 @@ const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
+const { logger } = require('../services/lib')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -36,7 +37,7 @@ adapter
 	})
 	.catch(function(err) {
 		// eslint-disable-next-line no-console
-		console.error(err)
+		logger.error(err)
 		process.exit(1)
 	})
 
@@ -67,11 +68,9 @@ function wait(ms) {
 }
 
 function logPostChannelsTick(channels) {
-	// eslint-disable-next-line no-console
-	console.log(`validatorWorker: processed ${channels.length} channels`)
+	logger.info(`validatorWorker: processed ${channels.length} channels`)
 	if (channels.length >= cfg.MAX_CHANNELS) {
-		// eslint-disable-next-line no-console
-		console.log(
+		logger.info(
 			`validatorWorker: WARNING: channel limit cfg.MAX_CHANNELS=${cfg.MAX_CHANNELS} reached`
 		)
 	}

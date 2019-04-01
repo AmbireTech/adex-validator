@@ -1,5 +1,6 @@
 const { mergeAggrs } = require('./lib/mergeAggrs')
 const { toBNMap } = require('./lib')
+const { logger } = require('../lib')
 
 async function tick(iface, channel) {
 	const accounting = (await iface.getOurLatestMsg('Accounting')) || {
@@ -23,8 +24,7 @@ async function tick(iface, channel) {
 }
 
 function logMerge(aggrs, channel) {
-	// eslint-disable-next-line no-console
-	console.log(`validatorWorker: channel ${channel.id}: processing ${aggrs.length} event aggregates`)
+	logger.info(`validatorWorker: channel ${channel.id}: processing ${aggrs.length} event aggregates`)
 }
 
 module.exports = { tick }

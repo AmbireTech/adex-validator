@@ -41,6 +41,7 @@
     "lodash.throttle": "^4.1.1",
     "mongodb": "^3.1.10",
     "node-fetch": "^2.3.0",
+    "winston": "^3.2.1",
     "yargs": "^12.0.5"
   },
   "devDependencies": {

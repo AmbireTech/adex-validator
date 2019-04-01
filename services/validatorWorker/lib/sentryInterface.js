@@ -1,6 +1,7 @@
 const fetch = require('node-fetch')
 const assert = require('assert')
 const cfg = require('../../../cfg')
+const { logger } = require('../../lib')
 
 const LOG_PREFIX = 'sentryInterface'
 
@@ -77,16 +78,14 @@ async function fetchJson(url, opts) {
 }
 
 function onPropagationError(adapter, recv, msgs, e) {
-	// eslint-disable-next-line no-console
-	console.error(
+	logger.info(
 		`${LOG_PREFIX}: Unable to propagate ${summarizeMsgs(msgs)} to ${recv.id}: ${e.message || e}`
 	)
 }
 
 function logPropagate(adapter, recvs, channel, msgs) {
 	// @TODO detailed log for some types of messages, e.g. RejectState
-	// eslint-disable-next-line no-console
-	console.log(
+	logger.info(
 		`${LOG_PREFIX}(${adapter.whoami()}): channel ${channel.id}: propagating ${summarizeMsgs(
 			msgs
 		)} to ${recvs.length} validators`
