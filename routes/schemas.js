@@ -119,7 +119,7 @@ module.exports = {
 		events: Joi.array().items(
 			Joi.object({
 				type: Joi.string()
-					.invalid(['CLOSE_CHANNEL'])
+					.invalid(['CLOSE'])
 					.required(),
 				publisher: Joi.string()
 			})

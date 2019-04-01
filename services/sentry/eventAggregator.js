@@ -2,7 +2,7 @@ const throttle = require('lodash.throttle')
 const db = require('../../db')
 const cfg = require('../../cfg')
 const eventReducer = require('./lib/eventReducer')
-const { logger } = require('../lib')
+const logger = require('../lib')('sentry')
 
 const recorders = new Map()
 
@@ -28,7 +28,7 @@ function makeRecorder(channelId) {
 	const persist = function(toSave) {
 		saveQueue = saveQueue.then(function() {
 			return eventAggrCol.insertOne(toSave).catch(function(err) {
-				logger.error('sentry: eventAggregator fatal error; will re-try', err)
+				logger.error('eventAggregator fatal error; will re-try', err)
 				persist(toSave)
 			})
 		})
@@ -71,7 +71,7 @@ function makeRecorder(channelId) {
 }
 
 function logAggregate(channelId) {
-	logger.info(`sentry: channel ${channelId}: event aggregate produced`)
+	logger.info(`channel ${channelId}: event aggregate produced`)
 }
 
 module.exports = { record }
