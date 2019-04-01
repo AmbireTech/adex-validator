@@ -338,16 +338,17 @@ tape('should close channel', async function(t) {
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
 	const expectDeposit = parseInt(channel.depositAmount, 10)
 	await postEvents(leaderUrl, channel.id, genImpressions(10))
-	await aggrAndTick()
 
-	// send close channel event
+	// close channel event
 	await fetchPost(`${leaderUrl}/channel/${channel.id}/events/close`, dummyVals.auth.creator, {
 		events: genCloseChannel()
 	})
+
 	await aggrAndTick()
 
 	// check the creator is awarded the remaining token balance
 	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+
 	t.equal(
 		balances[dummyVals.auth.creator],
 		'792',

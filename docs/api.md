@@ -1,6 +1,6 @@
 # API
 
-### Channel
+## Channel
 
 #### Get a list of all channels
 
@@ -80,7 +80,7 @@ Get channel status, and the validator sig(s); should each node maintain all sigs
 
 #### Close channel
 
-Event to close a channel
+Event to close a channel. Only a channel creator is allowed to close a channel
 
 - URL
 
@@ -114,7 +114,7 @@ Event to close a channel
 
 ---
 
-### Validator Messages
+## Validator Messages
 
 #### Get chanel validator messages
 
@@ -156,57 +156,57 @@ Event to close a channel
 
 #### Submit channel validator messages
 
-    - URL
+- URL
 
-    /:id/validator-messages
+/:id/validator-messages
 
-    - METHOD
+- METHOD
 
-    `POST`
+`POST`
 
-    - HEADERS
-        `authorization [ eg. 'Bearer xxx']`
-        `content-type [application/json]`
+- HEADERS
+    `authorization [ eg. 'Bearer xxx']`
+    `content-type [application/json]`
 
-    - Data Params
+- Data Params
 
-    `type=[string] [Required in ('NewState', 'ApproveState', 'Heartbeat', 'Accounting', 'RejectState')]`
+`type=[string] [Required in ('NewState', 'ApproveState', 'Heartbeat', 'Accounting', 'RejectState')]`
 
-    `signature=[string]  [Required in ('NewState', 'ApproveState', 'Heartbeat')]`
+`signature=[string]  [Required in ('NewState', 'ApproveState', 'Heartbeat')]`
 
-    `stateRoot=[string]  [Required in ('NewState', 'ApproveState', 'Heartbeat')]`
+`stateRoot=[string]  [Required in ('NewState', 'ApproveState', 'Heartbeat')]`
 
-    `isHealthy=[boolean] [Required in ('ApproveState)]`
+`isHealthy=[boolean] [Required in ('ApproveState)]`
 
-    `reason=[string] [Required in ('RejectState')]`
+`reason=[string] [Required in ('RejectState')]`
 
-    `balancesBeforeFees=[object] [Required in ('Accounting')]`
+`balancesBeforeFees=[object] [Required in ('Accounting')]`
 
-    `balances=[object] [Required in ('Accounting')]`
+`balances=[object] [Required in ('Accounting')]`
 
-    `timestamp=[ISODate] [Required in ('Heartbeat')]`
+`timestamp=[ISODate] [Required in ('Heartbeat')]`
 
-    `lastEvAggr=[ISODate] [Required in ('Accounting')]`
+`lastEvAggr=[ISODate] [Required in ('Accounting')]`
 
 
-    - Response
+- Response
 
-        * Success 
+    * Success 
 
-            ```javascript
-            {
-                success: true
-            }
-            ```
+        ```javascript
+        {
+            success: true
+        }
+        ```
 
-        * Error
+    * Error
 
-            * Code: 401
-             Message: Unauthorized
-            * Code: 400
-            Message:Error occurred
+        * Code: 401
+            Message: Unauthorized
+        * Code: 400
+        Message:Error occurred
 
-### Validator Last Approved Messages
+#### Validator Last Approved Messages
 
 Get chanel validator last approved `NewState` and `ApproveState` messages
 
@@ -231,7 +231,7 @@ Get chanel validator last approved `NewState` and `ApproveState` messages
         {
             lastApproved: {
                 'newState': {},
-                'approveState: {}
+                'approveState': {}
             }
         }
         ```
@@ -241,9 +241,11 @@ Get chanel validator last approved `NewState` and `ApproveState` messages
         * Code: 401
         Message: Unauthorized
 
+---
 
-### Event Aggregates
+## Events
 
+#### Event Aggregates
 Get event aggregates received by a validator
 
 - URL
@@ -275,7 +277,7 @@ Get event aggregates received by a validator
         * Code: 401
         Message: Unauthorized
 
-### Events
+#### POST Events
 
 Submit channel events to a validator sentry
 
