@@ -70,7 +70,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 }
 
 async function fetchJson(url, opts) {
-	const resp = await fetch(url, opts)
+	const resp = await fetch(url, { timeout: cfg.FETCH_TIMEOUT, ...opts })
 	if (resp.status !== 200) {
 		return Promise.reject(new Error(`request to ${url} failed with status code ${resp.status}`))
 	}

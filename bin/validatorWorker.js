@@ -25,6 +25,8 @@ const { argv } = yargs
 
 const adapter = adapters[argv.adapter]
 
+const tickTimeout = cfg.VALIDATOR_TICK_TIMEOUT || 5000
+
 adapter
 	.init(argv)
 	.then(() => adapter.unlock(argv))
@@ -42,9 +44,15 @@ adapter
 	})
 
 function allChannelsTick() {
-	return fetch(`${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`)
-		.then(res => res.json())
-		.then(({ channels }) => Promise.all(channels.map(validatorTick)))
+	return (
+		fetch(`${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`, {
+			timeout: cfg.LIST_TIMEOUT
+		})
+			.then(res => res.json())
+			.then(({ channels }) => Promise.all(channels.map(validatorTick)))
+			// eslint-disable-next-line no-console
+			.catch(e => console.error('allChannelsTick failed', e))
+	)
 }
 
 function loopChannels() {
@@ -61,10 +69,19 @@ function validatorTick(channel) {
 	const isLeader = validatorIdx === 0
 	const tick = isLeader ? leader.tick : follower.tick
 	const iface = new SentryInterface(adapter, channel)
-	return tick(adapter, iface, channel)
+	return (
+		Promise.race([tick(adapter, iface, channel), timeout(`tick for ${channel.id} timed out`)])
+			// eslint-disable-next-line no-console
+			.catch(e => console.error(`${channel.id} tick failed`, e))
+	)
 }
+
 function wait(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function timeout(msg) {
+	return new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), tickTimeout))
 }
 
 function logPostChannelsTick(channels) {
