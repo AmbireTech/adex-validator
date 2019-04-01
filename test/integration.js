@@ -5,15 +5,7 @@ const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const {
-	forceTick,
-	wait,
-	postEvents,
-	genImpressions,
-	genCloseChannel,
-	getDummySig,
-	fetchPost
-} = require('./lib')
+const { forceTick, wait, postEvents, genImpressions, getDummySig, fetchPost } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -341,7 +333,7 @@ tape('should close channel', async function(t) {
 
 	// close channel event
 	await fetchPost(`${leaderUrl}/channel/${channel.id}/events/close`, dummyVals.auth.creator, {
-		events: genCloseChannel()
+		events: genImpressions(1, null, 'CLOSE')
 	})
 
 	await aggrAndTick()
