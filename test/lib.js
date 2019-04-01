@@ -57,11 +57,20 @@ function forceTick() {
 	])
 }
 
+function genCloseChannel() {
+	return [
+		{
+			type: 'CLOSE_CHANNEL'
+		}
+	]
+}
+
 module.exports = {
 	postEvents,
 	genImpressions,
 	getDummySig,
 	forceTick,
 	wait,
-	fetchPost
+	fetchPost,
+	genCloseChannel
 }

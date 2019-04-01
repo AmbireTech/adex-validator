@@ -28,7 +28,21 @@ router.post(
 	channelLoad,
 	postValidatorMessages
 )
-router.post('/:id/events', authRequired, channelIfActive, postEvents)
+router.post(
+	'/:id/events',
+	authRequired,
+	celebrate({ body: schema.events }),
+	channelIfActive,
+	postEvents
+)
+router.post(
+	'/:id/events/close',
+	authRequired,
+	channelIfActive,
+	channelLoad,
+	allowOnlyCreator,
+	postEvents
+)
 
 // Implementations
 function getStatus(req, res) {
@@ -209,6 +223,20 @@ function authRequired(req, res, next) {
 	if (!req.session) {
 		res.sendStatus(401)
 		return
+	}
+	next()
+}
+
+function allowOnlyCreator(req, res, next) {
+	const containsCloseChannel = req.body.events.filter(event => event.type === 'CLOSE')
+	if (containsCloseChannel.length > 0) {
+		const creator = req.channel.creator
+		const uid = req.session.uid
+
+		if (creator !== uid) {
+			res.sendStatus(401)
+			return
+		}
 	}
 	next()
 }
