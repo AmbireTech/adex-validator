@@ -30,14 +30,6 @@ function genImpressions(n, pubName) {
 	return events
 }
 
-function genCloseChannel() {
-	return [
-		{
-			type: 'CLOSE_CHANNEL'
-		}
-	]
-}
-
 function getDummySig(hash, from) {
 	return `Dummy adapter signature for ${hash} by ${from}`
 }
@@ -65,12 +57,20 @@ function forceTick() {
 	])
 }
 
+function genCloseChannel() {
+	return [
+		{
+			type: 'CLOSE_CHANNEL'
+		}
+	]
+}
+
 module.exports = {
 	postEvents,
 	genImpressions,
-	genCloseChannel,
 	getDummySig,
 	forceTick,
 	wait,
-	fetchPost
+	fetchPost,
+	genCloseChannel
 }

@@ -325,7 +325,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	t.end()
 })
 
-tape.only('should close channel', async function(t) {
+tape('should close channel', async function(t) {
 	const channel = { ...dummyVals.channel, id: 'exceedDepositTest2' }
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
