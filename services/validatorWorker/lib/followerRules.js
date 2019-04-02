@@ -2,7 +2,6 @@ const BN = require('bn.js')
 const cfg = require('../../../cfg')
 
 const HEALTH_THRESHOLD = new BN(cfg.HEALTH_THRESHOLD_PROMILLES)
-const ZERO = new BN(0)
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {
@@ -41,7 +40,7 @@ function isHealthy(our, approved) {
 }
 
 function sumBNs(bns) {
-	return bns.reduce((a, b) => a.add(b), ZERO)
+	return bns.reduce((a, b) => a.add(b), new BN(0))
 }
 
 function sumMap(all) {
@@ -51,7 +50,7 @@ function sumMap(all) {
 function sumMins(our, approved) {
 	// since the min(anything, non existant val) is always 0, we need to sum the mins of the intersecting keys only
 	// for this, it's sufficient to iterate the keys of whichever map
-	return sumBNs(Object.keys(our).map(k => BN.min(our[k], approved[k] || ZERO)))
+	return sumBNs(Object.keys(our).map(k => BN.min(our[k], approved[k] || new BN(0))))
 }
 
 module.exports = { isValidTransition, isHealthy }
