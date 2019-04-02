@@ -208,6 +208,11 @@ tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
 	t.deepEqual(sum(tree2), sum(tree2ExpectedResult))
 	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, channel)), tree2ExpectedResult)
 
+	// partially distributed; but validator is in the input tree
+	const tree3 = { a: '100', b: '2000', one: '200' }
+	const tree3Expected = { a: '99', b: '1980', one: '209', two: '11' }
+	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree3, channel)), tree3Expected)
+
 	t.end()
 })
 
