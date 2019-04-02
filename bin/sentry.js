@@ -9,7 +9,7 @@ const adapters = require('../adapters')
 const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
 const channelCreate = require('../routes/channelCreate')
-const { logger } = require('../services/lib')
+const logger = require('../services/lib')('sentry')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')

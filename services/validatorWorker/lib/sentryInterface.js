@@ -1,9 +1,7 @@
 const fetch = require('node-fetch')
 const assert = require('assert')
 const cfg = require('../../../cfg')
-const { logger } = require('../../lib')
-
-const LOG_PREFIX = 'sentryInterface'
+const logger = require('../../lib')('sentryInterface')
 
 // Using ES5-style initiation rather than ES6 classes
 // cause we want private properties
@@ -78,17 +76,15 @@ async function fetchJson(url, opts) {
 }
 
 function onPropagationError(adapter, recv, msgs, e) {
-	logger.info(
-		`${LOG_PREFIX}: Unable to propagate ${summarizeMsgs(msgs)} to ${recv.id}: ${e.message || e}`
-	)
+	logger.info(`Unable to propagate ${summarizeMsgs(msgs)} to ${recv.id}: ${e.message || e}`)
 }
 
 function logPropagate(adapter, recvs, channel, msgs) {
 	// @TODO detailed log for some types of messages, e.g. RejectState
 	logger.info(
-		`${LOG_PREFIX}(${adapter.whoami()}): channel ${channel.id}: propagating ${summarizeMsgs(
-			msgs
-		)} to ${recvs.length} validators`
+		`(${adapter.whoami()}) - channel ${channel.id}: propagating ${summarizeMsgs(msgs)} to ${
+			recvs.length
+		} validators`
 	)
 }
 

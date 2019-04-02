@@ -20,11 +20,11 @@ function postEvents(url, channelId, events) {
 	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.user, { events })
 }
 
-function genImpressions(n, pubName) {
+function genImpressions(n, pubName, type = 'IMPRESSION') {
 	const events = []
 	for (let i = 0; i < n; i += 1)
 		events.push({
-			type: 'IMPRESSION',
+			type,
 			publisher: pubName || defaultPubName
 		})
 	return events
@@ -57,20 +57,11 @@ function forceTick() {
 	])
 }
 
-function genCloseChannel() {
-	return [
-		{
-			type: 'CLOSE_CHANNEL'
-		}
-	]
-}
-
 module.exports = {
 	postEvents,
 	genImpressions,
 	getDummySig,
 	forceTick,
 	wait,
-	fetchPost,
-	genCloseChannel
+	fetchPost
 }

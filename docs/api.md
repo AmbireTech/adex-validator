@@ -96,6 +96,16 @@ Event to close a channel. Only a channel creator is allowed to close a channel
 
 `POST`
 
+- Data Params
+
+`events=[array] [Required] 
+    Example: [
+        {
+            'type': 'CLOSE'
+        }
+    ]
+`
+
 - Response
 
     * Success
