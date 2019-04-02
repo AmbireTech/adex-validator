@@ -42,7 +42,9 @@ function getBalancesAfterFeesTree(balances, channel) {
 		// BN.js always floors, that's why the math until now always results in sum(balancesAfterFees) <= sum(balances)
 		// however, it might be lower, so we will fix this rounding error by assigning the rest to the first validator
 		const feeWithRounding = idx === 0 ? fee.add(roundingErr) : fee
-		if (feeWithRounding.gt(new BN(0))) balancesAfterFees[v.id] = feeWithRounding
+		if (feeWithRounding.gt(new BN(0))) {
+			balancesAfterFees[v.id] = (balancesAfterFees[v.id] || new BN(0)).add(feeWithRounding)
+		}
 	})
 
 	return balancesAfterFees
