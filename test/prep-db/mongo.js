@@ -22,7 +22,7 @@ const dummyVals = {
 		depositAmount: '1000',
 		creator: 'awesomeCreator',
 		// UNIX timestamp for 2100-01-01
-		validUntil: 4102444800,
+		validUntil: 4102444800000,
 		spec: {
 			minPerImpression: '1',
 			validators: [
