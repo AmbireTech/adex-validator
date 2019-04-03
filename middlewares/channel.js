@@ -40,4 +40,16 @@ function channelIfActive(req, res, next) {
 	channelIfFind({ _id: req.params.id, 'spec.validators.id': req.whoami }, req, res, next)
 }
 
-module.exports = { channelLoad, channelIfExists, channelIfActive }
+// requires channelLoad
+function channelIfGrace(req, res, next) {
+	const { channel } = req
+	const currentTime = Date.now()
+	if (channel.spec.gracePeriod || currentTime > channel.validUntil) {
+		// prevent updating state
+		res.sendStatus(400)
+		return
+	}
+	next()
+}
+
+module.exports = { channelLoad, channelIfExists, channelIfActive, channelIfGrace }
