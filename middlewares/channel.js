@@ -48,14 +48,15 @@ function channelIfGrace(req, res, next) {
 	const isAllowedToSubmit = !spec.withdrawPeriodStart || currentTime < spec.withdrawPeriodStart
 	const withinTime = validUntil > currentTime / 1000
 
-	if (isAllowedToSubmit === false || !withinTime) {
+	if (!isAllowedToSubmit || !withinTime) {
 		const message = 'channel cannnot update state, channel'
 		// prevent updating state
-		return res.status(400).send({
+		res.status(400).send({
 			message: `${message} ${!isAllowedToSubmit ? 'in grace period' : 'has expired'}`
 		})
+		return
 	}
-	return next()
+	next()
 }
 
 module.exports = { channelLoad, channelIfExists, channelIfActive, channelIfGrace }
