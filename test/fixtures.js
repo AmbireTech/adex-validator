@@ -14,6 +14,27 @@ const validatorMessage = {
 		'Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader'
 }
 
+const adUnit = {
+	type: 'legacy_250x250',
+	mediaUrl: 'ipfs://xxxxxxxxxxxxxxxxxisgagsd',
+	mediaMime: 'image/jpeg',
+	targetUrl: 'https://xxx',
+	targeting: [
+		{
+			tag: 'London_UK',
+			score: 100
+		}
+	],
+	tags: [
+		{
+			tag: 'London_UK',
+			score: 100
+		}
+	],
+	owner: '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d',
+	created: Date.now()
+}
+
 module.exports = {
 	createChannel: [
 		[
@@ -126,6 +147,46 @@ module.exports = {
 			},
 			cfg,
 			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" at position 0 fails because [child "id" fails because ["id" must be one of [0xa95743F561db3618D204C9a7c3ca55cDf0625107]]]]]`
+		],
+		// correct adunit spec
+		[
+			{
+				...dummyVals.channel,
+				ipfs: 'ipfs://xxxxxxxxxxxxxxxxxisgagsd',
+				spec: {
+					...dummyVals.channel.spec,
+					adUnits: [
+						{
+							...adUnit
+						}
+					]
+				}
+			},
+			{
+				...cfg,
+				VALIDATORS_WHITELIST: null
+			},
+			null
+		],
+		// incorrect ipfs url
+		[
+			{
+				...dummyVals.channel,
+				spec: {
+					...dummyVals.channel.spec,
+					adUnits: [
+						{
+							...adUnit,
+							mediaUrl: 'xxxx:/sgsaddgd/sdgadgsag'
+						}
+					]
+				}
+			},
+			{
+				...cfg,
+				VALIDATORS_WHITELIST: null
+			},
+			'ValidationError: child "spec" fails because [child "adUnits" fails because ["adUnits" at position 0 fails because [child "mediaUrl" fails because ["mediaUrl" with value "xxxx:/sgsaddgd/sdgadgsag" fails to match the required pattern: /^ipfs:/]]]]'
 		]
 	],
 	validatorMessages: [
