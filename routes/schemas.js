@@ -47,9 +47,45 @@ module.exports = {
 		// we want it to be stored in MongoDB as a number
 		validUntil: Joi.number().required(),
 		creator: creator(cfg),
+		created: Joi.number(),
+		ipfs: Joi.string(),
+		title: Joi.string(),
+		description: Joi.string(),
+		archived: Joi.boolean(),
+		modified: Joi.number(),
 		spec: Joi.object({
 			minPerImpression: numericString.default('1'),
-			validators: validators(cfg)
+			validators: validators(cfg),
+			withdrawPeriodStart: Joi.number(),
+			adUnits: Joi.array().items(
+				Joi.object({
+					type: Joi.string().valid([
+						'legacy_250x250',
+						'legacy_468x60',
+						'legacy_336x280',
+						'legacy_728x90',
+						'legacy_120x600',
+						'legacy_160x600'
+					]),
+					mediaUrl: Joi.string().regex(/^ipfs:/),
+					mediaMime: Joi.string().valid(['image/jpeg', 'image/png']),
+					targetUrl: Joi.string(),
+					targeting: Joi.array().items(
+						Joi.object({
+							tag: Joi.string(),
+							score: Joi.number()
+						})
+					),
+					tags: Joi.array().items(
+						Joi.object({
+							tag: Joi.string(),
+							score: Joi.number()
+						})
+					),
+					owner: Joi.string(),
+					created: Joi.number()
+				})
+			)
 		}).required()
 	}),
 	validatorMessage: {

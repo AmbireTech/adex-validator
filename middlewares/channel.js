@@ -43,13 +43,19 @@ function channelIfActive(req, res, next) {
 // requires channelLoad
 function channelIfGrace(req, res, next) {
 	const { channel } = req
+	const { spec, validUntil } = channel
 	const currentTime = Date.now()
-	if (channel.spec.gracePeriod || currentTime > channel.validUntil) {
+	const isAllowedToSubmit = !spec.withdrawPeriodStart || currentTime < spec.withdrawPeriodStart
+	const withinTime = validUntil > currentTime / 1000
+
+	if (isAllowedToSubmit === false || !withinTime) {
+		const message = 'channel cannnot update state, channel'
 		// prevent updating state
-		res.sendStatus(400)
-		return
+		return res.status(400).send({
+			message: `${message} ${!isAllowedToSubmit ? 'in grace period' : 'has expired'}`
+		})
 	}
-	next()
+	return next()
 }
 
 module.exports = { channelLoad, channelIfExists, channelIfActive, channelIfGrace }

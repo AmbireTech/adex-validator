@@ -5,7 +5,15 @@ const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const { forceTick, wait, postEvents, genEvents, getDummySig, fetchPost } = require('./lib')
+const {
+	forceTick,
+	wait,
+	postEvents,
+	genImpressions,
+	getDummySig,
+	fetchPost,
+	parseResponse
+} = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -111,6 +119,72 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
 	t.end()
 })
+
+tape('should prevent submitting validator messages for expired channel', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'exceedDepositTest3',
+		validUntil: new Date('2001-01-01').getTime() / 1000
+	}
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+	// submit validator channel
+	const { newState } = await iface.getLastApproved()
+
+	const response = await fetchPost(
+		`${followerUrl}/channel/${channel.id}/validator-messages`,
+		dummyVals.auth.follower,
+		{ messages: [newState.msg] }
+	).then(result => parseResponse(result))
+
+	t.equal(
+		response.message,
+		'channel cannnot update state, channel has expired',
+		'should prevent submitting message for an expired channel'
+	)
+	t.end()
+})
+
+tape(
+	'should prevent submitting validator messages for a channel in withdraw period',
+	async function(t) {
+		const channel = {
+			...dummyVals.channel,
+			id: 'exceedDepositTest4',
+			validUntil: new Date().getTime() / 1000 + 20,
+			spec: {
+				...dummyVals.channel.spec,
+				withdrawPeriodStart: new Date().getTime() - 10
+			}
+		}
+
+		// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+		await Promise.all([
+			fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+			fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+		])
+
+		const { newState } = await iface.getLastApproved()
+
+		const response = await fetchPost(
+			`${followerUrl}/channel/${channel.id}/validator-messages`,
+			dummyVals.auth.leader,
+			{ messages: [newState.msg] }
+		).then(result => parseResponse(result))
+
+		t.equal(
+			response.message,
+			'channel cannnot update state, channel in grace period',
+			'should prevent submitting message for an expired channel'
+		)
+
+		t.end()
+	}
+)
 
 tape('new states are not produced when there are no new aggregates', async function(t) {
 	const url = `${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`
@@ -295,6 +369,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 
 tape('cannot exceed channel deposit', async function(t) {
 	const channel = { ...dummyVals.channel, id: 'exceedDepositTest' }
+
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
