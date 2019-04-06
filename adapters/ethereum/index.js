@@ -87,7 +87,6 @@ async function sessionFromToken(token) {
 		sess = { uid: payload.identity, ...sess }
 	} else {
 		sess = { uid: from, ...sess }
-
 	}
 	tokensVerified.set(tokenId, sess)
 	return sess
