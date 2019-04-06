@@ -1,6 +1,7 @@
 const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
 const { Wallet, Contract, utils, getDefaultProvider } = require('ethers')
 const coreABI = require('adex-protocol-eth/abi/AdExCore')
+const identityABI = require('adex-protocol-eth/abi/Identity')
 const formatAddress = require('ethers').utils.getAddress
 const util = require('util')
 const assert = require('assert')
@@ -12,7 +13,8 @@ const readFile = util.promisify(fs.readFile)
 const cfg = require('../../cfg')
 const ewt = require('./ewt')
 
-const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, getDefaultProvider(cfg.ETHEREUM_NETWORK))
+const provider = getDefaultProvider(cfg.ETHEREUM_NETWORK)
+const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
 // Auth tokens that we have verified (tokenId => session)
 const tokensVerified = new Map()
@@ -66,23 +68,28 @@ function getBalanceLeaf(acc, bal) {
 }
 
 // Authentication tokens
-function sessionFromToken(token) {
+async function sessionFromToken(token) {
 	const tokenId = token.slice(0, -16)
 	if (tokensVerified.has(tokenId)) {
 		// @TODO: validate era
 		return Promise.resolve(tokensVerified.get(tokenId))
 	}
-	return ewt.verify(token).then(function({ from, payload }) {
-		if (payload.id !== whoami()) {
-			return Promise.reject(
-				new Error('token payload.id !== whoami(): token was not intended for us')
-			)
-		}
-		// @TODO: validate era too
-		const sess = { uid: from, era: payload.era }
-		tokensVerified.set(tokenId, sess)
-		return sess
-	})
+	const { from, payload } = await ewt.verify(token)
+	if (payload.id !== whoami()) {
+		return Promise.reject(new Error('token payload.id !== whoami(): token was not intended for us'))
+	}
+	// @TODO: validate era here too
+	let sess = { era: payload.era }
+	if (typeof payload.identity === 'string' && payload.identity.length === 42) {
+		const id = new Contract(payload.identity, identityABI, provider)
+		const privLevel = await id.privileges(from)
+		if (privLevel === 0) return Promise.reject(new Error('insufficient privilege'))
+		sess = { uid: payload.identity, ...sess }
+	} else {
+		sess = { uid: from, ...sess }
+	}
+	tokensVerified.set(tokenId, sess)
+	return sess
 }
 
 function getSignableStateRoot(channelId, balanceRoot) {
@@ -106,6 +113,11 @@ function getAuthFor(validator) {
 		return token
 	})
 }
+
+// Signed with a dummy private key, to authenticate for the Tom validator
+// just a simple snippet to test authenticating via Identity contracts
+// const tokenToTry = 'eyJ0eXBlIjoiSldUIiwiYWxnIjoiRVRIIn0.eyJpZCI6IjB4Mjg5MmY2QzQxRTA3MThlZWVEZDQ5RDk4RDY0OEM3ODk2NjhjQTY3ZCIsImlkZW50aXR5IjoiMHhhN2JmMGM2MTc5NWQ0MDhjYjVkMjI4MGNhMDNlODBiOTQ3MWVmY2JiIiwiZXJhIjoyNTkwOTU2MiwiYWRkcmVzcyI6IjB4N2IwMjQxNDQ3RGVlMjc5MDk0ZDM5MTc5M0E0NTNkRTA0YzY0MTMxMCJ9.CKcBojUprJwWMQXEEK3CYiFYKINgJz0Iq-6T7monrs4nnAB8E7e-4D4e0K3QPUjjtqrNZkGG8drCqvZu48gm7Rw'
+// init(require('yargs').argv).then(() => sessionFromToken(tokenToTry)).then(console.log)
 
 // ~350ms for 100k operations; takes minutes to do it w/o cache
 // const work = () => getAuthFor({ id: whoami() }).then(t => sessionFromToken(t))
