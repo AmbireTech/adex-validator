@@ -79,15 +79,16 @@ async function sessionFromToken(token) {
 		return Promise.reject(new Error('token payload.id !== whoami(): token was not intended for us'))
 	}
 	// @TODO: validate era here too
+	let sess = { era: payload.era }
 	if (typeof payload.identity === 'string' && payload.identity.length === 42) {
 		const id = new Contract(payload.identity, identityABI, provider)
 		const privLevel = await id.privileges(from)
 		if (privLevel === 0) return Promise.reject(new Error('insufficient privilege'))
-		const sess = { uid: payload.identity, era: payload.era }
-		tokensVerified.set(tokenId, sess)
-		return sess
+		sess = { uid: payload.identity, ...sess }
+	} else {
+		sess = { uid: from, ...sess }
+
 	}
-	const sess = { uid: from, era: payload.era }
 	tokensVerified.set(tokenId, sess)
 	return sess
 }
