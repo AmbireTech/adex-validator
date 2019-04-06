@@ -5,7 +5,7 @@ const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const { forceTick, wait, postEvents, genImpressions, getDummySig, fetchPost } = require('./lib')
+const { forceTick, wait, postEvents, genEvents, getDummySig, fetchPost } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -26,7 +26,7 @@ function aggrAndTick() {
 }
 
 tape('submit events and ensure they are accounted for', async function(t) {
-	const evs = genImpressions(3).concat(genImpressions(2, 'anotherPublisher'))
+	const evs = genEvents(3).concat(genEvents(2, 'anotherPublisher'))
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
@@ -155,7 +155,7 @@ tape('health works correctly', async function(t) {
 			postEvents(
 				url,
 				dummyVals.channel.id,
-				genImpressions(url === followerUrl ? toFollower : toLeader)
+				genEvents(url === followerUrl ? toFollower : toLeader)
 			)
 		)
 	)
@@ -170,7 +170,7 @@ tape('health works correctly', async function(t) {
 	t.equal(lastApprove.isHealthy, false, 'channel is registered as unhealthy')
 
 	// send events to the leader so it catches up
-	await postEvents(leaderUrl, dummyVals.channel.id, genImpressions(diff))
+	await postEvents(leaderUrl, dummyVals.channel.id, genEvents(diff))
 	await aggrAndTick()
 	await forceTick()
 
@@ -306,7 +306,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
 	const expectDeposit = parseInt(channel.depositAmount, 10)
 	const evCount = expectDeposit + 1
-	await postEvents(leaderUrl, channel.id, genImpressions(evCount))
+	await postEvents(leaderUrl, channel.id, genEvents(evCount))
 	await aggrAndTick()
 
 	const { balances } = await channelIface.getOurLatestMsg('Accounting')
@@ -318,7 +318,7 @@ tape('cannot exceed channel deposit', async function(t) {
 })
 
 tape('should close channel', async function(t) {
-	const channel = { ...dummyVals.channel, id: 'exceedDepositTest2' }
+	const channel = { ...dummyVals.channel, id: 'closeTest' }
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -329,18 +329,17 @@ tape('should close channel', async function(t) {
 
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
 	const expectDeposit = parseInt(channel.depositAmount, 10)
-	await postEvents(leaderUrl, channel.id, genImpressions(10))
+	await postEvents(leaderUrl, channel.id, genEvents(10))
 
 	// close channel event
 	await fetchPost(`${leaderUrl}/channel/${channel.id}/events/close`, dummyVals.auth.creator, {
-		events: genImpressions(1, null, 'CLOSE')
+		events: genEvents(1, null, 'CLOSE')
 	})
 
 	await aggrAndTick()
 
 	// check the creator is awarded the remaining token balance
 	const { balances } = await channelIface.getOurLatestMsg('Accounting')
-
 	t.equal(
 		balances[dummyVals.auth.creator],
 		'792',

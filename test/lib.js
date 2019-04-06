@@ -20,7 +20,7 @@ function postEvents(url, channelId, events) {
 	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.user, { events })
 }
 
-function genImpressions(n, pubName, type = 'IMPRESSION') {
+function genEvents(n, pubName, type = 'IMPRESSION') {
 	const events = []
 	for (let i = 0; i < n; i += 1)
 		events.push({
@@ -59,7 +59,7 @@ function forceTick() {
 
 module.exports = {
 	postEvents,
-	genImpressions,
+	genEvents,
 	getDummySig,
 	forceTick,
 	wait,
