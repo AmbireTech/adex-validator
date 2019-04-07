@@ -47,55 +47,18 @@ module.exports = {
 		// we want it to be stored in MongoDB as a number
 		validUntil: Joi.number().required(),
 		creator: creator(cfg),
-		created: Joi.number(),
-		ipfs: Joi.string().regex(/^ipfs:/),
-		title: Joi.string(),
-		description: Joi.string(),
-		archived: Joi.boolean(),
-		modified: Joi.number(),
 		spec: Joi.object({
-			minPerImpression: numericString.default('1'),
 			validators: validators(cfg),
-			withdrawPeriodStart: Joi.number(),
-			adUnits: Joi.array().items(
-				Joi.object({
-					type: Joi.string()
-						.valid([
-							'legacy_250x250',
-							'legacy_468x60',
-							'legacy_336x280',
-							'legacy_728x90',
-							'legacy_120x600',
-							'legacy_160x600'
-						])
-						.required(),
-					mediaUrl: Joi.string()
-						.regex(/^ipfs:/)
-						.required(),
-					mediaMime: Joi.string()
-						.valid(['image/jpeg', 'image/png'])
-						.required(),
-					targetUrl: Joi.string().required(),
-					targeting: Joi.array()
-						.items(
-							Joi.object({
-								tag: Joi.string().required(),
-								score: Joi.number().required()
-							})
-						)
-						.required(),
-					tags: Joi.array()
-						.items(
-							Joi.object({
-								tag: Joi.string().required(),
-								score: Joi.number().required()
-							})
-						)
-						.required(),
-					owner: Joi.string().required(),
-					created: Joi.number().required()
-				})
-			)
+			withdrawPeriodStart: Joi.number()
+				.greater(Date.now())
+				.required(),
+			minPerImpression: numericString.default('1'),
+			title: Joi.string(),
+			description: Joi.string(),
+			created: Joi.number(),
+			ipfs: Joi.string().regex(/^ipfs:/),
+			archived: Joi.boolean(),
+			modified: Joi.number()
 		}).required()
 	}),
 	validatorMessage: {

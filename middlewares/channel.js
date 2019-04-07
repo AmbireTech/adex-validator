@@ -41,7 +41,7 @@ function channelIfActive(req, res, next) {
 }
 
 // requires channelLoad
-function channelIfGrace(req, res, next) {
+function channelIfWithdraw(req, res, next) {
 	const { channel } = req
 	const { spec, validUntil } = channel
 	const currentTime = Date.now()
@@ -59,4 +59,4 @@ function channelIfGrace(req, res, next) {
 	next()
 }
 
-module.exports = { channelLoad, channelIfExists, channelIfActive, channelIfGrace }
+module.exports = { channelLoad, channelIfExists, channelIfActive, channelIfWithdraw }

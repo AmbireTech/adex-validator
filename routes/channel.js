@@ -7,7 +7,7 @@ const {
 	channelLoad,
 	channelIfExists,
 	channelIfActive,
-	channelIfGrace
+	channelIfWithdraw
 } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 
@@ -31,7 +31,7 @@ router.post(
 	authRequired,
 	celebrate({ body: schema.validatorMessage }),
 	channelLoad,
-	channelIfGrace,
+	channelIfWithdraw,
 	postValidatorMessages
 )
 router.post(

@@ -120,6 +120,7 @@ tape('POST /channel: create channel', async function(t) {
 		...dummyVals.channel,
 		id: 'awesomeTestChannel2',
 		spec: {
+			...dummyVals.channel.spec,
 			minPerImpression: '1',
 			// as a mild hack, use different IDs so we don't tick on it
 			validators: [

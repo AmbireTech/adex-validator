@@ -162,6 +162,11 @@ async function validateChannel(channel) {
 		new BN(ourValidator.fee).gte(new BN(cfg.MINIMAL_FEE || 0)),
 		'channel validator fee is less than MINIMAL_FEE'
 	)
+	assert.ok(
+		channel.spec.withdrawPeriodStart > channel.created &&
+			channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
+		'channel withdrawPeriodStart is invalid'
+	)
 
 	// Check the on-chain status
 	const channelStatus = await core.states(ethChannel.hash(core.address))
