@@ -9,7 +9,7 @@ const {
 	forceTick,
 	wait,
 	postEvents,
-	genImpressions,
+	genEvents,
 	getDummySig,
 	fetchPost,
 	parseResponse
@@ -237,11 +237,7 @@ tape('health works correctly', async function(t) {
 
 	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
-			postEvents(
-				url,
-				dummyVals.channel.id,
-				genEvents(url === followerUrl ? toFollower : toLeader)
-			)
+			postEvents(url, dummyVals.channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
 		)
 	)
 
