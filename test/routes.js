@@ -2,7 +2,7 @@
 
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
-const { postEvents, fetchPost } = require('./lib')
+const { postEvents, fetchPost, parseResponse } = require('./lib')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -115,6 +115,32 @@ tape('POST /channel/{id}/events/close: a publisher but not a creator', async fun
 	t.end()
 })
 
+tape('Should not create channel with invalid withdrawPeriodStart', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'awesomeTestChannel2',
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart: new Date('2200-01-01').getTime(),
+			minPerImpression: '1',
+			// as a mild hack, use different IDs so we don't tick on it
+			validators: [
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
+			]
+		}
+	}
+	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(res =>
+		parseResponse(res)
+	)
+	t.equal(
+		resp.message,
+		'channel withdrawPeriodStart is invalid',
+		'should throw invalid withdrawPeriodStart error'
+	)
+	t.end()
+})
+
 tape('POST /channel: create channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,
@@ -124,8 +150,8 @@ tape('POST /channel: create channel', async function(t) {
 			minPerImpression: '1',
 			// as a mild hack, use different IDs so we don't tick on it
 			validators: [
-				{ id: 'awesomeLeader2', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: '100' }
+				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
+				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
 			]
 		}
 	}

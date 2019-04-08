@@ -52,7 +52,7 @@ function channelIfWithdraw(req, res, next) {
 		const message = 'channel cannnot update state, channel'
 		// prevent updating state
 		res.status(400).send({
-			message: `${message} ${!isAllowedToSubmit ? 'in grace period' : 'has expired'}`
+			message: `${message} ${!withinTime ? 'has expired' : 'in grace period'}`
 		})
 		return
 	}

@@ -124,7 +124,11 @@ tape('should prevent submitting validator messages for expired channel', async f
 	const channel = {
 		...dummyVals.channel,
 		id: 'exceedDepositTest3',
-		validUntil: new Date('2001-01-01').getTime() / 1000
+		validUntil: new Date().getTime() / 1000 + 3,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart: new Date().getTime() + 2000
+		}
 	}
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -132,6 +136,10 @@ tape('should prevent submitting validator messages for expired channel', async f
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
+
+	// wait till channel expires
+	await wait(3000)
+
 	// submit validator channel
 	const { newState } = await iface.getLastApproved()
 
@@ -158,7 +166,7 @@ tape(
 			validUntil: new Date().getTime() / 1000 + 20,
 			spec: {
 				...dummyVals.channel.spec,
-				withdrawPeriodStart: new Date().getTime() - 10
+				withdrawPeriodStart: new Date().getTime() + 2000
 			}
 		}
 
@@ -167,6 +175,9 @@ tape(
 			fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
 			fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 		])
+
+		// wait till withdrawPeriodStart reaches
+		await wait(2000)
 
 		const { newState } = await iface.getLastApproved()
 

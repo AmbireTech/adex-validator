@@ -7,10 +7,10 @@ const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
 const crypto = require('crypto')
-const BN = require('bn.js')
 
 const readFile = util.promisify(fs.readFile)
 const cfg = require('../../cfg')
+const lib = require('../lib')
 const ewt = require('./ewt')
 
 const provider = getDefaultProvider(cfg.ETHEREUM_NETWORK)
@@ -131,42 +131,16 @@ function getAuthFor(validator) {
 // e.g. MINIMAL_DEPOSIT, MINIMAL_FEE, CREATORS_WHITELIST
 async function validateChannel(channel) {
 	const ethChannel = toEthereumChannel(channel)
-	const addrEq = (a, b) => a.toLowerCase() === b.toLowerCase()
-	const ourValidator = channel.spec.validators.find(({ id }) => addrEq(address, id))
-	assert.ok(ourValidator, 'channel is not validated by us')
+
 	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
-	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
 	assert.ok(
 		channel.spec.validators.every(({ id }) => id === formatAddress(id)),
 		'channel.validators: all addresses are checksummed'
 	)
-	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
-		assert.ok(
-			channel.spec.validators.every(
-				({ id }) => addrEq(id, address) || cfg.VALIDATORS_WHITELIST.includes(id.toLowerCase())
-			),
-			'validators are not in the whitelist'
-		)
-	}
-	if (cfg.CREATORS_WHITELIST && cfg.CREATORS_WHITELIST.length) {
-		assert.ok(
-			cfg.CREATORS_WHITELIST.includes(channel.creator.toLowerCase()),
-			'channel.creator is not whitelisted'
-		)
-	}
-	assert.ok(
-		new BN(channel.depositAmount).gte(new BN(cfg.MINIMAL_DEPOSIT || 0)),
-		'channel.depositAmount is less than MINIMAL_DEPOSIT'
-	)
-	assert.ok(
-		new BN(ourValidator.fee).gte(new BN(cfg.MINIMAL_FEE || 0)),
-		'channel validator fee is less than MINIMAL_FEE'
-	)
-	assert.ok(
-		channel.spec.withdrawPeriodStart > channel.created &&
-			channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
-		'channel withdrawPeriodStart is invalid'
-	)
+
+	await lib.isChannelValid(channel, address).catch(function(err) {
+		throw err
+	})
 
 	// Check the on-chain status
 	const channelStatus = await core.states(ethChannel.hash(core.address))
