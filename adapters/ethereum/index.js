@@ -127,8 +127,6 @@ function getAuthFor(validator) {
 // for (var i=0; i!=100000; i++) p = p.then(work)
 // p.then(() => console.log(Date.now()-start))
 
-// Note: some of this validation can be made generic and shared between adapters if needed
-// e.g. MINIMAL_DEPOSIT, MINIMAL_FEE, CREATORS_WHITELIST
 async function validateChannel(channel) {
 	const ethChannel = toEthereumChannel(channel)
 
