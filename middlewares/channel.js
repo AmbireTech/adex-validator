@@ -40,4 +40,23 @@ function channelIfActive(req, res, next) {
 	channelIfFind({ _id: req.params.id, 'spec.validators.id': req.whoami }, req, res, next)
 }
 
-module.exports = { channelLoad, channelIfExists, channelIfActive }
+// requires channelLoad
+function channelIfWithdraw(req, res, next) {
+	const { channel } = req
+	const { spec, validUntil } = channel
+	const currentTime = Date.now()
+	const isAllowedToSubmit = !spec.withdrawPeriodStart || currentTime < spec.withdrawPeriodStart
+	const withinTime = validUntil > currentTime / 1000
+
+	if (!isAllowedToSubmit || !withinTime) {
+		const message = 'channel cannnot update state, channel'
+		// prevent updating state
+		res.status(400).send({
+			message: `${message} ${!withinTime ? 'has expired' : 'in grace period'}`
+		})
+		return
+	}
+	next()
+}
+
+module.exports = { channelLoad, channelIfExists, channelIfActive, channelIfWithdraw }

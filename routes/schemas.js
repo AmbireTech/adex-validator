@@ -48,8 +48,17 @@ module.exports = {
 		validUntil: Joi.number().required(),
 		creator: creator(cfg),
 		spec: Joi.object({
+			validators: validators(cfg),
+			withdrawPeriodStart: Joi.number()
+				.greater(Date.now())
+				.required(),
 			minPerImpression: numericString.default('1'),
-			validators: validators(cfg)
+			title: Joi.string(),
+			description: Joi.string(),
+			created: Joi.number(),
+			ipfs: Joi.string().regex(/^ipfs:/),
+			archived: Joi.boolean(),
+			modified: Joi.number()
 		}).required()
 	}),
 	validatorMessage: {
