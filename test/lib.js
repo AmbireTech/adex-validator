@@ -16,6 +16,13 @@ function fetchPost(url, authToken, body) {
 	})
 }
 
+function parseResponse(response) {
+	if (!response.ok) {
+		return response.text().then(error => JSON.parse(error))
+	}
+	return response.json()
+}
+
 function postEvents(url, channelId, events) {
 	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.user, { events })
 }
@@ -63,5 +70,6 @@ module.exports = {
 	getDummySig,
 	forceTick,
 	wait,
-	fetchPost
+	fetchPost,
+	parseResponse
 }

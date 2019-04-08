@@ -1,6 +1,7 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
 const assert = require('assert')
 const dummyVals = require('../../test/prep-db/mongo')
+const lib = require('../lib')
 
 let identity = null
 
@@ -54,8 +55,12 @@ function verify(signer, stateRoot, signature) {
 	return Promise.resolve(signer === from)
 }
 
-function validateChannel(channel) {
-	return Promise.resolve(parseInt(channel.depositAmount, 10) > 0)
+async function validateChannel(channel) {
+	await lib.isChannelValid(channel, identity).catch(function(err) {
+		throw err
+	})
+
+	return parseInt(channel.depositAmount, 10) > 0
 }
 
 module.exports = {

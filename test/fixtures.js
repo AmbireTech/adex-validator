@@ -46,14 +46,14 @@ module.exports = {
 			{
 				...dummyVals.channel,
 				spec: {
-					minPerImpression: '1acb',
-					validators: [
-						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
-					]
+					...dummyVals.channel.spec,
+					minPerImpression: '1acb'
 				}
 			},
-			cfg,
+			{
+				...cfg,
+				VALIDATORS_WHITELIST: null
+			},
 			'ValidationError: child "spec" fails because [child "minPerImpression" fails because ["minPerImpression" with value "1acb" fails to match the required pattern: /^\\d+$/]]'
 		],
 		[
@@ -126,6 +126,20 @@ module.exports = {
 			},
 			cfg,
 			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" at position 0 fails because [child "id" fails because ["id" must be one of [0xa95743F561db3618D204C9a7c3ca55cDf0625107]]]]]`
+		],
+		// correct adunit spec
+		[
+			{
+				...dummyVals.channel,
+				spec: {
+					...dummyVals.channel.spec
+				}
+			},
+			{
+				...cfg,
+				VALIDATORS_WHITELIST: null
+			},
+			null
 		]
 	],
 	validatorMessages: [

@@ -3,7 +3,12 @@ const { celebrate } = require('celebrate')
 const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
-const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
+const {
+	channelLoad,
+	channelIfExists,
+	channelIfActive,
+	channelIfWithdraw
+} = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 
 const router = express.Router()
@@ -26,6 +31,7 @@ router.post(
 	authRequired,
 	celebrate({ body: schema.validatorMessage }),
 	channelLoad,
+	channelIfWithdraw,
 	postValidatorMessages
 )
 router.post(
