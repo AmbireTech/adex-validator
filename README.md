@@ -132,6 +132,13 @@ DB_MONGO_NAME=adexValidatorFollower PORT=8006 node bin/sentry --adapter=dummy --
 node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeFollower --sentryUrl=http://localhost:8006
 ```
 
+## Recommendation
+
+### Linux
+* build-essentials
+* node v10 *
+
+\* Do not use [Snap](https://snapcraft.io/node) to install node, as it leads to unexpected failure of some integration tests, for reasons that we haven't investigated.
 
 ## Docker
 
