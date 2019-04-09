@@ -134,8 +134,9 @@ node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeFollower --se
 
 ## Recommendation
 
-* node v10 *
+### Linux
 * build-essentials
+* node v10 *
 
 \* Do not use [Snap](https://snapcraft.io/node) to install node, as it leads to unexpected failure of some integration tests, for reasons that we haven't investigated.
 
