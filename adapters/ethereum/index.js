@@ -136,9 +136,7 @@ async function validateChannel(channel) {
 		'channel.validators: all addresses are checksummed'
 	)
 
-	await lib.isChannelValid(channel, address).catch(function(err) {
-		throw err
-	})
+	await lib.isChannelValid(channel, address)
 
 	// Check the on-chain status
 	const channelStatus = await core.states(ethChannel.hash(core.address))
