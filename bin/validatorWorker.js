@@ -50,16 +50,14 @@ function allChannelsTick() {
 		})
 			.then(res => res.json())
 			.then(({ channels }) => Promise.all(channels.map(validatorTick)))
+			.then(allResults => logPostChannelsTick(allResults))
 			// eslint-disable-next-line no-console
 			.catch(e => console.error('allChannelsTick failed', e))
 	)
 }
 
 function loopChannels() {
-	Promise.all([allChannelsTick(), wait(cfg.WAIT_TIME)]).then(function([allResults]) {
-		logPostChannelsTick(allResults)
-		loopChannels()
-	})
+	Promise.all([allChannelsTick(), wait(cfg.WAIT_TIME)]).then(loopChannels)
 }
 
 function validatorTick(channel) {
