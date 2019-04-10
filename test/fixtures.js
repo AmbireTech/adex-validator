@@ -260,5 +260,6 @@ module.exports = {
 			},
 			'ValidationError: child "messages" fails because ["messages" at position 0 fails because [child "isHealthy" fails because ["isHealthy" is required]]]'
 		]
-	]
+	],
+	invalidChannels: [[{}]]
 }

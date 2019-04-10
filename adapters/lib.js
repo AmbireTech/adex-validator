@@ -1,8 +1,7 @@
 const BN = require('bn.js')
 const assert = require('assert')
-const cfg = require('../cfg')
 
-async function isChannelValid(channel, address) {
+async function isChannelValid(cfg, channel, address) {
 	const addrEq = (a, b) => a.toLowerCase() === b.toLowerCase()
 	const ourValidator = channel.spec.validators.find(({ id }) => addrEq(address, id))
 	assert.ok(ourValidator, 'channel is not validated by us')
@@ -32,8 +31,7 @@ async function isChannelValid(channel, address) {
 		'channel validator fee is less than MINIMAL_FEE'
 	)
 	assert.ok(
-		channel.spec.withdrawPeriodStart > Date.now() &&
-			channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
+		channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
 		'channel withdrawPeriodStart is invalid'
 	)
 }

@@ -30,6 +30,12 @@ PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS &
 # the sentries need time to start listening
 sleep 2
 
+# start ganache cli 
+# Ethereum local testnet
+./test/ethereum.sh
+
+# the ganache-cli need time to start up
+sleep 3
 
 # Run the integration tests
 if [ -n "$RUN_EXTERNAL" ]; then

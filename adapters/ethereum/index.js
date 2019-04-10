@@ -9,12 +9,8 @@ const fs = require('fs')
 const crypto = require('crypto')
 
 const readFile = util.promisify(fs.readFile)
-const cfg = require('../../cfg')
 const lib = require('../lib')
 const ewt = require('./ewt')
-
-const provider = getDefaultProvider(cfg.ETHEREUM_NETWORK)
-const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
 // Auth tokens that we have verified (tokenId => session)
 const tokensVerified = new Map()
@@ -26,92 +22,118 @@ let address = null
 let keystoreJson = null
 let wallet = null
 
-function init(opts) {
-	assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
-	return readFile(opts.keystoreFile).then(json => {
-		keystoreJson = json
-		address = formatAddress(`0x${JSON.parse(json).address}`)
-		// eslint-disable-next-line no-console
-		console.log(`Ethereum address: ${whoami()}`)
-	})
-}
+function Adapter(opts, cfg, ethProvider) {
+	const provider = ethProvider || getDefaultProvider(cfg.ETHEREUM_NETWORK)
+	const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
-function unlock(opts) {
-	assert.ok(keystoreJson != null, 'init() needs to be called before unlock()')
-	assert.ok(typeof opts.keystorePwd === 'string', 'keystorePwd required')
-	return Wallet.fromEncryptedJson(keystoreJson, opts.keystorePwd).then(w => {
-		wallet = w
-	})
-}
+	this.init = function() {
+		assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
+		return readFile(opts.keystoreFile).then(json => {
+			keystoreJson = json
+			address = formatAddress(`0x${JSON.parse(json).address}`)
+			// eslint-disable-next-line no-console
+			console.log(`Ethereum address: ${this.whoami()}`)
+		})
+	}
 
-function whoami() {
-	return address
-}
+	this.unlock = function() {
+		assert.ok(keystoreJson != null, 'init() needs to be called before unlock()')
+		assert.ok(typeof opts.keystorePwd === 'string', 'keystorePwd required')
+		return Wallet.fromEncryptedJson(keystoreJson, opts.keystorePwd).then(w => {
+			wallet = w
+			return wallet
+		})
+	}
 
-function sign(stateRoot) {
-	assert.ok(wallet, 'unlock() must be called before sign()')
-	// signMessage takes Arrayish, so Buffer too: https://docs.ethers.io/ethers.js/html/api-utils.html#arrayish
-	return wallet.signMessage(stateRoot)
-}
+	this.whoami = function() {
+		return address
+	}
 
-function verify(signer, stateRoot, signature) {
-	assert.ok(stateRoot, 'valid state root must be provided')
-	assert.ok(signature, 'valid signature must be provided')
-	assert.ok(signer, 'valid signer is required')
+	this.sign = function(stateRoot) {
+		assert.ok(wallet, 'unlock() must be called before sign()')
+		// signMessage takes Arrayish, so Buffer too: https://docs.ethers.io/ethers.js/html/api-utils.html#arrayish
+		return wallet.signMessage(stateRoot)
+	}
 
-	const from = utils.verifyMessage(stateRoot, signature)
-	return Promise.resolve(signer === from)
+	this.verify = function(signer, stateRoot, signature) {
+		assert.ok(stateRoot, 'valid state root must be provided')
+		assert.ok(signature, 'valid signature must be provided')
+		assert.ok(signer, 'valid signer is required')
+
+		const from = utils.verifyMessage(stateRoot, signature)
+		return Promise.resolve(signer === from)
+	}
+
+	this.validateChannel = async function(channel) {
+		const ethChannel = toEthereumChannel(channel)
+		
+		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
+		assert.ok(
+			channel.spec.validators.every(({ id }) => id === formatAddress(id)),
+			'channel.validators: all addresses are checksummed'
+		)
+
+		await lib.isChannelValid(cfg, channel, address)
+		// Check the on-chain status
+		const channelStatus = await core.states(ethChannel.hash(core.address))
+		assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
+
+		// Channel is valid
+		return true
+	}
+
+	// Authentication tokens
+	this.sessionFromToken = async function(token) {
+		const tokenId = token.slice(0, -16)
+		if (tokensVerified.has(tokenId)) {
+			// @TODO: validate era
+			return Promise.resolve(tokensVerified.get(tokenId))
+		}
+		const { from, payload } = await ewt.verify(token)
+		if (payload.id !== this.whoami()) {
+			return Promise.reject(
+				new Error('token payload.id !== whoami(): token was not intended for us')
+			)
+		}
+		// @TODO: validate era here too
+		let sess = { era: payload.era }
+		if (typeof payload.identity === 'string' && payload.identity.length === 42) {
+			const id = new Contract(payload.identity, identityABI, provider)
+			const privLevel = await id.privileges(from)
+			if (privLevel === 0) return Promise.reject(new Error('insufficient privilege'))
+			sess = { uid: payload.identity, ...sess }
+		} else {
+			sess = { uid: from, ...sess }
+		}
+		tokensVerified.set(tokenId, sess)
+		return sess
+	}
+
+	this.getAuthFor = function(validator) {
+		// we will self-generate a challenge to contain whoever we're authenticating to, the validity period and the current time
+		// we will sign that challenge and use that, and build a complete token using the EWT (JWT subset) standard
+		// we would allow /session_revoke, which forever revokes the session (early; otherwise it will self-revoke when the validity period expires)
+		if (tokensForAuth.has(validator.id)) {
+			return Promise.resolve(tokensForAuth.get(validator.id))
+		}
+
+		const payload = {
+			id: validator.id,
+			era: Math.floor(Date.now() / 60000)
+		}
+		return ewt.sign(wallet, payload).then(function(token) {
+			tokensForAuth.set(validator.id, token)
+			return token
+		})
+	}
 }
 
 function getBalanceLeaf(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
-// Authentication tokens
-async function sessionFromToken(token) {
-	const tokenId = token.slice(0, -16)
-	if (tokensVerified.has(tokenId)) {
-		// @TODO: validate era
-		return Promise.resolve(tokensVerified.get(tokenId))
-	}
-	const { from, payload } = await ewt.verify(token)
-	if (payload.id !== whoami()) {
-		return Promise.reject(new Error('token payload.id !== whoami(): token was not intended for us'))
-	}
-	// @TODO: validate era here too
-	let sess = { era: payload.era }
-	if (typeof payload.identity === 'string' && payload.identity.length === 42) {
-		const id = new Contract(payload.identity, identityABI, provider)
-		const privLevel = await id.privileges(from)
-		if (privLevel === 0) return Promise.reject(new Error('insufficient privilege'))
-		sess = { uid: payload.identity, ...sess }
-	} else {
-		sess = { uid: from, ...sess }
-	}
-	tokensVerified.set(tokenId, sess)
-	return sess
-}
-
 function getSignableStateRoot(channelId, balanceRoot) {
 	return Channel.getSignableStateRoot(channelId, balanceRoot)
-}
-
-function getAuthFor(validator) {
-	// we will self-generate a challenge to contain whoever we're authenticating to, the validity period and the current time
-	// we will sign that challenge and use that, and build a complete token using the EWT (JWT subset) standard
-	// we would allow /session_revoke, which forever revokes the session (early; otherwise it will self-revoke when the validity period expires)
-	if (tokensForAuth.has(validator.id)) {
-		return Promise.resolve(tokensForAuth.get(validator.id))
-	}
-
-	const payload = {
-		id: validator.id,
-		era: Math.floor(Date.now() / 60000)
-	}
-	return ewt.sign(wallet, payload).then(function(token) {
-		tokensForAuth.set(validator.id, token)
-		return token
-	})
 }
 
 // Signed with a dummy private key, to authenticate for the Tom validator
@@ -127,24 +149,6 @@ function getAuthFor(validator) {
 // for (var i=0; i!=100000; i++) p = p.then(work)
 // p.then(() => console.log(Date.now()-start))
 
-async function validateChannel(channel) {
-	const ethChannel = toEthereumChannel(channel)
-
-	assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
-	assert.ok(
-		channel.spec.validators.every(({ id }) => id === formatAddress(id)),
-		'channel.validators: all addresses are checksummed'
-	)
-
-	await lib.isChannelValid(channel, address)
-
-	// Check the on-chain status
-	const channelStatus = await core.states(ethChannel.hash(core.address))
-	assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
-
-	// Channel is valid
-	return true
-}
 function toEthereumChannel(channel) {
 	const specHash = crypto
 		.createHash('sha256')
@@ -193,15 +197,9 @@ testValidation().catch(e => console.error(e))
 */
 
 module.exports = {
-	init,
-	unlock,
-	whoami,
-	sign,
+	Adapter,
 	getBalanceLeaf,
-	sessionFromToken,
-	getAuthFor,
 	MerkleTree,
-	verify,
-	getSignableStateRoot,
-	validateChannel
+	toEthereumChannel,
+	getSignableStateRoot
 }
