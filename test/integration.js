@@ -123,7 +123,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 tape('should prevent submitting validator messages for expired channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'exceedDepositTest3',
+		id: 'expiredChannelTest',
 		validUntil: new Date().getTime() / 1000 + 3,
 		spec: {
 			...dummyVals.channel.spec,
@@ -162,7 +162,7 @@ tape(
 	async function(t) {
 		const channel = {
 			...dummyVals.channel,
-			id: 'exceedDepositTest4',
+			id: 'withdrawPeriodTest',
 			validUntil: new Date().getTime() / 1000 + 20,
 			spec: {
 				...dummyVals.channel.spec,
