@@ -144,7 +144,7 @@ async function retrieveLastApproved(channel) {
 				'msg.type': 'ApproveState'
 			},
 			{
-				projection: VALIDATOR_MSGS_PROJ,
+				projection: VALIDATOR_MSGS_PROJ
 			}
 		)
 		.sort({ received: -1 })
@@ -162,7 +162,7 @@ async function retrieveLastApproved(channel) {
 			'msg.stateRoot': approveState.msg.stateRoot
 		},
 		{
-			projection: VALIDATOR_MSGS_PROJ,
+			projection: VALIDATOR_MSGS_PROJ
 		}
 	)
 	if (newState) {

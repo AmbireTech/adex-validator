@@ -10,7 +10,7 @@ function forAdapter(adapter) {
 		const channelsCol = db.getMongo().collection('channels')
 		const channel = {
 			...req.body,
-			_id: req.body.id,
+			_id: req.body.id
 		}
 
 		adapter
