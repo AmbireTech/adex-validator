@@ -123,7 +123,7 @@ tape('Should not create channel with invalid withdrawPeriodStart', async functio
 			...dummyVals.channel.spec,
 			withdrawPeriodStart: new Date('2200-01-01').getTime(),
 			minPerImpression: '1',
-			// as a mild hack, use different IDs so we don't tick on it
+			maxPerImpression: '1',
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
 				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
@@ -148,7 +148,9 @@ tape('POST /channel: create channel', async function(t) {
 		spec: {
 			...dummyVals.channel.spec,
 			minPerImpression: '1',
-			// as a mild hack, use different IDs so we don't tick on it
+			maxPerImpression: '1',
+			adUnits: [],
+			targeting: [{ tag: 'gender_female', score: 17 }],
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
 				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
