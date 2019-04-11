@@ -165,8 +165,6 @@ tape('POST /channel: create channel', async function(t) {
 		res.json()
 	)
 	t.ok(channelStatus.channel, 'has channelStatus.channel')
-	// remove created property
-	delete channelStatus.channel.created
 	t.deepEqual(channelStatus.channel, channel, 'channel is the same')
 
 	const respFail = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel)

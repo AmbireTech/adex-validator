@@ -32,7 +32,7 @@ async function isChannelValid(channel, address) {
 		'channel validator fee is less than MINIMAL_FEE'
 	)
 	assert.ok(
-		channel.spec.withdrawPeriodStart > channel.created &&
+		channel.spec.withdrawPeriodStart > Date.now() &&
 			channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
 		'channel withdrawPeriodStart is invalid'
 	)

@@ -55,7 +55,6 @@ module.exports = {
 			minPerImpression: numericString.default('1'),
 			title: Joi.string(),
 			description: Joi.string(),
-			created: Joi.number(),
 			ipfs: Joi.string().regex(/^ipfs:/),
 			archived: Joi.boolean(),
 			modified: Joi.number()

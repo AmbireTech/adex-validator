@@ -11,7 +11,6 @@ function forAdapter(adapter) {
 		const channel = {
 			...req.body,
 			_id: req.body.id,
-			created: Date.now()
 		}
 
 		adapter
