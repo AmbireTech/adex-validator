@@ -50,7 +50,6 @@ module.exports = {
 		spec: Joi.object({
 			validators: validators(cfg),
 			withdrawPeriodStart: Joi.number()
-				.greater(Date.now())
 				.required(),
 			minPerImpression: numericString.default('1'),
 			title: Joi.string(),
