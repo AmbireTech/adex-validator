@@ -76,7 +76,6 @@ function getEventAggregates(req, res, next) {
 		.find(query, { projection })
 		.limit(cfg.EVENTS_FIND_LIMIT)
 		.sort({ created: 1 })
-		.hint({ channelId: 1, created: 1 })
 		.toArray()
 		.then(events => res.send({ channel, events }))
 		.catch(next)
@@ -97,7 +96,6 @@ function getList(req, res, next) {
 		.find(query, { projection: { _id: 0 } })
 		.limit(cfg.CHANNELS_FIND_LIMIT)
 		.skip(skip || 0)
-		.hint({ validUntil: 1, 'spec.validators.id': 1 })
 		.toArray()
 		.then(function(channels) {
 			res.send({ channels })
@@ -123,7 +121,6 @@ function getValidatorMessages(req, res, next) {
 		.find(query, { projection: VALIDATOR_MSGS_PROJ })
 		.sort({ received: -1 })
 		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
-		.hint({ channnelId: 1, from: 1, 'msg.type': 1, received: 1 })
 		.toArray()
 		.then(function(validatorMessages) {
 			res.send({ validatorMessages })
@@ -148,7 +145,6 @@ async function retrieveLastApproved(channel) {
 			},
 			{
 				projection: VALIDATOR_MSGS_PROJ,
-				hint: { channnelId: 1, from: 1, 'msg.type': 1, received: 1 }
 			}
 		)
 		.sort({ received: -1 })
@@ -167,7 +163,6 @@ async function retrieveLastApproved(channel) {
 		},
 		{
 			projection: VALIDATOR_MSGS_PROJ,
-			hint: { 'msg.type': 1, 'msg.stateRoot': 1 }
 		}
 	)
 	if (newState) {

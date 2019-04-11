@@ -56,10 +56,7 @@ function verify(signer, stateRoot, signature) {
 }
 
 async function validateChannel(channel) {
-	await lib.isChannelValid(channel, identity).catch(function(err) {
-		throw err
-	})
-
+	await lib.isChannelValid(channel, identity)
 	return parseInt(channel.depositAmount, 10) > 0
 }
 
