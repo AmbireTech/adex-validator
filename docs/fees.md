@@ -23,7 +23,7 @@ for validating the transaction. The cost of which we should evenly distribute as
 | `Publisher Two` balance |  |  | `200 DAI` |
 | `Publisher One` impressions to account for | # impressions * impression price | `5 impressions` * `10 DAI` | `50 DAI` |
 | `Publisher One` balance after impressions | `Publisher One` balance + `Publisher One` impressions to account for | `100 DAI` + `50 DAI` | `150 DAI` |
-| Total distribution | `Publisher One` balance + `Publisher Two` balance | `150 DAI` + `200 DAI` | `300 DAI` |
+| Total distribution | `Publisher One` balance after impressions + `Publisher Two` balance | `150 DAI` + `200 DAI` | `300 DAI` |
 | Total validator fee | `Leader validator` fee + `Follower validator` fee | 2 x `50 DAI` | `100 DAI` |
 | Deposit to distribute | Total deposit - Total validator fee | `10 000 DAI` - `100 DAI` | `9 900 DAI` |
 | `Publisher One` adjusted balance after fee | `Publisher One` balance * Deposit to distribute / Deposit | `150 DAI` * `9 900 DAI` / `10 000 DAI` | `148 DAI` (`148.5 DAI`, but floored *) |
