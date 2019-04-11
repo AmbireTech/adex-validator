@@ -1,30 +1,23 @@
 # Fees
 
 ## Fees distribution
+Given that we have a deposit on the channl of `10 000 DAI` and we have channel participants
+with the current balance tree being:
 
-Suppose we have 1 channel with 2 publishers `Publisher One` and `Publisher Two` and creator of the channel `Creator`
-with the minimum cost per Impression being `1 DAI`.
-The channel deposit is `10 000 DAI` made by `Creator` and he is __not__ participating as a Publisher.
-`Publisher One` currently has `100 DAI` and `Publisher Two` - `200 DAI`.
-On the channel we have 2 validators `Leader One` and `Follower One` and both of their fees is `50 DAI`.
+| Channel participant | Amount    |
+|---------------------|:---------:|
+| `Publisher One`     | `150 DAI` |
+| `Publisher Two`     | `200 DAI` |
 
-Let's say we have 5 impressions on `Publisher One` and each impression pays out `10 DAI`.
-In this case `Publisher One` has received `50 DAI`, but there is a fee that needs to be paid to the validators,
-for validating the transaction. The cost of which we should evenly distribute as follows:
+We need to distribute the fee required for the validators, between the validators and fees accordingly:
+
+| Validator      | Fee      |
+|----------------|:--------:|
+| `Leader One`   | `50 DAI` |
+| `Follower One` | `50 DAI` |
 
 | What do we calculate | Pseudo calculation | Calculation | Total amount |
 |----------------------|--------------------|-------------|--------------|
-| Deposit |  |  | `10 000 DAI` |
-| `Leader One` validator fee |  |  | `50 DAI` |
-| `Leader One` balance |  |  | `50 DAI` |
-| `Follower One` validator fee |  |  | `50 DAI` |
-| `Follower One` balance |  |  | `50 DAI` |
-| `Publisher One` balance |  |  | `100 DAI` |
-| `Publisher Two` balance |  |  | `200 DAI` |
-| `Publisher One` impressions to account for | # impressions * impression price | `5 impressions` * `10 DAI` | `50 DAI` |
-| `Publisher One` balance after impressions | `Publisher One` balance + `Publisher One` impressions to account for | `100 DAI` + `50 DAI` | `150 DAI` |
-| Total distribution | `Publisher One` balance after impressions + `Publisher Two` balance | `150 DAI` + `200 DAI` | `300 DAI` |
-| Total validator fee | `Leader validator` fee + `Follower validator` fee | 2 x `50 DAI` | `100 DAI` |
 | Deposit to distribute | Total deposit - Total validator fee | `10 000 DAI` - `100 DAI` | `9 900 DAI` |
 | `Publisher One` adjusted balance after fee | `Publisher One` balance * Deposit to distribute / Deposit | `150 DAI` * `9 900 DAI` / `10 000 DAI` | `148 DAI` (`148.5 DAI`, but floored *) |
 | `Publisher Two` adjusted balance after fee | `Publisher Two` balance * Deposit to distribute / Deposit | `200 DAI` * `9 900 DAI` / `10 000 DAI` | `198 DAI` |
@@ -38,14 +31,14 @@ for validating the transaction. The cost of which we should evenly distribute as
 | `Follower One` fee with rounding | `Follower One` validator fee for work + Rounding error | `1 DAI` + `0 DAI` (in our case) | `1 DAI` |
 | `Follower One` balance after fee | `Follower One` current balance + `Follower One` fee with rounding | `0 DAI` + `1 DAI` | `1 DAI` |
 
-At the end we have the following balances:
+At the end we have the following balance tree:
 
-| Channel participant         | Amount    |
-|-----------------------------|:---------:|
-| `Publisher One`             | `148 DAI` |
-| `Publisher Two`             | `198 DAI` |
-| `Leader One` validator      | `1 DAI`   |
-| `Follower One` validator    | `1 DAI`   |
+| Channel participant | Amount    |
+|---------------------|:---------:|
+| `Publisher One`     | `148 DAI` |
+| `Publisher Two`     | `198 DAI` |
+| `Leader One`        | `1 DAI`   |
+| `Follower One`      | `1 DAI`   |
 
 \* Since we are using [bn.js](https://github.com/indutny/bn.js) it floors all the calculations and we need to adjust
 for this error in the distribution of the fee
