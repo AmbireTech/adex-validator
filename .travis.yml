@@ -7,6 +7,5 @@ node_js:
 script:
         - npm run lint
         - npm test
-        - npm run test-adapter
         - npm run test-integration
         #- npm run test-integration-external
