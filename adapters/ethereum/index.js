@@ -22,7 +22,7 @@ let address = null
 let keystoreJson = null
 let wallet = null
 
-function Adapter(opts, cfg, ethProvider = null) {
+function Adapter(opts, cfg, ethProvider) {
 	const provider = ethProvider || getDefaultProvider(cfg.ETHEREUM_NETWORK)
 	const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
@@ -128,11 +128,11 @@ function Adapter(opts, cfg, ethProvider = null) {
 	}
 }
 
-Adapter.prototype.getBalanceLeaf = function (acc, bal) {
+Adapter.prototype.getBalanceLeaf = function(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
-Adapter.prototype.getSignableStateRoot = function (channelId, balanceRoot) {
+Adapter.prototype.getSignableStateRoot = function(channelId, balanceRoot) {
 	return Channel.getSignableStateRoot(channelId, balanceRoot)
 }
 

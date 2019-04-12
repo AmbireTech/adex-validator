@@ -8,9 +8,11 @@ const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
 const schema = require('../routes/schemas')
-const dummyAdapter = require('../adapters/dummy')
+const { Adapter } = require('../adapters/dummy')
 const fixtures = require('./fixtures')
+const dummyVals = require('./prep-db/mongo')
 
+const dummyAdapter = new Adapter({ dummyIdentity: dummyVals.ids.leader }, {})
 const dummyChannel = { depositAmount: new BN(100) }
 
 const sum = tree =>

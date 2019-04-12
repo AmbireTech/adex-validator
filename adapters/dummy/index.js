@@ -57,11 +57,11 @@ function Adapter(opts, cfg) {
 	}
 }
 
-Adapter.prototype.getBalanceLeaf = function (acc, bal) {
+Adapter.prototype.getBalanceLeaf = function(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
-Adapter.prototype.getSignableStateRoot = function (channelId, balanceRoot) {
+Adapter.prototype.getSignableStateRoot = function(channelId, balanceRoot) {
 	return Channel.getSignableStateRoot(channelId, balanceRoot)
 }
 

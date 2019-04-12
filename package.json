@@ -9,7 +9,8 @@
     "test": "node test/index.js",
     "test-adapter": "node test/adapter.js",
     "test-integration": "./test/run-integration-tests.sh",
-    "test-integration-external": "./test/run-integration-tests.sh external"
+    "test-integration-external": "./test/run-integration-tests.sh external",
+    "all-tests": "./test.sh"
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
