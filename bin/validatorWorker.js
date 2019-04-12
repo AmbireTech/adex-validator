@@ -23,13 +23,13 @@ const { argv } = yargs
 	.describe('singleTick', 'run a single tick and exit')
 	.demandOption(['adapter', 'sentryUrl'])
 
-const adapter = adapters[argv.adapter]
+const adapter = new adapters[argv.adapter].Adapter(argv, cfg)
 
 const tickTimeout = cfg.VALIDATOR_TICK_TIMEOUT || 5000
 
 adapter
-	.init(argv)
-	.then(() => adapter.unlock(argv))
+	.init()
+	.then(() => adapter.unlock())
 	.then(function() {
 		if (argv.singleTick) {
 			allChannelsTick().then(() => process.exit(0))

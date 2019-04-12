@@ -8,7 +8,6 @@ const cfg = require('../cfg')
 const { channelOpen, deployContracts, sampleChannel } = require('./etheruem')
 const ewt = require('../adapters/ethereum/ewt')
 const fixtures = require('./fixtures')
-const dummyVals = require('./prep-db/mongo')
 
 const tryCatchAsync = async function(fn, errMsg) {
 	try {
@@ -103,6 +102,9 @@ tape('should getAuthFor and sessionFromToken for validator', async function(t) {
 })
 
 tape('should validate channel properly', async function(t) {
+	await ethereumAdapter.init(opts)
+	await ethereumAdapter.unlock(opts)
+
 	// deploy contracts onchain
 	const { core } = await deployContracts()
 	const ethAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
@@ -122,100 +124,100 @@ tape('should validate channel properly', async function(t) {
 	t.end()
 })
 
-tape('should not validate invalid channels', async function(t) {
+tape('shoud not validate channel with invalid id', async function(t) {
+	await ethereumAdapter.init(opts)
+	await ethereumAdapter.unlock(opts)
 	const { core } = await deployContracts()
-	const ethAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
 
+	const okChannel = await getValidChannel()
+
+	const ethAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
 	const invalidChannelId = {
-		...validChannel,
+		...okChannel,
 		id: '0xdffsfsfsfs'
 	}
-	const invalidChannelValidatorsChecksum = {
-		...validChannel,
-		spec: {
-			...validChannel.spec,
-			validators: [
-				// keystore json address
-				{
-					id: '0x2bdeafae53940669daa6f519373f686c1f3d3393',
-					url: 'http://localhost:8005',
-					fee: '100'
-				},
-				{
-					id: '0x2bdeafae53940669daa6f519373f686c1f3d3393',
-					url: 'http://localhost:8006',
-					fee: '100'
-				}
-			]
-		}
-	}
-
-	console.log({ invalidChannelValidatorsChecksum })
-
-	const invalidChannelNotValidatedByUs = {
-		...validChannel,
-		spec: {
-			...validChannel.spec,
-			validators: [
-				// keystore json address
-				{
-					id: '0x6704Fbfcd5Ef766B287262fA2281C105d57246a6',
-					url: 'http://localhost:8005',
-					fee: '100'
-				},
-				{
-					id: '0x6704Fbfcd5Ef766B287262fA2281C105d57246a6',
-					url: 'http://localhost:8006',
-					fee: '100'
-				}
-			]
-		}
-	}
-
 	await tryCatchAsync(
 		async () => ethAdapter.validateChannel(invalidChannelId),
 		'channel.id is not valid'
 	)
-	await tryCatchAsync(
-		async () => ethAdapter.validateChannel(invalidChannelValidatorsChecksum),
-		'channel.validators: all addresses are checksummed'
-	)
-	await tryCatchAsync(
-		async () => ethAdapter.validateChannel(invalidChannelNotValidatedByUs),
-		'channel is not validated by us'
-	)
+	t.end()
+})
+
+tape('should not validate invalid channels', async function(t) {
+	await ethereumAdapter.init(opts)
+	await ethereumAdapter.unlock(opts)
+
+	const { core } = await deployContracts()
+
+	const okChannel = await getValidChannel()
+
+	fixtures.invalidChannels(okChannel).forEach(async item => {
+		const [channel, config, err] = item
+
+		const ethAdapter = new ethereum.Adapter(
+			opts,
+			{ ...config, ETHEREUM_CORE_ADDR: core.address },
+			provider
+		)
+		// ethereum representation
+		const ethChannel = ethereum.toEthereumChannel(channel)
+		channel.id = ethChannel.hashHex(core.address)
+
+		await tryCatchAsync(async () => ethAdapter.validateChannel(channel), err)
+	})
 
 	t.end()
 })
 
-// tape('EWT should sign message', async function(t) {
-// 	const payload = {
-// 		id: 'awesomeValidator',
-// 		era: 100000
-// 	}
+tape('EWT should sign message', async function(t) {
+	const payload = {
+		id: 'awesomeValidator',
+		era: 100000
+	}
 
-// 	let wallet = await ethereumAdapter.init(opts)
-// 	wallet = await ethereumAdapter.unlock(opts)
+	let wallet = await ethereumAdapter.init(opts)
+	wallet = await ethereumAdapter.unlock(opts)
 
-// 	const actual = await ewt.sign(wallet, payload)
-// 	const expected =
-// 		'eyJ0eXBlIjoiSldUIiwiYWxnIjoiRVRIIn0.eyJpZCI6ImF3ZXNvbWVWYWxpZGF0b3IiLCJlcmEiOjEwMDAwMCwiYWRkcmVzcyI6IjB4MmJEZUFGQUU1Mzk0MDY2OURhQTZGNTE5MzczZjY4NmMxZjNkMzM5MyJ9.gGw_sfnxirENdcX5KJQWaEt4FVRvfEjSLD4f3OiPrJIltRadeYP2zWy9T2GYcK5xxD96vnqAw4GebAW7rMlz4xw'
-// 	t.equal(actual, expected, 'properly generated the right message')
-// 	t.end()
-// })
+	const actual = await ewt.sign(wallet, payload)
+	const expected =
+		'eyJ0eXBlIjoiSldUIiwiYWxnIjoiRVRIIn0.eyJpZCI6ImF3ZXNvbWVWYWxpZGF0b3IiLCJlcmEiOjEwMDAwMCwiYWRkcmVzcyI6IjB4MmJEZUFGQUU1Mzk0MDY2OURhQTZGNTE5MzczZjY4NmMxZjNkMzM5MyJ9.gGw_sfnxirENdcX5KJQWaEt4FVRvfEjSLD4f3OiPrJIltRadeYP2zWy9T2GYcK5xxD96vnqAw4GebAW7rMlz4xw'
+	t.equal(actual, expected, 'properly generated the right message')
+	t.end()
+})
 
-// tape('EWT: should verify message', async function(t) {
-// 	const actual = await ewt.verify(
-// 		'eyJ0eXBlIjoiSldUIiwiYWxnIjoiRVRIIn0.eyJpZCI6ImF3ZXNvbWVWYWxpZGF0b3IiLCJlcmEiOjI1OTE0NzkzLCJhZGRyZXNzIjoiMHgyYkRlQUZBRTUzOTQwNjY5RGFBNkY1MTkzNzNmNjg2YzFmM2QzMzkzIn0.FeqZaINRG3N2zjJUpeBdfAjnbsjM8qCyZaunpTvCuxxPKo7p7DW255xxhAyGK68tF3v8vbTdo_mfh0kxosfomhw'
-// 	)
-// 	const expected = {
-// 		from: '0x2bDeAFAE53940669DaA6F519373f686c1f3d3393',
-// 		payload: {
-// 			id: 'awesomeValidator',
-// 			era: 25914793,
-// 			address: '0x2bDeAFAE53940669DaA6F519373f686c1f3d3393'
-// 		}
-// 	}
-// 	t.deepEqual(actual, expected, 'should verify message properly')
-// 	t.end()
-// })
+tape('EWT: should verify message', async function(t) {
+	const actual = await ewt.verify(
+		'eyJ0eXBlIjoiSldUIiwiYWxnIjoiRVRIIn0.eyJpZCI6ImF3ZXNvbWVWYWxpZGF0b3IiLCJlcmEiOjI1OTE0NzkzLCJhZGRyZXNzIjoiMHgyYkRlQUZBRTUzOTQwNjY5RGFBNkY1MTkzNzNmNjg2YzFmM2QzMzkzIn0.FeqZaINRG3N2zjJUpeBdfAjnbsjM8qCyZaunpTvCuxxPKo7p7DW255xxhAyGK68tF3v8vbTdo_mfh0kxosfomhw'
+	)
+	const expected = {
+		from: '0x2bDeAFAE53940669DaA6F519373f686c1f3d3393',
+		payload: {
+			id: 'awesomeValidator',
+			era: 25914793,
+			address: '0x2bDeAFAE53940669DaA6F519373f686c1f3d3393'
+		}
+	}
+	t.deepEqual(actual, expected, 'should verify message properly')
+	t.end()
+})
+
+async function getValidChannel() {
+	if (validChannel) return validChannel
+	await ethereumAdapter.init(opts)
+	await ethereumAdapter.unlock(opts)
+
+	// deploy contracts onchain
+	const { core } = await deployContracts()
+	const ethAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
+	// get a sample valid channel
+	const channel = await sampleChannel()
+	const ethChannel = ethereum.toEthereumChannel(channel)
+	channel.id = ethChannel.hashHex(core.address)
+
+	// open channel onchain
+	await channelOpen(ethChannel)
+	await ethAdapter.validateChannel(channel)
+	// assign channel to validChannel
+	validChannel = channel
+	return channel
+}

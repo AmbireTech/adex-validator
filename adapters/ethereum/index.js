@@ -22,7 +22,7 @@ let address = null
 let keystoreJson = null
 let wallet = null
 
-function Adapter(opts, cfg, ethProvider) {
+function Adapter(opts, cfg, ethProvider = null) {
 	const provider = ethProvider || getDefaultProvider(cfg.ETHEREUM_NETWORK)
 	const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
@@ -66,7 +66,7 @@ function Adapter(opts, cfg, ethProvider) {
 
 	this.validateChannel = async function(channel) {
 		const ethChannel = toEthereumChannel(channel)
-		
+
 		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
 		assert.ok(
 			channel.spec.validators.every(({ id }) => id === formatAddress(id)),
