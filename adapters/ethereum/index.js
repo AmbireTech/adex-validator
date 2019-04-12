@@ -128,13 +128,15 @@ function Adapter(opts, cfg, ethProvider = null) {
 	}
 }
 
-function getBalanceLeaf(acc, bal) {
+Adapter.prototype.getBalanceLeaf = function (acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
-function getSignableStateRoot(channelId, balanceRoot) {
+Adapter.prototype.getSignableStateRoot = function (channelId, balanceRoot) {
 	return Channel.getSignableStateRoot(channelId, balanceRoot)
 }
+
+Adapter.prototype.MerkleTree = MerkleTree
 
 // Signed with a dummy private key, to authenticate for the Tom validator
 // just a simple snippet to test authenticating via Identity contracts
@@ -198,8 +200,5 @@ testValidation().catch(e => console.error(e))
 
 module.exports = {
 	Adapter,
-	getBalanceLeaf,
-	MerkleTree,
-	toEthereumChannel,
-	getSignableStateRoot
+	toEthereumChannel
 }

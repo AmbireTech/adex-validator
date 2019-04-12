@@ -5,7 +5,6 @@ const lib = require('../lib')
 
 let identity = null
 
-// eslint-disable-next-line no-unused-vars
 function Adapter(opts, cfg) {
 	this.init = function() {
 		assert.ok(typeof opts.dummyIdentity === 'string', 'dummyIdentity required')
@@ -40,7 +39,7 @@ function Adapter(opts, cfg) {
 	}
 
 	this.validateChannel = async function(channel) {
-		await lib.isChannelValid(channel, identity)
+		await lib.isChannelValid(cfg, channel, identity)
 		return parseInt(channel.depositAmount, 10) > 0
 	}
 
@@ -58,17 +57,16 @@ function Adapter(opts, cfg) {
 	}
 }
 
-function getBalanceLeaf(acc, bal) {
+Adapter.prototype.getBalanceLeaf = function (acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
 
-function getSignableStateRoot(channelId, balanceRoot) {
-	return Channel.getSignableStateRoot(Buffer.from(channelId), balanceRoot)
+Adapter.prototype.getSignableStateRoot = function (channelId, balanceRoot) {
+	return Channel.getSignableStateRoot(channelId, balanceRoot)
 }
 
+Adapter.prototype.MerkleTree = MerkleTree
+
 module.exports = {
-	Adapter,
-	getBalanceLeaf,
-	MerkleTree,
-	getSignableStateRoot
+	Adapter
 }

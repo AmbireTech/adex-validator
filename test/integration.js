@@ -13,7 +13,10 @@ const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
 
-dummyAdapter.init({ dummyIdentity: dummyVals.ids.leader })
+let dummyAdapter = require('../adapters/dummy')
+
+dummyAdapter = new dummyAdapter.Adapter({ dummyIdentity: dummyVals.ids.leader }, cfg)
+dummyAdapter.init()
 const iface = new SentryInterface(dummyAdapter, dummyVals.channel, { logging: false })
 
 function aggrAndTick() {

@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint .  -c .eslintrc.js --fix",
     "start": "node bin/sentry.js",
-    "test": "node test/adapter.js",
+    "test": "node test/index.js",
+    "test-adapter": "node test/adapter.js",
     "test-integration": "./test/run-integration-tests.sh",
     "test-integration-external": "./test/run-integration-tests.sh external"
   },
@@ -14,6 +15,17 @@
     "adex-sentry": "./bin/sentry.js",
     "adex-validator-worker": "./bin/validatorWorker.js",
     "adex-watcher": "./bin/watcher.js"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "npm run lint",
+      "git add"
+    ]
   },
   "repository": {
     "type": "git",

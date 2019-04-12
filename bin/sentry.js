@@ -21,7 +21,7 @@ const { argv } = yargs
 	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
 	.demandOption(['adapter'])
 
-const adapter = adapters[argv.adapter].Adapter(argv, cfg)
+const adapter = new adapters[argv.adapter].Adapter(argv, cfg)
 const app = express()
 const port = process.env.PORT || 8005
 
