@@ -2,7 +2,7 @@
 
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
-const { postEvents, fetchPost, parseResponse } = require('./lib')
+const { postEvents, fetchPost } = require('./lib')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -126,8 +126,8 @@ tape('Should not create channel with invalid withdrawPeriodStart', async functio
 			]
 		}
 	}
-	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(res =>
-		parseResponse(res)
+	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(r =>
+		r.json()
 	)
 	t.equal(
 		resp.message,

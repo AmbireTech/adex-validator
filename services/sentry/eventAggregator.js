@@ -61,6 +61,18 @@ function makeRecorder(channelId) {
 			if (userId !== channel.creator && events.find(e => e.type === 'CLOSE')) {
 				return { success: false, statusCode: 401 }
 			}
+			const currentTime = Date.now()
+			if (currentTime > channel.validUntil * 1000) {
+				return { success: false, statusCode: 400, message: 'channel is expired' }
+			}
+			if (
+				channel.spec.withdrawPeriodStart &&
+				currentTime > channel.spec.withdrawPeriodStart &&
+				!events.every(e => e.type === 'CLOSE')
+			) {
+				return { success: false, statusCode: 400, message: 'channel is past withdraw period' }
+			}
+
 			aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
 			if (cfg.AGGR_THROTTLE) {
 				throttledPersistAndReset()
