@@ -414,7 +414,7 @@ tape('should close channel', async function(t) {
 	await postEvents(leaderUrl, channel.id, genEvents(10))
 
 	// close channel event
-	await fetchPost(`${leaderUrl}/channel/${channel.id}/events/close`, dummyVals.auth.creator, {
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
 		events: genEvents(1, null, 'CLOSE')
 	})
 

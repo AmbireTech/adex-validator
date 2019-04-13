@@ -91,7 +91,7 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 
 tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', async function(t) {
 	await Promise.all(
-		['events', 'validator-messages', 'events/close'].map(path =>
+		['events', 'validator-messages'].map(path =>
 			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, `WRONG AUTH`, {
 				messages: []
 			}).then(function(resp) {
@@ -102,9 +102,9 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 	t.end()
 })
 
-tape('POST /channel/{id}/events/close: a publisher but not a creator', async function(t) {
+tape('POST /channel/{id}/events: CLOSE: a publisher but not a creator', async function(t) {
 	await fetchPost(
-		`${leaderUrl}/channel/${dummyVals.channel.id}/events/close`,
+		`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
 		dummyVals.auth.publisher,
 		{
 			events: [{ type: 'CLOSE' }]

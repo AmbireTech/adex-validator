@@ -58,14 +58,19 @@ function makeRecorder(channelId) {
 		// that needs to be passed into the eventReducer
 		// this will probably be implemented an updateRecorder() function
 		return channelPromise.then(channel => {
+			if (userId !== channel.creator && events.find(e => e.type === 'CLOSE')) {
+				return { success: false, statusCode: 401 }
+			}
 			aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
 			if (cfg.AGGR_THROTTLE) {
 				throttledPersistAndReset()
-				return Promise.resolve()
+				return Promise.resolve({ success: true })
 			}
 			const toSave = aggr
 			aggr = eventReducer.newAggr(channelId)
-			return eventAggrCol.insertOne(toSave)
+			return eventAggrCol
+				.insertOne(toSave)
+				.then(() => ({ success: true }))
 		})
 	}
 }
