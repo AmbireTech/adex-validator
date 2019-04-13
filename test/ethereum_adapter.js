@@ -115,6 +115,7 @@ tape('should getAuthFor and sessionFromToken for validator', async function(t) {
 
 tape('should validate channel properly', async function(t) {
 	await getValidChannel()
+	t.pass('succesfully validated channel')
 	t.end()
 })
 
@@ -166,8 +167,8 @@ tape('EWT should sign message', async function(t) {
 		era: 100000
 	}
 
-	let wallet = await ethereumAdapter.init(opts)
-	wallet = await ethereumAdapter.unlock(opts)
+	await ethereumAdapter.init(opts)
+	const wallet = await ethereumAdapter.unlock(opts)
 
 	const actual = await ewt.sign(wallet, payload)
 	const expected =
@@ -196,9 +197,6 @@ async function getValidChannel() {
 	if (validChannel) return validChannel
 	const { core } = await deployContracts()
 	const ethereumAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
-
-	await ethereumAdapter.init()
-	await ethereumAdapter.unlock()
 
 	// get a sample valid channel
 	const channel = await sampleChannel()

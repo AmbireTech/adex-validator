@@ -341,17 +341,7 @@ module.exports = {
 			'channel.depositAmount is less than MINIMAL_DEPOSIT'
 		],
 		[
-			// invalidChannel channel.depositAmount is less than MINIMAL_DEPOSIT
-			{
-				...validChannel
-			},
-			{
-				MINIMAL_FEE: 100000000
-			},
-			'channel validator fee is less than MINIMAL_FEE'
-		],
-		[
-			// invalidChannel channel.depositAmount is less than MINIMAL_DEPOSIT
+			// invalidChannel channel.depositAmount is less than MINIMAL_FEE
 			{
 				...validChannel
 			},
