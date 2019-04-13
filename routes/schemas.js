@@ -51,8 +51,7 @@ module.exports = {
 			adUnits: Joi.array().items(Joi.object()),
 			targeting: Joi.array().items(Joi.object()),
 			validators: validators(cfg),
-			withdrawPeriodStart: Joi.number()
-				.required(),
+			withdrawPeriodStart: Joi.number().required(),
 			minPerImpression: numericString.default('1'),
 			maxPerImpression: numericString.default('1'),
 			nonce: Joi.string(),
@@ -125,8 +124,7 @@ module.exports = {
 	events: {
 		events: Joi.array().items(
 			Joi.object({
-				type: Joi.string()
-					.required(),
+				type: Joi.string().required(),
 				publisher: Joi.string()
 			})
 		)

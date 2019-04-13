@@ -103,13 +103,9 @@ tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', asy
 })
 
 tape('POST /channel/{id}/events: CLOSE: a publisher but not a creator', async function(t) {
-	await fetchPost(
-		`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
-		dummyVals.auth.publisher,
-		{
-			events: [{ type: 'CLOSE' }]
-		}
-	).then(function(resp) {
+	await fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, dummyVals.auth.publisher, {
+		events: [{ type: 'CLOSE' }]
+	}).then(function(resp) {
 		t.equal(resp.status, 401, 'status must be Unauthorized')
 	})
 	t.end()

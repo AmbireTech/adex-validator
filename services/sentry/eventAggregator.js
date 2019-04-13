@@ -68,9 +68,7 @@ function makeRecorder(channelId) {
 			}
 			const toSave = aggr
 			aggr = eventReducer.newAggr(channelId)
-			return eventAggrCol
-				.insertOne(toSave)
-				.then(() => ({ success: true }))
+			return eventAggrCol.insertOne(toSave).then(() => ({ success: true }))
 		})
 	}
 }
