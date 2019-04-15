@@ -96,6 +96,21 @@ tape('Should sign message', async function(t) {
 	t.end()
 })
 
+tape('Should verify message', async function(t) {
+	const ethereumAdapter = new ethereum.Adapter(opts, cfg, provider)
+
+	await ethereumAdapter.init()
+	await ethereumAdapter.unlock()
+
+	const message = 'hello world'
+	const actual = await ethereumAdapter.sign(message)
+	const expected =
+		'0xb139c99dbc0ab504f55ba0aa1e0d5662b1cb32aa207e8bb9b6204cab78e234901bd7abcf0d7d303ed276de735c1459018e672c5bf183690e2a2796670099757e1b'
+
+	t.equal(actual, expected, 'should sign message appropiately')
+	t.end()
+})
+
 tape('should getAuthFor and sessionFromToken for validator', async function(t) {
 	const ethereumAdapter = new ethereum.Adapter(opts, cfg, provider)
 
