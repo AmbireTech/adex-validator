@@ -68,8 +68,9 @@ function getEventAggregates(req, res, next) {
 }
 
 function getList(req, res, next) {
+	const { CHANNELS_FIND_LIMIT } = cfg
 	const channelsCol = db.getMongo().collection('channels')
-	const skip = req.query.skip && parseInt(req.query.skip, 10)
+	const skip = req.query.page && parseInt(req.query.page, 10) * CHANNELS_FIND_LIMIT
 	let query = {
 		validUntil: { $gt: Math.floor(Date.now() / 1000) }
 	}
@@ -80,7 +81,7 @@ function getList(req, res, next) {
 	}
 	return channelsCol
 		.find(query, { projection: { _id: 0 } })
-		.limit(cfg.CHANNELS_FIND_LIMIT)
+		.limit(CHANNELS_FIND_LIMIT)
 		.skip(skip || 0)
 		.toArray()
 		.then(function(channels) {
