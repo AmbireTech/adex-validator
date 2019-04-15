@@ -45,7 +45,9 @@ module.exports = {
 		depositAmount: numericString.required(),
 		// UNIX timestamp; we're not using Jai.date() cause
 		// we want it to be stored in MongoDB as a number
-		validUntil: Joi.number().required(),
+		validUntil: Joi.number()
+			.integer()
+			.required(),
 		creator: creator(cfg),
 		spec: Joi.object({
 			adUnits: Joi.array().items(Joi.object()),
