@@ -67,10 +67,13 @@ function getEventAggregates(req, res, next) {
 		.catch(next)
 }
 
-function getList(req, res, next) {
+async function getList(req, res, next) {
 	const { CHANNELS_FIND_LIMIT } = cfg
+	// assign 0 default value
+	const { page = 0 } = req.query
+
 	const channelsCol = db.getMongo().collection('channels')
-	const skip = req.query.page && parseInt(req.query.page, 10) * CHANNELS_FIND_LIMIT
+	const skip = page && parseInt(page, 10) * CHANNELS_FIND_LIMIT
 	let query = {
 		validUntil: { $gt: Math.floor(Date.now() / 1000) }
 	}
@@ -79,13 +82,18 @@ function getList(req, res, next) {
 		// this query will find anything where the array contains an object with this ID
 		query = { ...query, 'spec.validators.id': req.query.validator }
 	}
+
+	const channelTotal = await channelsCol.countDocuments(query)
+	// subtract one becuase page counting starts from 0
+	const totalPages = Math.ceil(channelTotal / CHANNELS_FIND_LIMIT) - 1
+
 	return channelsCol
 		.find(query, { projection: { _id: 0 } })
 		.limit(CHANNELS_FIND_LIMIT)
 		.skip(skip || 0)
 		.toArray()
 		.then(function(channels) {
-			res.send({ channels })
+			res.send({ channels, total: totalPages, page })
 		})
 		.catch(next)
 }
