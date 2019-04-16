@@ -61,7 +61,7 @@ async function allChannelsTick(currentPage) {
 	)
 	logPostChannelsTick(allResults)
 
-	if (total && total >= page) {
+	if (total > page) {
 		const nextPage = parseInt(page, 10) + 1
 
 		return allChannelsTick(nextPage)
