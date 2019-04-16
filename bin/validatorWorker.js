@@ -61,12 +61,15 @@ async function allChannelsTick(currentPage) {
 	)
 	logPostChannelsTick(allResults)
 
-	if (total <= page) return null
+	if (total && total >= page) {
+		const nextPage = parseInt(page, 10) + 1
 
-	const nextPage = parseInt(page, 10) + 1
-	return Promise.all([allChannelsTick(nextPage), wait(cfg.WAIT_TIME)])
-		.then(function() {})
-		.catch(e => logger.error(`tick for next page ${nextPage} failed`, e))
+		return allChannelsTick(nextPage)
+			.then(function() {})
+			.catch(e => logger.error(`tick for next page ${nextPage} failed`, e))
+	}
+
+	return null
 }
 
 function loopChannels() {
