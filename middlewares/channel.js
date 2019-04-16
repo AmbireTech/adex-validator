@@ -9,7 +9,7 @@ function channelLoad(req, res, next) {
 		.toArray()
 		.then(function(channels) {
 			if (!channels.length) {
-				res.sendStatus(404)
+				res.status(404).json(null)
 			} else {
 				req.channel = channels[0]
 				next()
@@ -24,7 +24,7 @@ function channelIfFind(cond, req, res, next) {
 		.countDocuments(cond, { limit: 1 })
 		.then(function(n) {
 			if (!n) {
-				res.sendStatus(404)
+				res.status(404).json(null)
 			} else {
 				next()
 			}
@@ -40,23 +40,4 @@ function channelIfActive(req, res, next) {
 	channelIfFind({ _id: req.params.id, 'spec.validators.id': req.whoami }, req, res, next)
 }
 
-// requires channelLoad
-function channelIfWithdraw(req, res, next) {
-	const { channel } = req
-	const { spec, validUntil } = channel
-	const currentTime = Date.now()
-	const isAllowedToSubmit = !spec.withdrawPeriodStart || currentTime < spec.withdrawPeriodStart
-	const withinTime = validUntil > currentTime / 1000
-
-	if (!isAllowedToSubmit || !withinTime) {
-		const message = 'channel cannnot update state, channel'
-		// prevent updating state
-		res.status(400).send({
-			message: `${message} ${!withinTime ? 'has expired' : 'in grace period'}`
-		})
-		return
-	}
-	next()
-}
-
-module.exports = { channelLoad, channelIfExists, channelIfActive, channelIfWithdraw }
+module.exports = { channelLoad, channelIfExists, channelIfActive }

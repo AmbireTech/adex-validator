@@ -3,12 +3,7 @@ const { celebrate } = require('celebrate')
 const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
-const {
-	channelLoad,
-	channelIfExists,
-	channelIfActive,
-	channelIfWithdraw
-} = require('../middlewares/channel')
+const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 
 const router = express.Router()
@@ -31,7 +26,6 @@ router.post(
 	authRequired,
 	celebrate({ body: schema.validatorMessage }),
 	channelLoad,
-	channelIfWithdraw,
 	postValidatorMessages
 )
 router.post(
@@ -39,14 +33,6 @@ router.post(
 	authRequired,
 	celebrate({ body: schema.events }),
 	channelIfActive,
-	postEvents
-)
-router.post(
-	'/:id/events/close',
-	authRequired,
-	channelIfActive,
-	channelLoad,
-	allowOnlyCreator,
 	postEvents
 )
 
@@ -200,39 +186,16 @@ function postValidatorMessages(req, res, next) {
 
 function postEvents(req, res, next) {
 	const { events } = req.body
-
-	const isValid = Array.isArray(events) && events.every(isEventValid)
-	if (!isValid) {
-		res.sendStatus(400)
-		return
-	}
 	eventAggrService
 		.record(req.params.id, req.session.uid, events)
-		.then(function() {
-			res.send({ success: true })
+		.then(function(resp) {
+			res.status(resp.statusCode || 200).send(resp)
 		})
 		.catch(next)
 }
 
-// Helpers
-
-function isEventValid(ev) {
-	return ev && typeof ev.type === 'string'
-}
-
 function authRequired(req, res, next) {
 	if (!req.session) {
-		res.sendStatus(401)
-		return
-	}
-	next()
-}
-
-function allowOnlyCreator(req, res, next) {
-	const creator = req.channel.creator
-	const uid = req.session.uid
-
-	if (creator !== uid) {
 		res.sendStatus(401)
 		return
 	}

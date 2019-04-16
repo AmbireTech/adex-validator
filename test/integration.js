@@ -5,15 +5,7 @@ const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const dummyAdapter = require('../adapters/dummy')
-const {
-	forceTick,
-	wait,
-	postEvents,
-	genEvents,
-	getDummySig,
-	fetchPost,
-	parseResponse
-} = require('./lib')
+const { forceTick, wait, postEvents, genEvents, getDummySig, fetchPost } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -120,14 +112,14 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	t.end()
 })
 
-tape('should prevent submitting validator messages for expired channel', async function(t) {
+tape('should prevent submitting events for expired channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,
 		id: 'expiredChannelTest',
-		validUntil: new Date().getTime() / 1000 + 3,
+		validUntil: Math.ceil(Date.now() / 1000) + 1,
 		spec: {
 			...dummyVals.channel.spec,
-			withdrawPeriodStart: new Date().getTime() + 2000
+			withdrawPeriodStart: Date.now() + 500
 		}
 	}
 
@@ -138,64 +130,43 @@ tape('should prevent submitting validator messages for expired channel', async f
 	])
 
 	// wait till channel expires
-	await wait(3000)
+	await wait(2100)
 
-	// submit validator channel
-	const { newState } = await iface.getLastApproved()
-
-	const response = await fetchPost(
-		`${followerUrl}/channel/${channel.id}/validator-messages`,
-		dummyVals.auth.follower,
-		{ messages: [newState.msg] }
-	).then(result => parseResponse(result))
-
-	t.equal(
-		response.message,
-		'channel cannnot update state, channel has expired',
-		'should prevent submitting message for an expired channel'
-	)
+	const resp = await postEvents(followerUrl, channel.id, genEvents(1)).then(r => r.json())
+	t.equal(resp.message, 'channel is expired', 'should prevent events after validUntil')
 	t.end()
 })
 
-tape(
-	'should prevent submitting validator messages for a channel in withdraw period',
-	async function(t) {
-		const channel = {
-			...dummyVals.channel,
-			id: 'withdrawPeriodTest',
-			validUntil: new Date().getTime() / 1000 + 20,
-			spec: {
-				...dummyVals.channel.spec,
-				withdrawPeriodStart: new Date().getTime() + 2000
-			}
+tape('should prevent submitting events for a channel in withdraw period', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'withdrawPeriodTest',
+		validUntil: Math.floor(Date.now() / 1000) + 20,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart: Date.now() + 1000
 		}
-
-		// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
-		await Promise.all([
-			fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
-			fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
-		])
-
-		// wait till withdrawPeriodStart reaches
-		await wait(2000)
-
-		const { newState } = await iface.getLastApproved()
-
-		const response = await fetchPost(
-			`${followerUrl}/channel/${channel.id}/validator-messages`,
-			dummyVals.auth.leader,
-			{ messages: [newState.msg] }
-		).then(result => parseResponse(result))
-
-		t.equal(
-			response.message,
-			'channel cannnot update state, channel in grace period',
-			'should prevent submitting message for an expired channel'
-		)
-
-		t.end()
 	}
-)
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// wait till withdrawPeriodStart
+	await wait(1100)
+
+	const resp = await postEvents(followerUrl, channel.id, genEvents(1)).then(r => r.json())
+	t.equal(
+		resp.message,
+		'channel is past withdraw period',
+		'should prevent events after withdraw period'
+	)
+	// @TODO we can still submit validator messages
+
+	t.end()
+})
 
 tape('new states are not produced when there are no new aggregates', async function(t) {
 	const url = `${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`
@@ -414,7 +385,7 @@ tape('should close channel', async function(t) {
 	await postEvents(leaderUrl, channel.id, genEvents(10))
 
 	// close channel event
-	await fetchPost(`${leaderUrl}/channel/${channel.id}/events/close`, dummyVals.auth.creator, {
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
 		events: genEvents(1, null, 'CLOSE')
 	})
 
