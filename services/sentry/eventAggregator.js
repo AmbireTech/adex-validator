@@ -59,7 +59,7 @@ function makeRecorder(channelId) {
 		// this will probably be implemented an updateRecorder() function
 		return channelPromise.then(channel => {
 			if (userId !== channel.creator && events.find(e => e.type === 'CLOSE')) {
-				return { success: false, statusCode: 401 }
+				return { success: false, statusCode: 403 }
 			}
 			const currentTime = Date.now()
 			if (currentTime > channel.validUntil * 1000) {
