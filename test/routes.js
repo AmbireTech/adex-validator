@@ -154,10 +154,16 @@ tape('POST /channel: create channel', async function(t) {
 		}
 	}
 
-	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(res =>
-		res.json()
-	)
-	t.equal(resp.success, true, 'Successfully created channel')
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+		.then(res => Promise.all(res.map(item => item.json())))
+		.then(function(data) {
+			data.forEach(resp => {
+				t.equal(resp.success, true, 'Successfully created channel')
+			})
+		})
 
 	const channelStatus = await fetch(`${followerUrl}/channel/${channel.id}/status`).then(res =>
 		res.json()
