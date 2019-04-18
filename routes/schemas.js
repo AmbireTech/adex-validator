@@ -55,7 +55,8 @@ module.exports = {
 			minPerImpression: numericString.default('1'),
 			maxPerImpression: numericString.default('1'),
 			nonce: Joi.string(),
-			created: Joi.number()
+			created: Joi.number(),
+			activeFrom: Joi.number()
 		}).required()
 	}),
 	validatorMessage: {
