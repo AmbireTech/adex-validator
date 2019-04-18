@@ -53,35 +53,36 @@ function makeRecorder(channelId) {
 		trailing: true
 	})
 
-	return function(userId, events) {
+	return async function(userId, events) {
 		// @TODO keep in mind that at one point validator messages will be able to change payment/bidding information
 		// that needs to be passed into the eventReducer
 		// this will probably be implemented an updateRecorder() function
-		return channelPromise.then(channel => {
-			if (userId !== channel.creator && events.find(e => e.type === 'CLOSE')) {
-				return { success: false, statusCode: 403 }
-			}
-			const currentTime = Date.now()
-			if (currentTime > channel.validUntil * 1000) {
-				return { success: false, statusCode: 400, message: 'channel is expired' }
-			}
-			if (
-				channel.spec.withdrawPeriodStart &&
-				currentTime > channel.spec.withdrawPeriodStart &&
-				!events.every(e => e.type === 'CLOSE')
-			) {
-				return { success: false, statusCode: 400, message: 'channel is past withdraw period' }
-			}
+		const channel = await channelPromise
 
-			aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
-			if (cfg.AGGR_THROTTLE) {
-				throttledPersistAndReset()
-				return Promise.resolve({ success: true })
-			}
-			const toSave = aggr
-			aggr = eventReducer.newAggr(channelId)
-			return eventAggrCol.insertOne(toSave).then(() => ({ success: true }))
-		})
+		if (userId !== channel.creator && events.find(e => e.type === 'CLOSE')) {
+			return { success: false, statusCode: 403 }
+		}
+		const currentTime = Date.now()
+		if (currentTime > channel.validUntil * 1000) {
+			return { success: false, statusCode: 400, message: 'channel is expired' }
+		}
+		if (
+			channel.spec.withdrawPeriodStart &&
+			currentTime > channel.spec.withdrawPeriodStart &&
+			!events.every(e => e.type === 'CLOSE')
+		) {
+			return { success: false, statusCode: 400, message: 'channel is past withdraw period' }
+		}
+
+		aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
+		if (cfg.AGGR_THROTTLE) {
+			throttledPersistAndReset()
+			return Promise.resolve({ success: true })
+		}
+
+		const toSave = aggr
+		aggr = eventReducer.newAggr(channelId)
+		return eventAggrCol.insertOne(toSave).then(() => ({ success: true }))
 	}
 }
 
