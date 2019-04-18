@@ -54,22 +54,29 @@ function getChannels(pageNumber) {
 }
 
 async function allChannelsTick(currentPage) {
-	const { channels, total, page } = await getChannels(currentPage)
+	// get page 0
+	const { channels, total } = await getChannels(currentPage)
+	// start from page 1 to end
+	const pages = range(1, total)
 
-	const allResults = await Promise.all(channels.map(validatorTick)).catch(e =>
-		logger.error('allChannelsTick failed', e)
+	const otherChannels = await Promise.all(pages.map(getChannels)).then(result =>
+		result.map(item => item.channels)
 	)
+	const flattenOtherChannels = [].concat(...otherChannels)
+
+	const allResults = await Promise.all(
+		[...channels, ...flattenOtherChannels].map(validatorTick)
+	).catch(e => logger.error('allChannelsTick failed', e))
+
 	logPostChannelsTick(allResults)
+}
 
-	if (total > page) {
-		const nextPage = parseInt(page, 10) + 1
-
-		return allChannelsTick(nextPage)
-			.then(function() {})
-			.catch(e => logger.error(`tick for next page ${nextPage} failed`, e))
+function range(start, end) {
+	const arr = []
+	for (let i = start; i <= end; i += 1) {
+		arr.push(i)
 	}
-
-	return null
+	return arr
 }
 
 function loopChannels() {
