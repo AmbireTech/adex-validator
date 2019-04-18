@@ -28,13 +28,7 @@ router.post(
 	channelLoad,
 	postValidatorMessages
 )
-router.post(
-	'/:id/events',
-	authRequired,
-	celebrate({ body: schema.events }),
-	channelIfActive,
-	postEvents
-)
+router.post('/:id/events', celebrate({ body: schema.events }), channelIfActive, postEvents)
 
 // Implementations
 function getStatus(req, res) {

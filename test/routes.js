@@ -89,16 +89,12 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 	t.end()
 })
 
-tape('POST /channel/{id}/{events,validator-messages}: wrong authentication', async function(t) {
-	await Promise.all(
-		['events', 'validator-messages'].map(path =>
-			fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/${path}`, `WRONG AUTH`, {
-				messages: []
-			}).then(function(resp) {
-				t.equal(resp.status, 401, 'status must be Unauthorized')
-			})
-		)
-	)
+tape('POST /channel/{id}/validator-messages: wrong authentication', async function(t) {
+	await fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`, `WRONG AUTH`, {
+		messages: []
+	}).then(function(resp) {
+		t.equal(resp.status, 401, 'status must be Unauthorized')
+	})
 	t.end()
 })
 
