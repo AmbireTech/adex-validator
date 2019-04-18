@@ -4,10 +4,8 @@ function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
 }
 
-function reduce(userId, channel, initialAggr, ev) {
+function reduce(channel, initialAggr, ev) {
 	const aggr = { ...initialAggr }
-	// for now, we don't use userId
-	// @TODO: this is one of the places to add other ev types
 	if (ev.type === 'IMPRESSION') {
 		aggr.events.IMPRESSION = mergeImpressionEv(initialAggr.events.IMPRESSION, ev, channel)
 	} else if (ev.type === 'CLOSE') {

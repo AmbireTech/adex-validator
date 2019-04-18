@@ -6,12 +6,12 @@ const logger = require('../lib')('sentry')
 
 const recorders = new Map()
 
-function record(id, userId, events) {
+function record(id, session, events) {
 	if (!recorders.has(id)) {
 		recorders.set(id, makeRecorder(id))
 	}
 
-	return recorders.get(id)(userId, events)
+	return recorders.get(id)(session, events)
 }
 
 function makeRecorder(channelId) {
@@ -53,13 +53,13 @@ function makeRecorder(channelId) {
 		trailing: true
 	})
 
-	return async function(userId, events) {
+	return async function(session, events) {
 		// @TODO keep in mind that at one point validator messages will be able to change payment/bidding information
 		// that needs to be passed into the eventReducer
 		// this will probably be implemented an updateRecorder() function
 		const channel = await channelPromise
 
-		if (userId !== channel.creator && events.find(e => e.type === 'CLOSE')) {
+		if (session.uid !== channel.creator && events.find(e => e.type === 'CLOSE')) {
 			return { success: false, statusCode: 403 }
 		}
 		const currentTime = Date.now()
@@ -74,7 +74,7 @@ function makeRecorder(channelId) {
 			return { success: false, statusCode: 400, message: 'channel is past withdraw period' }
 		}
 
-		aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
+		aggr = events.reduce(eventReducer.reduce.bind(null, channel), aggr)
 		if (cfg.AGGR_THROTTLE) {
 			throttledPersistAndReset()
 			return Promise.resolve({ success: true })

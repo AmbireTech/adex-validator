@@ -187,7 +187,7 @@ function postValidatorMessages(req, res, next) {
 function postEvents(req, res, next) {
 	const { events } = req.body
 	eventAggrService
-		.record(req.params.id, req.session.uid, events)
+		.record(req.params.id, req.session, events)
 		.then(function(resp) {
 			res.status(resp.statusCode || 200).send(resp)
 		})
