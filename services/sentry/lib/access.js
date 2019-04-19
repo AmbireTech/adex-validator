@@ -31,14 +31,14 @@ async function checkAccess(channel, session, events) {
 	const allowRules =
 		eventSubmission && Array.isArray(eventSubmission.allow)
 			? eventSubmission.allow
-			: [{ uid: [channel.creator] }, { uid: null, rateLimit: cfg.EVENTS_RATE_LIMIT }]
+			: [{ uids: [channel.creator] }, { uids: null, rateLimit: cfg.EVENTS_RATE_LIMIT }]
 	// first, find an applicable access rule
 	const rule = allowRules.find(r => {
 		// uid === null means it applies to all UIDs
-		if (r.uid === null) return true
-		if (Array.isArray(r.uid)) {
+		if (r.uids === null) return true
+		if (Array.isArray(r.uids)) {
 			const ourUid = session.uid || null
-			return r.uid.includes(ourUid)
+			return r.uids.includes(ourUid)
 		}
 		return false
 	})
