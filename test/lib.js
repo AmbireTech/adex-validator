@@ -17,7 +17,7 @@ function fetchPost(url, authToken, body) {
 }
 
 function postEvents(url, channelId, events) {
-	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.user, { events })
+	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.creator, { events })
 }
 
 function genEvents(n, pubName, type = 'IMPRESSION') {
