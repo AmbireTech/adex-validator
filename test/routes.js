@@ -89,6 +89,17 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 	t.end()
 })
 
+tape('POST /channel/{id}/events: rate limits', async function(t) {
+	const ev = { type: 'IMPRESSION', publisher: dummyVals.ids.publisher }
+	const resp = await fetchPost(
+		`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
+		dummyVals.auth.user,
+		{ events: [ev, ev] }
+	)
+	t.equal(resp.status, 429, 'status is TooManyRequests')
+	t.end()
+})
+
 tape('POST /channel/{id}/validator-messages: wrong authentication', async function(t) {
 	await fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`, `WRONG AUTH`, {
 		messages: []
