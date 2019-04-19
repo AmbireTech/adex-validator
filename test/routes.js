@@ -11,6 +11,8 @@ const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
 
+const dummyChannelId2 = 'awesomeTestChannel2'
+
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
 	t.ok(resp, 'has resp')
@@ -89,17 +91,6 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 	t.end()
 })
 
-tape('POST /channel/{id}/events: rate limits', async function(t) {
-	const ev = { type: 'IMPRESSION', publisher: dummyVals.ids.publisher }
-	const resp = await fetchPost(
-		`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
-		dummyVals.auth.user,
-		{ events: [ev, ev] }
-	)
-	t.equal(resp.status, 429, 'status is TooManyRequests')
-	t.end()
-})
-
 tape('POST /channel/{id}/validator-messages: wrong authentication', async function(t) {
 	await fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`, `WRONG AUTH`, {
 		messages: []
@@ -118,10 +109,10 @@ tape('POST /channel/{id}/events: CLOSE: a publisher but not a creator', async fu
 	t.end()
 })
 
-tape('Should not create channel with invalid withdrawPeriodStart', async function(t) {
+tape('POST /channel: should not work with invalid withdrawPeriodStart', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'awesomeTestChannel2',
+		id: dummyChannelId2,
 		spec: {
 			...dummyVals.channel.spec,
 			withdrawPeriodStart: new Date('2200-01-01').getTime(),
@@ -147,7 +138,7 @@ tape('Should not create channel with invalid withdrawPeriodStart', async functio
 tape('POST /channel: create channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'awesomeTestChannel2',
+		id: dummyChannelId2,
 		spec: {
 			...dummyVals.channel.spec,
 			minPerImpression: '1',
@@ -240,3 +231,23 @@ tape(
 		t.end()
 	}
 )
+
+// Test rate limits with the new channel that we created (dummyChannelId2)
+// to not interfere with integration.js
+tape('POST /channel/{id}/events: rate limits', async function(t) {
+	const ev = { type: 'IMPRESSION', publisher: dummyVals.ids.publisher }
+	const url = `${leaderUrl}/channel/${dummyChannelId2}/events`
+	// We cannot submit many events
+	const resp = await fetchPost(url, dummyVals.auth.user, { events: [ev, ev] })
+	t.equal(resp.status, 429, 'status is TooManyRequests')
+
+	// We can submit one
+	const respOk = await fetchPost(url, dummyVals.auth.user, { events: [ev] })
+	t.equal(respOk.status, 200, 'status is Ok')
+
+	// But we cannot submit one right after
+	const respNotOk = await fetchPost(url, dummyVals.auth.user, { events: [ev] })
+	t.equal(respNotOk.status, 429, 'status is TooManyRequests')
+
+	t.end()
+})
