@@ -32,8 +32,11 @@ tape('submit events and ensure they are accounted for', async function(t) {
 
 	const channel = dummyVals.channel
 	await Promise.all(
-		// @TODO maybe we should assert that the status is 200 here?
-		[leaderUrl, followerUrl].map(url => postEvents(url, dummyVals.channel.id, evs))
+		[leaderUrl, followerUrl].map(url =>
+			postEvents(url, dummyVals.channel.id, evs).then(({ status }) => {
+				if (status !== 200) throw new Error(`postEvents failed with ${status}`)
+			})
+		)
 	)
 	await aggrAndTick()
 	const resp = await iface.getOurLatestMsg('Accounting')
