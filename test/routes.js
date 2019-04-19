@@ -243,11 +243,23 @@ tape('POST /channel/{id}/events: rate limits', async function(t) {
 
 	// We can submit one
 	const respOk = await fetchPost(url, dummyVals.auth.user, { events: [ev] })
-	t.equal(respOk.status, 200, 'status is Ok')
+	t.equal(respOk.status, 200, 'status is ok')
 
 	// But we cannot submit one right after
 	const respNotOk = await fetchPost(url, dummyVals.auth.user, { events: [ev] })
 	t.equal(respNotOk.status, 429, 'status is TooManyRequests')
+
+	// but the creator can submit whatever they want
+	t.equal(
+		(await fetchPost(url, dummyVals.auth.creator, { events: [ev, ev] })).status,
+		200,
+		'status is ok'
+	)
+	t.equal(
+		(await fetchPost(url, dummyVals.auth.creator, { events: [ev] })).status,
+		200,
+		'status is ok'
+	)
 
 	t.end()
 })
