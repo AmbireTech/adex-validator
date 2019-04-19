@@ -17,7 +17,8 @@ function fetchPost(url, authToken, body) {
 }
 
 function postEvents(url, channelId, events) {
-	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.user, { events })
+	// It is important to use creator auth, otherwise we'd hit rate limits
+	return fetchPost(`${url}/channel/${channelId}/events`, dummyVals.auth.creator, { events })
 }
 
 function genEvents(n, pubName, type = 'IMPRESSION') {

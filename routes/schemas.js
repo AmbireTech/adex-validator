@@ -54,6 +54,7 @@ module.exports = {
 			withdrawPeriodStart: Joi.number().required(),
 			minPerImpression: numericString.default('1'),
 			maxPerImpression: numericString.default('1'),
+			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
 			nonce: Joi.string(),
 			created: Joi.number(),
 			activeFrom: Joi.number()

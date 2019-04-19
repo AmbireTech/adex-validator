@@ -28,13 +28,7 @@ router.post(
 	channelLoad,
 	postValidatorMessages
 )
-router.post(
-	'/:id/events',
-	authRequired,
-	celebrate({ body: schema.events }),
-	channelIfActive,
-	postEvents
-)
+router.post('/:id/events', celebrate({ body: schema.events }), channelIfActive, postEvents)
 
 // Implementations
 function getStatus(req, res) {
@@ -186,8 +180,11 @@ function postValidatorMessages(req, res, next) {
 
 function postEvents(req, res, next) {
 	const { events } = req.body
+	const trueip = req.headers['true-client-ip']
+	const xforwardedfor = req.headers['x-forwarded-for']
+	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
 	eventAggrService
-		.record(req.params.id, req.session.uid, events)
+		.record(req.params.id, { ...req.session, ip }, events)
 		.then(function(resp) {
 			res.status(resp.statusCode || 200).send(resp)
 		})

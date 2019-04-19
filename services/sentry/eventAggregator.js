@@ -2,16 +2,17 @@ const throttle = require('lodash.throttle')
 const db = require('../../db')
 const cfg = require('../../cfg')
 const eventReducer = require('./lib/eventReducer')
+const checkAccess = require('./lib/access')
 const logger = require('../lib')('sentry')
 
 const recorders = new Map()
 
-function record(id, userId, events) {
+function record(id, session, events) {
 	if (!recorders.has(id)) {
 		recorders.set(id, makeRecorder(id))
 	}
 
-	return recorders.get(id)(userId, events)
+	return recorders.get(id)(session, events)
 }
 
 function makeRecorder(channelId) {
@@ -53,35 +54,32 @@ function makeRecorder(channelId) {
 		trailing: true
 	})
 
-	return function(userId, events) {
+	// return a recorder
+	return async function(session, events) {
+		const channel = await channelPromise
+
+		const hasAccess = await checkAccess(channel, session, events)
+		if (!hasAccess.success) {
+			return hasAccess
+		}
+
 		// @TODO keep in mind that at one point validator messages will be able to change payment/bidding information
 		// that needs to be passed into the eventReducer
 		// this will probably be implemented an updateRecorder() function
-		return channelPromise.then(channel => {
-			if (userId !== channel.creator && events.find(e => e.type === 'CLOSE')) {
-				return { success: false, statusCode: 403 }
-			}
-			const currentTime = Date.now()
-			if (currentTime > channel.validUntil * 1000) {
-				return { success: false, statusCode: 400, message: 'channel is expired' }
-			}
-			if (
-				channel.spec.withdrawPeriodStart &&
-				currentTime > channel.spec.withdrawPeriodStart &&
-				!events.every(e => e.type === 'CLOSE')
-			) {
-				return { success: false, statusCode: 400, message: 'channel is past withdraw period' }
-			}
+		// Record the events
+		aggr = events.reduce(eventReducer.reduce.bind(null, channel), aggr)
+		if (cfg.AGGR_THROTTLE) {
+			throttledPersistAndReset()
+			return { success: true }
+		}
 
-			aggr = events.reduce(eventReducer.reduce.bind(null, userId, channel), aggr)
-			if (cfg.AGGR_THROTTLE) {
-				throttledPersistAndReset()
-				return Promise.resolve({ success: true })
-			}
-			const toSave = aggr
-			aggr = eventReducer.newAggr(channelId)
-			return eventAggrCol.insertOne(toSave).then(() => ({ success: true }))
-		})
+		// switch over aggr to toSave, reset the aggr and
+		// then insert into DB; this is done so that we never lose events,
+		// even while inserting
+		const toSave = aggr
+		aggr = eventReducer.newAggr(channelId)
+		await eventAggrCol.insertOne(toSave)
+		return { success: true }
 	}
 }
 
