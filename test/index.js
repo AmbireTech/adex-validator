@@ -6,7 +6,7 @@ const { Joi } = require('celebrate')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const eventReducer = require('../services/sentry/lib/eventReducer')
-const producer =  require('../services/validatorWorker/producer')
+const producer = require('../services/validatorWorker/producer')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
 const schema = require('../routes/schemas')
@@ -317,13 +317,10 @@ tape('eventReducer: reduce', function(t) {
 	const aggr = eventReducer.newAggr(channelId)
 
 	const events = {
-		'IMPRESSION': [{
-
-		}]
+		IMPRESSION: [{}]
 	}
 
 	const reducer = eventReducer.reduce('test', channelId, aggr)
-	
 })
 
 tape('validatorWorker: producer', function(t) {
