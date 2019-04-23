@@ -5,6 +5,8 @@ const BN = require('bn.js')
 const { Joi } = require('celebrate')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
+const eventReducer = require('../services/sentry/lib/eventReducer')
+const producer =  require('../services/validatorWorker/producer')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
 const schema = require('../routes/schemas')
@@ -298,4 +300,33 @@ tape('validator message schema', function(t) {
 })
 
 // @TODO: event aggregator
+
+tape('eventReducer: newAggr', function(t) {
+	const channelId = 'eventReducerTest'
+	const aggr = eventReducer.newAggr(channelId)
+
+	t.equal(aggr.channelId, channelId, 'should return same channel id')
+	t.equal(aggr.events, {}, 'should have empty events')
+	t.ok(aggr.created, 'should have created at date')
+
+	t.end()
+})
+
+tape('eventReducer: reduce', function(t) {
+	const channelId = 'eventReducerTest'
+	const aggr = eventReducer.newAggr(channelId)
+
+	const events = {
+		'IMPRESSION': [{
+
+		}]
+	}
+
+	const reducer = eventReducer.reduce('test', channelId, aggr)
+	
+})
+
+tape('validatorWorker: producer', function(t) {
+	const tick = producer.tick()
+})
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances
