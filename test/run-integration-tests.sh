@@ -30,6 +30,12 @@ PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS &
 # the sentries need time to start listening
 sleep 2
 
+# start ganache cli 
+# Ethereum local testnet
+./test/ethereum.sh
+
+# the ganache-cli need time to start up
+sleep 3
 
 # Run the integration tests
 if [ -n "$RUN_EXTERNAL" ]; then
@@ -37,7 +43,7 @@ if [ -n "$RUN_EXTERNAL" ]; then
 	cd ./node_modules/adex-validator-stack-test
 	npm run test-local
 else 
-	./test/routes.js && ./test/integration.js
+	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js
 fi
 
 exitCode=$?

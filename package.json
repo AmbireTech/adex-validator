@@ -7,8 +7,10 @@
     "lint": "eslint .  -c .eslintrc.js --fix",
     "start": "node bin/sentry.js",
     "test": "node test/index.js",
+    "test-eth-adapter": "node test/ethereum_adapter.js",
     "test-integration": "./test/run-integration-tests.sh",
-    "test-integration-external": "./test/run-integration-tests.sh external"
+    "test-integration-external": "./test/run-integration-tests.sh external",
+    "all-tests": "./test.sh"
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
@@ -41,7 +43,7 @@
   },
   "homepage": "https://github.com/AdExNetwork/adex-validator-stack-js#readme",
   "dependencies": {
-    "adex-protocol-eth": "^3.1.0",
+    "adex-protocol-eth": "^3.1.1",
     "base64url": "^3.0.1",
     "bn.js": "^4.11.8",
     "body-parser": "^1.18.3",
@@ -54,6 +56,8 @@
     "mongodb": "^3.1.10",
     "node-fetch": "^2.3.0",
     "redis": "^2.8.0",
+    "truffle": "^5.0.12",
+    "web3": "^1.0.0-beta.52",
     "winston": "^3.2.1",
     "yargs": "^12.0.5"
   },
@@ -64,9 +68,11 @@
     "eslint-config-prettier": "^4.1.0",
     "eslint-plugin-import": "^2.16.0",
     "eslint-plugin-prettier": "^3.0.1",
+    "ganache-cli": "^6.4.2",
     "husky": "^1.3.1",
     "lint-staged": "^8.1.5",
     "prettier": "^1.16.4",
+    "tap": "^12.6.1",
     "tape": "^4.9.1",
     "tape-catch": "^1.0.6"
   }

@@ -21,7 +21,7 @@ const { argv } = yargs
 	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
 	.demandOption(['adapter'])
 
-const adapter = adapters[argv.adapter]
+const adapter = new adapters[argv.adapter].Adapter(argv, cfg)
 const app = express()
 const port = process.env.PORT || 8005
 
@@ -35,7 +35,7 @@ app.use(errors())
 
 db.connect()
 	.then(function() {
-		return adapter.init(argv)
+		return adapter.init()
 	})
 	.then(function() {
 		app.listen(port, () => logger.info(`Sentry listening on port ${port}!`))

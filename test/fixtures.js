@@ -260,5 +260,95 @@ module.exports = {
 			},
 			'ValidationError: child "messages" fails because ["messages" at position 0 fails because [child "isHealthy" fails because ["isHealthy" is required]]]'
 		]
+	],
+	invalidChannels: validChannel => [
+		[
+			// invalidChannelValidatorsChecksum
+			{
+				...validChannel,
+				spec: {
+					...validChannel.spec,
+					validators: [
+						// keystore json address
+						{
+							id: '0x2bdeafae53940669daa6f519373f686c1f3d3393',
+							url: 'http://localhost:8005',
+							fee: '100'
+						},
+						{
+							id: '0x2bdeafae53940669daa6f519373f686c1f3d3393',
+							url: 'http://localhost:8006',
+							fee: '100'
+						}
+					]
+				}
+			},
+			{},
+			'channel.validators: all addresses are checksummed'
+		],
+		[
+			// invalidChannelNotValidatedByUs
+			{
+				...validChannel,
+				spec: {
+					...validChannel.spec,
+					validators: [
+						// keystore json address
+						{
+							id: '0x6704Fbfcd5Ef766B287262fA2281C105d57246a6',
+							url: 'http://localhost:8005',
+							fee: '100'
+						},
+						{
+							id: '0x6704Fbfcd5Ef766B287262fA2281C105d57246a6',
+							url: 'http://localhost:8006',
+							fee: '100'
+						}
+					]
+				}
+			},
+			{},
+			'channel is not validated by us'
+		],
+		[
+			// invalidChannel validators are not in the whitelist
+			{
+				...validChannel
+			},
+			{
+				VALIDATORS_WHITELIST: ['0x']
+			},
+			'validators are not in the whitelist'
+		],
+		[
+			// invalidChannel channel.creator is not whitelisted
+			{
+				...validChannel
+			},
+			{
+				CREATORS_WHITELIST: ['0x']
+			},
+			'channel.creator is not whitelisted'
+		],
+		[
+			// invalidChannel channel.depositAmount is less than MINIMAL_DEPOSIT
+			{
+				...validChannel
+			},
+			{
+				MINIMAL_DEPOSIT: 100000000
+			},
+			'channel.depositAmount is less than MINIMAL_DEPOSIT'
+		],
+		[
+			// invalidChannel channel.depositAmount is less than MINIMAL_FEE
+			{
+				...validChannel
+			},
+			{
+				MINIMAL_FEE: 100000000
+			},
+			'channel validator fee is less than MINIMAL_FEE'
+		]
 	]
 }
