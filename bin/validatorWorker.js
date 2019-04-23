@@ -43,17 +43,40 @@ adapter
 		process.exit(1)
 	})
 
-function allChannelsTick() {
-	return (
-		fetch(`${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`, {
-			timeout: cfg.LIST_TIMEOUT
-		})
-			.then(res => res.json())
-			.then(({ channels }) => Promise.all(channels.map(validatorTick)))
-			.then(allResults => logPostChannelsTick(allResults))
-			// eslint-disable-next-line no-console
-			.catch(e => console.error('allChannelsTick failed', e))
+function getChannels(pageNumber) {
+	const page = pageNumber && `&page=${pageNumber}`
+	const defaultUrl = `${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`
+	const url = (page && `${defaultUrl}${page}`) || defaultUrl
+
+	return fetch(url, {
+		timeout: cfg.LIST_TIMEOUT
+	}).then(res => res.json())
+}
+
+async function allChannelsTick(currentPage) {
+	// get page 0
+	const { channels, total } = await getChannels(currentPage)
+	// start from page 1 to end
+	const pages = range(1, total)
+
+	const otherChannels = await Promise.all(pages.map(getChannels)).then(result =>
+		result.map(item => item.channels)
 	)
+	const flattenOtherChannels = [].concat(...otherChannels)
+
+	const allResults = await Promise.all(
+		[...channels, ...flattenOtherChannels].map(validatorTick)
+	).catch(e => logger.error('allChannelsTick failed', e))
+
+	logPostChannelsTick(allResults)
+}
+
+function range(start, end) {
+	const arr = []
+	for (let i = start; i <= end; i += 1) {
+		arr.push(i)
+	}
+	return arr
 }
 
 function loopChannels() {

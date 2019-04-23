@@ -14,7 +14,7 @@
 
 - URL Params
 
-`skip=[integer]`
+`page=[integer]`
 
 `limit=[integer]`
 
