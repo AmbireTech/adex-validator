@@ -18,6 +18,74 @@ function depositAsset({ TOKEN_ADDRESS_WHITELIST }) {
 
 const numericString = Joi.string().regex(/^\d+$/)
 
+const validatorMessage = Joi.object({
+	type: Joi.string()
+		.valid(['NewState', 'ApproveState', 'Heartbeat', 'Accounting', 'RejectState'])
+		.required(),
+	stateRoot: Joi.string()
+		.length(64)
+		.when('type', {
+			is: ['NewState', 'ApproveState', 'Heartbeat'],
+			then: Joi.string().required()
+		}),
+	signature: Joi.string().when('type', {
+		is: ['NewState', 'ApproveState', 'Heartbeat'],
+		then: Joi.string().required()
+	}),
+	lastEvAggr: Joi.string()
+		.isoDate()
+		.when('type', {
+			is: ['Accounting'],
+			then: Joi.string()
+				.isoDate()
+				.required()
+		}),
+	balances: Joi.object()
+		.keys()
+		.pattern(/./, numericString)
+		.when('type', {
+			is: ['NewState', 'Accounting'],
+			then: Joi.object()
+				.keys()
+				.pattern(/./, numericString)
+				.required()
+		}),
+	timestamp: Joi.string()
+		.isoDate()
+		.when('type', {
+			is: 'Heartbeat',
+			then: Joi.string()
+				.isoDate()
+				.required()
+		}),
+	balancesBeforeFees: Joi.object()
+		.keys()
+		.pattern(/./, numericString)
+		.when('type', {
+			is: 'Accounting',
+			then: Joi.object()
+				.keys()
+				.pattern(/./, numericString)
+				.required()
+		}),
+	reason: Joi.string().when('type', {
+		is: 'RejectState',
+		then: Joi.string().required()
+	}),
+	isHealthy: Joi.boolean().when('type', {
+		is: 'ApproveState',
+		then: Joi.boolean().required()
+	})
+})
+
+const sentryValidatorMessage = Joi.object({
+	from: Joi.string().required(),
+	received: Joi.string()
+		.isoDate()
+		.required(),
+	msg: Joi.array().items(validatorMessage)
+})
+
 function validators({ VALIDATORS_WHITELIST }) {
 	return Joi.array()
 		.items(
@@ -63,73 +131,42 @@ module.exports = {
 		}).required()
 	}),
 	validatorMessage: {
-		messages: Joi.array().items(
-			Joi.object({
-				type: Joi.string()
-					.valid(['NewState', 'ApproveState', 'Heartbeat', 'Accounting', 'RejectState'])
-					.required(),
-				stateRoot: Joi.string()
-					.length(64)
-					.when('type', {
-						is: ['NewState', 'ApproveState', 'Heartbeat'],
-						then: Joi.string().required()
-					}),
-				signature: Joi.string().when('type', {
-					is: ['NewState', 'ApproveState', 'Heartbeat'],
-					then: Joi.string().required()
-				}),
-				lastEvAggr: Joi.string()
-					.isoDate()
-					.when('type', {
-						is: ['Accounting'],
-						then: Joi.string()
-							.isoDate()
-							.required()
-					}),
-				balances: Joi.object()
-					.keys()
-					.pattern(/./, numericString)
-					.when('type', {
-						is: ['NewState', 'Accounting'],
-						then: Joi.object()
-							.keys()
-							.pattern(/./, numericString)
-							.required()
-					}),
-				timestamp: Joi.string()
-					.isoDate()
-					.when('type', {
-						is: 'Heartbeat',
-						then: Joi.string()
-							.isoDate()
-							.required()
-					}),
-				balancesBeforeFees: Joi.object()
-					.keys()
-					.pattern(/./, numericString)
-					.when('type', {
-						is: 'Accounting',
-						then: Joi.object()
-							.keys()
-							.pattern(/./, numericString)
-							.required()
-					}),
-				reason: Joi.string().when('type', {
-					is: 'RejectState',
-					then: Joi.string().required()
-				}),
-				isHealthy: Joi.boolean().when('type', {
-					is: 'ApproveState',
-					then: Joi.boolean().required()
-				})
-			})
-		)
+		messages: Joi.array().items(validatorMessage)
 	},
 	events: {
 		events: Joi.array().items(
 			Joi.object({
 				type: Joi.string().required(),
 				publisher: Joi.string()
+			})
+		)
+	},
+	sentry: {
+		message: sentryValidatorMessage,
+		lastApproved: Joi.object({
+			newState: sentryValidatorMessage,
+			approveState: sentryValidatorMessage
+		}),
+		events: Joi.array().items(
+			Joi.object({
+				channelId: Joi.string().required(),
+				created: Joi.string()
+					.isoDate()
+					.required(),
+				events: Joi.object()
+					.keys()
+					.pattern(
+						/./,
+						Joi.object({
+							eventCounts: Joi.object()
+								.keys()
+								.pattern(/./, Joi.string()),
+							eventPayouts: Joi.object()
+								.keys()
+								.pattern(/./, Joi.string())
+						})
+					)
+					.required()
 			})
 		)
 	}

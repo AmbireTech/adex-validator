@@ -6,9 +6,9 @@ const { Joi } = require('celebrate')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const eventReducer = require('../services/sentry/lib/eventReducer')
-const producer = require('../services/validatorWorker/producer')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
+
 const schema = require('../routes/schemas')
 const { Adapter } = require('../adapters/dummy')
 const fixtures = require('./fixtures')
@@ -299,31 +299,60 @@ tape('validator message schema', function(t) {
 	t.end()
 })
 
-// @TODO: event aggregator
+tape('sentry response schema', function(t) {
+	const keys = Object.keys(fixtures.sentry)
+	keys.forEach(key => {
+		fixtures.sentry[key].forEach(function([data, expected]) {
+			Joi.validate(data, schema.sentry[key], function(err) {
+				let error = null
+				if (err) error = err.toString()
+				t.equal(error, expected, 'Should validate sentry response schema properly')
+			})
+		})
+	})
+
+	t.end()
+})
 
 tape('eventReducer: newAggr', function(t) {
 	const channelId = 'eventReducerTest'
 	const aggr = eventReducer.newAggr(channelId)
 
 	t.equal(aggr.channelId, channelId, 'should return same channel id')
-	t.equal(aggr.events, {}, 'should have empty events')
+	t.deepEqual(aggr.events, {}, 'should have empty events')
 	t.ok(aggr.created, 'should have created at date')
 
 	t.end()
 })
 
 tape('eventReducer: reduce', function(t) {
-	const channelId = 'eventReducerTest'
-	const aggr = eventReducer.newAggr(channelId)
+	const channel = { id: 'testing', spec: {} }
+	const aggr = eventReducer.newAggr(channel.id)
 
-	const events = {
-		IMPRESSION: [{}]
+	const event = {
+		type: 'IMPRESSION',
+		publisher: 'myAwesomePublisher'
+	}
+	// reduce 100 events
+	for (let i = 0; i < 100; i += 1) {
+		eventReducer.reduce(channel, aggr, event)
 	}
 
-	const reducer = eventReducer.reduce('test', channelId, aggr)
+	const result = eventReducer.reduce(channel, aggr, event)
+
+	t.equal(result.channelId, channel.id, 'should have same channel id')
+	t.equal(
+		result.events.IMPRESSION.eventCounts.myAwesomePublisher,
+		'101',
+		'should have the correct number of eventsCounts'
+	)
+	t.equal(
+		result.events.IMPRESSION.eventPayouts.myAwesomePublisher,
+		'101',
+		'should have the correct number of eventsPayouts'
+	)
+
+	t.end()
 })
 
-tape('validatorWorker: producer', function(t) {
-	const tick = producer.tick()
-})
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances
