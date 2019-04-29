@@ -326,13 +326,19 @@ tape('eventReducer: newAggr', function(t) {
 })
 
 tape('eventReducer: reduce', function(t) {
-	const channel = { id: 'testing', spec: {} }
+	const channel = {
+		id: 'testing',
+		creator: 'reduce',
+		depositAmount: '100',
+		spec: {}
+	}
 	const aggr = eventReducer.newAggr(channel.id)
 
 	const event = {
 		type: 'IMPRESSION',
 		publisher: 'myAwesomePublisher'
 	}
+
 	// reduce 100 events
 	for (let i = 0; i < 100; i += 1) {
 		eventReducer.reduce(channel, aggr, event)
@@ -351,6 +357,17 @@ tape('eventReducer: reduce', function(t) {
 		'101',
 		'should have the correct number of eventsPayouts'
 	)
+
+	const closeReduce = eventReducer.reduce(channel, aggr, {
+		type: 'CLOSE'
+	})
+
+	t.equal(
+		closeReduce.events.CLOSE.eventPayouts.reduce,
+		'100',
+		'should allocate deposit amount for close event'
+	)
+	t.equal(closeReduce.events.CLOSE.eventCounts.reduce.toString(), '1', 'should have event count')
 
 	t.end()
 })

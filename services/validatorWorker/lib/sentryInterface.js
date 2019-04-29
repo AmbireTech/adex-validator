@@ -42,7 +42,8 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 		return fetchJson(url).then(({ validatorMessages }) => {
 			if (validatorMessages.length) {
 				const { err } = sentry.message.validate(validatorMessages)
-				return !err ? validatorMessages[0].msg : null
+				if (err) throw new Error(err)
+				return validatorMessages[0].msg
 			}
 			return null
 		})
@@ -56,7 +57,8 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 		const lastApprovedUrl = `${baseUrl}/last-approved`
 		return fetchJson(lastApprovedUrl).then(({ lastApproved }) => {
 			const { err } = sentry.lastApproved.validate(lastApproved)
-			return !err ? lastApproved : null
+			if (err) throw new Error(err)
+			return lastApproved
 		})
 	}
 
@@ -71,7 +73,8 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 			}
 		}).then(({ events }) => {
 			const { err } = sentry.events.validate(events)
-			return !err ? events : null
+			if (err) throw new Error(err)
+			return events
 		})
 	}
 
