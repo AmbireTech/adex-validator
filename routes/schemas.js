@@ -160,10 +160,12 @@ module.exports = {
 						Joi.object({
 							eventCounts: Joi.object()
 								.keys()
-								.pattern(/./, Joi.string()),
+								.pattern(/./, Joi.string())
+								.required(),
 							eventPayouts: Joi.object()
 								.keys()
 								.pattern(/./, Joi.string())
+								.required()
 						})
 					)
 					.required()
