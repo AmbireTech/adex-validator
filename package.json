@@ -9,8 +9,7 @@
     "test": "node test/index.js",
     "test-eth-adapter": "node test/ethereum_adapter.js",
     "test-integration": "./test/run-integration-tests.sh",
-    "test-integration-external": "./test/run-integration-tests.sh external",
-    "all-tests": "./test.sh"
+    "test-integration-external": "./test/run-integration-tests.sh external"
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",

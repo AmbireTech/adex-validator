@@ -11,7 +11,8 @@ module.exports = {
 	FETCH_TIMEOUT: 5000,
 	LIST_TIMEOUT: 5000,
 	VALIDATOR_TICK_TIMEOUT: 5000,
-	EVENTS_RATE_LIMIT: { type: 'ip', timeframe: 20000 },
+	IP_RATE_LIMIT: { type: 'ip', timeframe: 20000 },
+	SID_RATE_LIMIT: { type: 'sid', timeframe: 20000 },
 	ETHEREUM_CORE_ADDR: '0x333420fc6a897356e69b62417cd17ff012177d2b',
 	ETHEREUM_NETWORK: 'goerli'
 }

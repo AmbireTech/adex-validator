@@ -31,9 +31,13 @@ async function checkAccess(channel, session, events) {
 	const allowRules =
 		eventSubmission && Array.isArray(eventSubmission.allow)
 			? eventSubmission.allow
-			: [{ uids: [channel.creator] }, { uids: null, rateLimit: cfg.EVENTS_RATE_LIMIT }]
+			: [
+					{ uids: [channel.creator] },
+					{ uids: null, rateLimit: cfg.IP_RATE_LIMIT },
+					{ uids: null, rateLimit: cfg.SID_RATE_LIMIT }
+			  ]
 	// first, find an applicable access rule
-	const rule = allowRules.find(r => {
+	const rules = allowRules.filter(r => {
 		// uid === null means it applies to all UIDs
 		if (r.uids === null) return true
 		if (Array.isArray(r.uids)) {
@@ -42,17 +46,55 @@ async function checkAccess(channel, session, events) {
 		}
 		return false
 	})
-	if (rule && rule.rateLimit && rule.rateLimit.type === 'ip') {
-		if (events.length !== 1)
-			return { success: false, statusCode: 429, message: 'rateLimit: only allows 1 event' }
-		const key = `adexRateLimit:${channel.id}:${session.ip}`
-		if (await redisExists(key))
-			return { success: false, statusCode: 429, message: 'rateLimit: too many requests' }
-		const seconds = Math.ceil(rule.rateLimit.timeframe / 1000)
-		await redisSetex(key, seconds, '1')
+
+	let response = { success: true }
+
+	for (let i = 0; i < rules.length; i += 1) {
+		const rule = rules[i]
+		const type = rule.rateLimit && rule.rateLimit.type
+		const ourUid = session.uid || null
+		let key
+
+		// check if uid is allowed to submit whatever it likes
+		if (rule.uids && rule.uids.length > 0 && rule.uids.includes(ourUid)) break
+
+		// ip rateLimit
+		if (rule && rule.rateLimit && type === 'ip') {
+			if (events.length !== 1) {
+				response = { success: false, statusCode: 429, message: 'rateLimit: only allows 1 event' }
+				break
+			}
+			key = `adexRateLimit:${channel.id}:${session.ip}`
+		}
+
+		// session uid ratelimit
+		if (rule && rule.rateLimit && type === 'sid') {
+			// if unauthenticated reject request
+			if (!session.uid) {
+				response = {
+					success: false,
+					statusCode: 401,
+					message: 'rateLimit: unauthenticated request'
+				}
+				break
+			}
+			// if authenticated then use ratelimit
+			key = `adexRateLimit:${channel.id}:${session.uid}`
+		}
+
+		if (key) {
+			// eslint-disable-next-line no-await-in-loop
+			if (await redisExists(key)) {
+				response = { success: false, statusCode: 429, message: 'rateLimit: too many requests' }
+				break
+			}
+			const seconds = Math.ceil(rule.rateLimit.timeframe / 1000)
+			// eslint-disable-next-line no-await-in-loop
+			await redisSetex(key, seconds, '1')
+		}
 	}
 
-	return { success: true }
+	return response
 }
 
 module.exports = checkAccess

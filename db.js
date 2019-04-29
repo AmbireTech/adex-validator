@@ -6,6 +6,7 @@ const dbName = process.env.DB_MONGO_NAME || 'adexValidator'
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379'
 
 let mongoClient = null
+let redisClient = null
 
 function connect() {
 	return MongoClient.connect(url, { useNewUrlParser: true }).then(function(client) {
@@ -19,7 +20,10 @@ function getMongo() {
 }
 
 function getRedis() {
-	return redis.createClient(redisUrl)
+	if (!redisClient) {
+		redisClient = redis.createClient(redisUrl)
+	}
+	return redisClient
 }
 
 module.exports = { connect, getMongo, getRedis }
