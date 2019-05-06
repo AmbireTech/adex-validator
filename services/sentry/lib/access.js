@@ -31,11 +31,7 @@ async function checkAccess(channel, session, events) {
 	const allowRules =
 		eventSubmission && Array.isArray(eventSubmission.allow)
 			? eventSubmission.allow
-			: [
-					{ uids: [channel.creator] },
-					{ uids: null, rateLimit: cfg.IP_RATE_LIMIT },
-					{ uids: null, rateLimit: cfg.SID_RATE_LIMIT }
-			  ]
+			: [{ uids: [channel.creator] }, { uids: null, rateLimit: cfg.IP_RATE_LIMIT }]
 	// first, find an applicable access rule
 	const rules = allowRules.filter(r => {
 		// uid === null means it applies to all UIDs
