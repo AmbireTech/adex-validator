@@ -11,7 +11,8 @@ const validatorMessage = {
 	type: 'NewState',
 	stateRoot: '0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951',
 	signature:
-		'Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader'
+		'Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader',
+	balances: { myAwesomePublisher: '214000000000000000000000', anotherPublisher: '2' }
 }
 
 module.exports = {
@@ -350,5 +351,100 @@ module.exports = {
 			},
 			'channel validator fee is less than MINIMAL_FEE'
 		]
-	]
+	],
+	sentry: {
+		message: [
+			[
+				{
+					from: '0x',
+					received: new Date().toISOString(),
+					msg: [
+						{
+							...validatorMessage
+						}
+					]
+				},
+				null
+			],
+			[
+				{
+					from: '0x',
+					received: new Date().toISOString(),
+					msg: []
+				},
+				null
+			],
+			[
+				{
+					received: new Date().toISOString(),
+					msg: []
+				},
+				'ValidationError: child "from" fails because ["from" is required]'
+			]
+		],
+		lastApproved: [
+			[
+				{
+					newState: {
+						from: '0x1',
+						received: new Date().toISOString(),
+						msg: [
+							{
+								...validatorMessage
+							}
+						]
+					},
+					approveState: {
+						from: '0x1',
+						received: new Date().toISOString(),
+						msg: [
+							{
+								...validatorMessage
+							}
+						]
+					}
+				},
+				null
+			]
+		],
+		events: [
+			[
+				[
+					{
+						channelId: 'test',
+						created: new Date().toISOString(),
+						events: {
+							IMPRESSION: {
+								eventCounts: {
+									awesomePublisher: '1'
+								},
+								eventPayouts: {
+									awesomePublisher: '1'
+								}
+							}
+						}
+					}
+				],
+				null
+			],
+			[
+				[
+					{
+						created: new Date().toISOString(),
+						events: {
+							IMPRESSION: {
+								eventCounts: {
+									awesomePublisher: '1'
+								},
+								eventPayouts: {
+									awesomePublisher: '1'
+								}
+							}
+						}
+					}
+				],
+				`ValidationError: "value" at position 0 fails because [child "channelId" fails because ["channelId" is required]]`
+			]
+		]
+	}
 }

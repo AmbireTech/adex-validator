@@ -117,62 +117,6 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	t.end()
 })
 
-tape('should prevent submitting events for expired channel', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: 'expiredChannelTest',
-		validUntil: Math.ceil(Date.now() / 1000) + 1,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart: Date.now() + 500
-		}
-	}
-
-	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
-	await Promise.all([
-		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
-		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
-	])
-
-	// wait till channel expires
-	await wait(2100)
-
-	const resp = await postEvents(followerUrl, channel.id, genEvents(1)).then(r => r.json())
-	t.equal(resp.message, 'channel is expired', 'should prevent events after validUntil')
-	t.end()
-})
-
-tape('should prevent submitting events for a channel in withdraw period', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: 'withdrawPeriodTest',
-		validUntil: Math.floor(Date.now() / 1000) + 20,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart: Date.now() + 1000
-		}
-	}
-
-	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
-	await Promise.all([
-		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
-		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
-	])
-
-	// wait till withdrawPeriodStart
-	await wait(1100)
-
-	const resp = await postEvents(followerUrl, channel.id, genEvents(1)).then(r => r.json())
-	t.equal(
-		resp.message,
-		'channel is past withdraw period',
-		'should prevent events after withdraw period'
-	)
-	// @TODO we can still submit validator messages
-
-	t.end()
-})
-
 tape('new states are not produced when there are no new aggregates', async function(t) {
 	const url = `${leaderUrl}/channel/${dummyVals.channel.id}/validator-messages`
 	const { validatorMessages } = await fetch(url).then(res => res.json())

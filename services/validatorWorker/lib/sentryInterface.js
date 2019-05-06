@@ -1,6 +1,7 @@
 const fetch = require('node-fetch')
 const assert = require('assert')
 const cfg = require('../../../cfg')
+const { sentry } = require('../../../routes/schemas')
 const logger = require('../../lib')('sentryInterface')
 
 // Using ES5-style initiation rather than ES6 classes
@@ -38,9 +39,14 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 
 	this.getLatestMsg = function(from, type) {
 		const url = `${baseUrl}/validator-messages/${from}/${type}?limit=1`
-		return fetchJson(url).then(({ validatorMessages }) =>
-			validatorMessages.length ? validatorMessages[0].msg : null
-		)
+		return fetchJson(url).then(({ validatorMessages }) => {
+			if (validatorMessages.length) {
+				const { err } = sentry.message.validate(validatorMessages)
+				if (err) throw new Error(err)
+				return validatorMessages[0].msg
+			}
+			return null
+		})
 	}
 
 	this.getOurLatestMsg = function(type) {
@@ -49,7 +55,11 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 
 	this.getLastApproved = function() {
 		const lastApprovedUrl = `${baseUrl}/last-approved`
-		return fetchJson(lastApprovedUrl).then(({ lastApproved }) => lastApproved)
+		return fetchJson(lastApprovedUrl).then(({ lastApproved }) => {
+			const { err } = sentry.lastApproved.validate(lastApproved)
+			if (err) throw new Error(err)
+			return lastApproved
+		})
 	}
 
 	this.getEventAggrs = async function(params = { after: 0 }) {
@@ -61,7 +71,11 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 				'content-type': 'application/json',
 				authorization: `Bearer ${authToken}`
 			}
-		}).then(({ events }) => events)
+		}).then(({ events }) => {
+			const { err } = sentry.events.validate(events)
+			if (err) throw new Error(err)
+			return events
+		})
 	}
 
 	return Object.freeze(this)
