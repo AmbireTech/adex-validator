@@ -187,22 +187,55 @@ tape('new states are not produced when there are no new aggregates', async funct
 	t.end()
 })
 
-// @TODO filtering tests
-// do we return the aggregates we have access to only?
-// do we return everything if we're a superuser (validator)
 tape('/channel/{id}/events-aggregates', async function(t) {
-	const resp = await fetch(`${leaderUrl}/channel/${dummyVals.channel.id}/events-aggregates`, {
-		method: 'GET',
-		headers: {
-			authorization: `Bearer ${dummyVals.auth.publisher}`,
-			'content-type': 'application/json'
-		}
-	}).then(res => res.json())
+	const id = 'eventAggregateCountTest'
+	const channel = { ...dummyVals.channel, id }
 
-	t.ok(resp.channel, 'has resp.channel')
-	t.ok(resp.events, 'has resp.events')
-	t.ok(resp.events.length >= 1, 'should have events of min legnth 1')
-	t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// post events for that channel for multiple publishers
+	const publishers = [
+		[dummyVals.auth.publisher, genEvents(1, dummyVals.ids.publisher)],
+		[dummyVals.auth.publisher2, genEvents(1, dummyVals.ids.publisher2)]
+	]
+
+	await Promise.all(
+		publishers.map(async ([auth, event]) =>
+			postEvents(leaderUrl, id, event, auth).then(res => res.json())
+		)
+	)
+	await aggrAndTick()
+
+	const eventAggrFilterfixtures = [
+		// if we're a non superuser (validator) returns our event
+		[dummyVals.auth.publisher, 1],
+		[dummyVals.auth.publisher2, 1],
+		// if we're a superuser (validator) returns all events
+		[dummyVals.auth.leader, 2]
+	]
+	const url = `${leaderUrl}/channel/${id}/events-aggregates`
+
+	await Promise.all(
+		eventAggrFilterfixtures.map(async fixture => {
+			const [auth, eventLength] = fixture
+			const resp = await fetch(url, {
+				method: 'GET',
+				headers: {
+					authorization: `Bearer ${auth}`,
+					'content-type': 'application/json'
+				}
+			}).then(res => res.json())
+			t.ok(resp.channel, 'has resp.channel')
+			t.ok(resp.events, 'has resp.events')
+			t.ok(resp.events.length === eventLength, `should have events of length ${eventLength}`)
+			t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
+		})
+	)
+
 	t.end()
 })
 
