@@ -71,8 +71,9 @@ async function checkAccess(channel, session, events) {
 		})
 		.filter(e => e !== null)
 
+	// uid is allowed to submit whatever it likes
 	if (checkRules.find(e => e.allowAny === true)) return response
-
+	// check for error
 	if (checkRules.length > 0) {
 		// return the first error message
 		response = { success: false, statusCode: 429, message: checkRules[0].message }
@@ -109,9 +110,10 @@ async function checkAccess(channel, session, events) {
 		})
 	).then(result => result.filter(e => e !== null))
 
-	if (ifErr.length === 0) return response
+	if (ifErr.length > 0) {
+		response = { success: false, statusCode: 429, message: ifErr[0].message }
+	}
 
-	response = { success: false, statusCode: 429, message: ifErr[0].message }
 	return response
 }
 
