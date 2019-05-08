@@ -31,9 +31,9 @@ async function checkAccess(channel, session, events) {
 	const allowRules =
 		eventSubmission && Array.isArray(eventSubmission.allow)
 			? eventSubmission.allow
-			: [{ uids: [channel.creator] }, { uids: null, rateLimit: cfg.EVENTS_RATE_LIMIT }]
+			: [{ uids: [channel.creator] }, { uids: null, rateLimit: cfg.IP_RATE_LIMIT }]
 	// first, find an applicable access rule
-	const rule = allowRules.find(r => {
+	const rules = allowRules.filter(r => {
 		// uid === null means it applies to all UIDs
 		if (r.uids === null) return true
 		if (Array.isArray(r.uids)) {
@@ -42,17 +42,79 @@ async function checkAccess(channel, session, events) {
 		}
 		return false
 	})
-	if (rule && rule.rateLimit && rule.rateLimit.type === 'ip') {
-		if (events.length !== 1)
-			return { success: false, statusCode: 429, message: 'rateLimit: only allows 1 event' }
-		const key = `adexRateLimit:${channel.id}:${session.ip}`
-		if (await redisExists(key))
-			return { success: false, statusCode: 429, message: 'rateLimit: too many requests' }
-		const seconds = Math.ceil(rule.rateLimit.timeframe / 1000)
-		await redisSetex(key, seconds, '1')
+
+	let response = { success: true }
+
+	const checkRules = rules
+		.map(rule => {
+			const type = rule.rateLimit && rule.rateLimit.type
+			const ourUid = session.uid || null
+
+			if (rule.uids && rule.uids.length > 0 && rule.uids.includes(ourUid)) {
+				// check if uid is allowed to submit whatever it likes
+				return { allowAny: true }
+			}
+
+			if (rule && rule.rateLimit && type === 'ip') {
+				if (events.length !== 1) {
+					return new Error('rateLimit: only allows 1 event')
+				}
+			}
+
+			if (rule && rule.rateLimit && type === 'sid') {
+				// if unauthenticated reject request
+				if (!session.uid) {
+					return new Error('rateLimit: unauthenticated request')
+				}
+			}
+			return null
+		})
+		.filter(e => e !== null)
+
+	// uid is allowed to submit whatever it likes
+	if (checkRules.find(e => e.allowAny === true)) return response
+	// check for error
+	if (checkRules.length > 0) {
+		// return the first error message
+		response = { success: false, statusCode: 429, message: checkRules[0].message }
+		return response
 	}
 
-	return { success: true }
+	const limitKeys = rules
+		.map(rule => {
+			const type = rule.rateLimit && rule.rateLimit.type
+
+			if (rule && rule.rateLimit && type === 'sid') {
+				return { rule, key: `adexRateLimit:${channel.id}:${session.uid}` }
+			}
+
+			if (rule && rule.rateLimit && type === 'ip') {
+				return { rule, key: `adexRateLimit:${channel.id}:${session.ip}` }
+			}
+
+			return null
+		})
+		.filter(e => e !== null)
+
+	if (limitKeys.length === 0) return response
+
+	const ifErr = await Promise.all(
+		limitKeys.map(async limitKey => {
+			const { rule, key } = limitKey
+			if (await redisExists(key)) {
+				return new Error('rateLimit: too many requests')
+			}
+			const seconds = Math.ceil(rule.rateLimit.timeframe / 1000)
+			await redisSetex(key, seconds, '1')
+			return null
+		})
+	).then(result => result.filter(e => e !== null))
+
+	if (ifErr.length > 0) {
+		response = { success: false, statusCode: 429, message: ifErr[0].message }
+	}
+
+	return response
 }
 
 module.exports = checkAccess
