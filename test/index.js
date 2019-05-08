@@ -1,16 +1,11 @@
 #!/usr/bin/env node
-const tape = require('tape-catch')
+const tape = require('tape')
 
 const BN = require('bn.js')
 const { Joi } = require('celebrate')
 const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
-<<<<<<< HEAD
 const eventReducer = require('../services/sentry/lib/eventReducer')
-=======
-const checkAccess = require('../services/sentry/lib/access')
-
->>>>>>> a5fc577... add: session uid ratelimit
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
 
@@ -18,8 +13,6 @@ const schema = require('../routes/schemas')
 const { Adapter } = require('../adapters/dummy')
 const fixtures = require('./fixtures')
 const dummyVals = require('./prep-db/mongo')
-const { genEvents } = require('./lib')
-const db = require('../db')
 
 const dummyAdapter = new Adapter({ dummyIdentity: dummyVals.ids.leader }, {})
 const dummyChannel = { depositAmount: new BN(100) }
@@ -380,51 +373,3 @@ tape('eventReducer: reduce', function(t) {
 })
 
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances
-
-tape('check access: session uid rateLimit', async function(t) {
-	const channel = {
-		creator: 'creator',
-		spec: {
-			eventSubmission: {
-				allow: [{ uids: null, rateLimit: { type: 'sid', timeframe: 20000 } }]
-			}
-		}
-	}
-
-	const events = genEvents(2, 'working')
-	const response = await checkAccess(channel, { uid: 'response' }, events)
-	t.equal(response.success, true, 'should process request')
-
-	const tooManyRequest = await checkAccess(channel, { uid: 'response' }, events)
-
-	t.equal(tooManyRequest.success, false, 'should not process request')
-	t.equal(tooManyRequest.statusCode, 429, 'should have too many requests status code')
-
-	t.end()
-})
-
-tape('check access: ip rateLimit', async function(t) {
-	const channel = {
-		creator: 'creator',
-		spec: {
-			eventSubmission: {
-				allow: [{ uids: null, rateLimit: { type: 'ip', timeframe: 20000 } }]
-			}
-		}
-	}
-
-	const events = genEvents(2, 'working')
-	const allowOnlyOneEvent = await checkAccess(channel, {}, events)
-	t.equal(allowOnlyOneEvent.success, false, 'should not process request')
-	t.equal(allowOnlyOneEvent.statusCode, 429, 'shoudl ahbe err')
-	t.equal(allowOnlyOneEvent.message, 'rateLimit: only allows 1 event', 'invalid error message')
-
-	const response = await checkAccess(channel, {}, [events[0]])
-	t.equal(response.success, true, 'should process request')
-
-	t.end()
-})
-
-// redis connection preventing test from closing
-// hence the quit
-tape.onFinish(() => db.getRedis().quit())

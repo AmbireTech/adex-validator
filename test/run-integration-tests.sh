@@ -43,7 +43,8 @@ if [ -n "$RUN_EXTERNAL" ]; then
 	cd ./node_modules/adex-validator-stack-test
 	npm run test-local
 else 
-	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js
+	./test/integration.js
+	# ./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js
 fi
 
 exitCode=$?

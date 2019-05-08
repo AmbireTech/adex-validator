@@ -45,51 +45,72 @@ async function checkAccess(channel, session, events) {
 
 	let response = { success: true }
 
-	for (let i = 0; i < rules.length; i += 1) {
-		const rule = rules[i]
-		const type = rule.rateLimit && rule.rateLimit.type
-		const ourUid = session.uid || null
-		let key
+	const checkErr = rules
+		.map(rule => {
+			const type = rule.rateLimit && rule.rateLimit.type
+			const ourUid = session.uid || null
 
-		// check if uid is allowed to submit whatever it likes
-		if (rule.uids && rule.uids.length > 0 && rule.uids.includes(ourUid)) break
-
-		// ip rateLimit
-		if (rule && rule.rateLimit && type === 'ip') {
-			if (events.length !== 1) {
-				response = { success: false, statusCode: 429, message: 'rateLimit: only allows 1 event' }
-				break
+			if (rule.uids && rule.uids.length > 0 && rule.uids.includes(ourUid)) {
+				return { allowAny: true }
 			}
-			key = `adexRateLimit:${channel.id}:${session.ip}`
-		}
 
-		// session uid ratelimit
-		if (rule && rule.rateLimit && type === 'sid') {
-			// if unauthenticated reject request
-			if (!session.uid) {
-				response = {
-					success: false,
-					statusCode: 401,
-					message: 'rateLimit: unauthenticated request'
+			if (rule && rule.rateLimit && type === 'ip') {
+				if (events.length !== 1) {
+					return new Error('rateLimit: only allows 1 event')
 				}
-				break
 			}
-			// if authenticated then use ratelimit
-			key = `adexRateLimit:${channel.id}:${session.uid}`
-		}
 
-		if (key) {
-			// eslint-disable-next-line no-await-in-loop
-			if (await redisExists(key)) {
-				response = { success: false, statusCode: 429, message: 'rateLimit: too many requests' }
-				break
+			if (rule && rule.rateLimit && type === 'sid') {
+				// if unauthenticated reject request
+				if (!session.uid) {
+					return new Error('rateLimit: unauthenticated request')
+				}
 			}
-			const seconds = Math.ceil(rule.rateLimit.timeframe / 1000)
-			// eslint-disable-next-line no-await-in-loop
-			await redisSetex(key, seconds, '1')
-		}
+			return null
+		})
+		.filter(e => e !== null)
+
+	if (checkErr.find(e => e.allowAny === true)) return response
+
+	if (checkErr.length > 0) {
+		// return the first error message
+		response = { success: false, statusCode: 429, message: checkErr[0].message }
+		return response
 	}
 
+	const limitKeys = rules
+		.map(rule => {
+			const type = rule.rateLimit && rule.rateLimit.type
+
+			if (rule && rule.rateLimit && type === 'sid') {
+				return { rule, key: `adexRateLimit:${channel.id}:${session.uid}` }
+			}
+
+			if (rule && rule.rateLimit && type === 'ip') {
+				return { rule, key: `adexRateLimit:${channel.id}:${session.ip}` }
+			}
+
+			return null
+		})
+		.filter(e => e !== null)
+
+	if (limitKeys.length === 0) return response
+
+	const ifErr = await Promise.all(
+		limitKeys.map(async limitKey => {
+			const { rule, key } = limitKey
+			if (await redisExists(key)) {
+				return new Error('rateLimit: too many requests')
+			}
+			const seconds = Math.ceil(rule.rateLimit.timeframe / 1000)
+			await redisSetex(key, seconds, '1')
+			return null
+		})
+	).then(result => result.filter(e => e !== null))
+
+	if (ifErr.length === 0) return response
+
+	response = { success: false, statusCode: 429, message: ifErr[0].message }
 	return response
 }
 
