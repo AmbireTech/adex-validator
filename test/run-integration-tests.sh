@@ -44,7 +44,7 @@ if [ -n "$RUN_EXTERNAL" ]; then
 	npm run test-local
 else 
 	./test/integration.js
-	# ./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js
+	# ./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js
 fi
 
 exitCode=$?

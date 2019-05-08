@@ -45,12 +45,13 @@ async function checkAccess(channel, session, events) {
 
 	let response = { success: true }
 
-	const checkErr = rules
+	const checkRules = rules
 		.map(rule => {
 			const type = rule.rateLimit && rule.rateLimit.type
 			const ourUid = session.uid || null
 
 			if (rule.uids && rule.uids.length > 0 && rule.uids.includes(ourUid)) {
+				// check if uid is allowed to submit whatever it likes
 				return { allowAny: true }
 			}
 
@@ -70,11 +71,11 @@ async function checkAccess(channel, session, events) {
 		})
 		.filter(e => e !== null)
 
-	if (checkErr.find(e => e.allowAny === true)) return response
+	if (checkRules.find(e => e.allowAny === true)) return response
 
-	if (checkErr.length > 0) {
+	if (checkRules.length > 0) {
 		// return the first error message
-		response = { success: false, statusCode: 429, message: checkErr[0].message }
+		response = { success: false, statusCode: 429, message: checkRules[0].message }
 		return response
 	}
 
