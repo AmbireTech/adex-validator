@@ -1,6 +1,5 @@
 .git
-Dockerfile
 .DS_Store
 .gitignore
 env.*
-node_modules
+node_modules/*
