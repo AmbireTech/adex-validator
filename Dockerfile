@@ -16,10 +16,6 @@ RUN echo 'http://dl-3.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositor
 
 WORKDIR /app 
 
-RUN apk add --no-cache bash git openssh
-
-RUN mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-
 EXPOSE ${PORT}
 
 ADD . .
