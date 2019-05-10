@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:11
+FROM mhart/alpine-node:12
 
 MAINTAINER samparsky@gmail.com
 
