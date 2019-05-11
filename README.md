@@ -153,7 +153,15 @@ folders respectively.
 Required: You have to specify the keystore password via the `KEYSTORE_PASSWORD` 
           environment variable in the `docker-compose.yml` file
 
+
 ### Run
 ```sh
 docker-compose up
+```
+
+Or
+
+```
+docker build --tag=adex/adex-validator
+docker run --network=host --env-file .env.prod --mount type=bind,source=$(PWD)/keystore.json,target=/app/keystore.json adex/adex-validator
 ```
