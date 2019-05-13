@@ -6,7 +6,7 @@ const { readFileSync } = require('fs')
 const formatAddress = require('ethers').utils.getAddress
 const { ethereum } = require('../adapters')
 const cfg = require('../cfg')
-const { channelOpen, deployContracts, sampleChannel } = require('./etheruem')
+const { channelOpen, deployContracts, sampleChannel } = require('./ethereum')
 const ewt = require('../adapters/ethereum/ewt')
 const fixtures = require('./fixtures')
 
