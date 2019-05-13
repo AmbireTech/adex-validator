@@ -7,6 +7,7 @@ const dummyVals = {
 		follower: 'awesomeFollower',
 		user: 'awesomeTestUser',
 		publisher: 'myAwesomePublisher',
+		publisher2: 'myAwesomePublisher2',
 		creator: 'awesomeCreator',
 	},
 	auth: {
@@ -14,6 +15,7 @@ const dummyVals = {
 		follower: 'AUTH_awesomeFollower',
 		user: 'x8c9v1b2',
 		publisher: 'testing',
+		publisher2: 'testing2',
 		creator: 'awesomeCreator',
 	},
 	channel: {

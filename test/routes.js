@@ -20,12 +20,28 @@ tape('/cfg', async function(t) {
 	t.end()
 })
 
-tape('/channel/list', async function(t) {
-	const resp = await fetch(`${leaderUrl}/channel/list`).then(res => res.json())
-	t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
-	t.equal(resp.channels.length, 1, 'resp.channels is the right len')
+tape('/channel/list - with filters', async function(t) {
+	const id = dummyVals.channel.spec.validators[0].id
+	const creator = dummyVals.channel.creator
+	// test channel list filters if there are any
+	const channelFilterFixtures = [
+		['', 1],
+		[`?validator=${id}`, 1],
+		[`?validator=${id}1`, 0],
+		[`?creator=${creator}`, 1],
+		[`?creator=${creator}1`, 0],
+		// 2200-01-01
+		[`?validUntil=7258118400`, 0]
+	]
+	await Promise.all(
+		channelFilterFixtures.map(async item => {
+			const [filter, length] = item
+			const resp = await fetch(`${leaderUrl}/channel/list${filter}`).then(res => res.json())
+			t.ok(Array.isArray(resp.channels), 'resp.channels is an array')
+			t.equal(resp.channels.length, length, 'resp.channels is the right len')
+		})
+	)
 	t.end()
-	// @TODO: test channel list filters if there are any
 })
 
 tape('/channel/{id}/{status,validator-messages}: non existant channel', async function(t) {
@@ -204,6 +220,20 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 					validators: [
 						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
 						{ id: 'awesomeFollower', url: 'http://localhost:8006' }
+					]
+				}
+			},
+			// more than 2 validators
+			{
+				id: 'test',
+				creator: 'someone',
+				depositAsset: 'DAI',
+				depositAmount: '1000',
+				spec: {
+					validators: [
+						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
+						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' },
+						{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: '100' }
 					]
 				}
 			}
