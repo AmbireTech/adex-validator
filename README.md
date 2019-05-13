@@ -88,17 +88,31 @@ npm test && npm run test-integration
 
 ``DB_MONGO_NAME``
 
+``REDIS_URL``
+
+``KEYSTORE_PWD`` - applies when adapter is set to `ethereum`
+
+``NODE_ENV`` - if set to `production`, we will load the production configuration (see `cfg/`)
+
 ## Command line arguments
+
+Those affect the fundamental mode of operation: e.g. whether we run with the dummy adapter (for testing/development purposes) or with the Ethereum adapter.
 
 ``--adapter`` - `dummy` or `ethereum`
 
 ``--keystoreFile`` - path to JSON keystore file (Ethereum adapter)
 
-``--keystorePwd`` - password for the JSON keystore file (Ethereum adapter; needed only for the `validatorWorker`)
-
 ``--dummyIdentity`` - dummy adapter identity (Dummy adapter)
 
 ``--singleTick`` - applies to the `validatorWorker` - run a single tick and exit
+
+
+## Configuration files
+
+Those hold constants that are rarely meant to be changed, for example the validator tick timeout or the address of the OUTPACE contract
+
+see `cfg/`
+
 
 ## Testing setup
 
@@ -143,15 +157,14 @@ node bin/validatorWorker.js --adapter=dummy --dummyIdentity=awesomeFollower --se
 ## Docker
 
 The docker setup provides a leader, follower and mongo image. 
-It uses the ethereum adapter by default which requires a `keystoreFile` and `keystorePwd`
+It uses the ethereum adapter by default which requires a `keystoreFile` and env variable `KEYSTORE_PWD`
 
 ### Configuration
 The docker compose file uses volumes to manage the keystore files.
 Put the keystore files for the leader and follower in the `./resources/leader` and `./resources/follower`
 folders respectively.
 
-Required: You have to specify the keystore password via the `KEYSTORE_PASSWORD` 
-          environment variable in the `docker-compose.yml` file
+Required: You have to specify the keystore password via the `KEYSTORE_PWD` environment variable in the `docker-compose.yml` file
 
 
 ### Run
