@@ -4,7 +4,7 @@ MONGO_OUT=/dev/null # could be &1
 
 TIMESTAMP=`date +%s`
 
-RUN_EXTERNAL=$1
+SUBCOMMAND=$1
 
 LEAD_PORT=8005
 LEAD_MONGO="testValStackLeader${TIMESTAMP}"
@@ -30,19 +30,19 @@ PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS &
 # the sentries need time to start listening
 sleep 2
 
-# start ganache cli 
-# Ethereum local testnet
-./test/ethereum.sh
-
-# the ganache-cli need time to start up
-sleep 3
-
 # Run the integration tests
-if [ -n "$RUN_EXTERNAL" ]; then
+if [ $SUBCOMMAND == 'external' ]; then
 	echo "Running external tests"
 	cd ./node_modules/adex-validator-stack-test
 	npm run test-local
+elif [ $SUBCOMMAND == 'benchmark' ]; then
+	echo "Running benchmark"
+	./test/benchmark/benchmark.sh
 else 
+	# start ganache cli 
+	# Ethereum local testnet
+	./test/scripts/ethereum.sh
+	
 	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js
 fi
 

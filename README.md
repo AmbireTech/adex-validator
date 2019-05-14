@@ -178,3 +178,36 @@ Or
 docker build --tag=adex/adex-validator
 docker run --network=host --env-file .env.prod --mount type=bind,source=$(PWD)/keystore.json,target=/app/keystore.json adex/adex-validator
 ```
+
+### Benchmark
+
+#### Install Wrk2
+
+Details to install wrk2 can be found here on either Linux or Mac OSX
+
+* Linux
+
+https://github.com/giltene/wrk2/wiki/Installing-wrk2-on-Linux
+
+* Mac OSX
+
+https://github.com/giltene/wrk2/wiki/Installing-wrk2-on-Mac
+
+#### Running Benchmark
+
+* Bare Metal
+
+```sh
+
+npm run benchmark
+
+```
+
+* Docker
+
+```sh
+
+> docker-compose up
+> npm run benchmark-docker
+
+```
