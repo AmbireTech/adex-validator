@@ -10,7 +10,8 @@
     "test-eth-adapter": "node test/ethereum_adapter.js",
     "test-integration": "./test/run-integration-tests.sh",
     "test-integration-external": "./test/run-integration-tests.sh external",
-    "benchmark": "./test/run-integration-tests.sh benchmark"
+    "benchmark": "./test/run-integration-tests.sh benchmark",
+    "benchmark-docker": "./test/benchmark/benchmark.sh"
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
