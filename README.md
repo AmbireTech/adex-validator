@@ -195,8 +195,19 @@ https://github.com/giltene/wrk2/wiki/Installing-wrk2-on-Mac
 
 #### Running Benchmark
 
+* Bare Metal
+
 ```sh
 
 npm run benchmark
+
+```
+
+* Docker
+
+```sh
+
+> docker-compose up
+> npm run benchmark-docker
 
 ```
