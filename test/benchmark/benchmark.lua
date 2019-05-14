@@ -1,4 +1,3 @@
-
 wrk.method = "POST"
 wrk.body   = "{ \"events\": [ {\"type\": \"IMPRESSION\", \"publisher\": \"awesomePublisher\"} ] }"
 wrk.headers["Content-Type"] = "application/json"
