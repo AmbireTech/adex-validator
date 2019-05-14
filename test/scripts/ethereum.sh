@@ -30,3 +30,6 @@ else
   echo "Starting our own testrpc instance"
   start_testrpc
 fi
+
+# the ganache-cli need time to start up
+sleep 3
