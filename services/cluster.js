@@ -1,6 +1,6 @@
 const cluster = require('cluster')
 const os = require('os')
-const logger = require('../services/lib')('cluster')
+const logger = require('../services/logger')('cluster')
 
 const setupWorkerProcesses = () => {
 	// to read number of cores on system

@@ -10,8 +10,8 @@ const adapters = require('../adapters')
 const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
 const channelCreate = require('../routes/channelCreate')
-const logger = require('../services/lib')('sentry')
-const createCluster = require('./cluster')
+const logger = require('../services/logger')('sentry')
+const createCluster = require('../services/cluster')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -20,6 +20,8 @@ const { argv } = yargs
 	.default('adapter', 'ethereum')
 	.describe('keystoreFile', 'path to JSON Ethereum keystore file')
 	.describe('dummyIdentity', 'the identity to use with the dummy adapter')
+	.boolean('clustered')
+	.describe('clustered', 'run app in cluster mode with multiple workers')
 	.demandOption(['adapter'])
 
 const adapter = new adapters[argv.adapter].Adapter(argv, cfg)
@@ -34,7 +36,7 @@ app.use('/channel', channelCreate.forAdapter(adapter))
 app.use('/cfg', (_, res) => res.send(cfg))
 app.use(errors())
 
-if (cfg.CLUSTER_MODE) {
+if (argv.clustered) {
 	createCluster(run)
 } else {
 	// dont run in cluster mode

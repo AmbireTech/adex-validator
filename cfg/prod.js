@@ -1,5 +1,4 @@
 module.exports = {
-	CLUSTER_MODE: true,
 	MAX_CHANNELS: 512,
 	WAIT_TIME: 15000,
 	AGGR_THROTTLE: 5000,
