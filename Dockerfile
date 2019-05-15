@@ -23,8 +23,8 @@ EXPOSE ${PORT}
 
 ADD . .
 
-RUN npm install --production && npm install -g pm2
+RUN npm install --production
 
-CMD PORT=${PORT} pm2-docker start bin/sentry.js -- --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} && \
-	pm2 start -x bin/validatorWorker.js -- --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} --keystorePwd=${KEYSTORE_PASSWORD} --sentryUrl=http://127.0.0.1:${PORT}
+CMD PORT=${PORT} node bin/sentry.js --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} && \
+	node bin/validatorWorker.js --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} --keystorePwd=${KEYSTORE_PASSWORD} --sentryUrl=http://127.0.0.1:${PORT}
     

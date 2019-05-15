@@ -8,6 +8,7 @@ const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
 const logger = require('../services/lib')('validatorWorker')
+const createCluster = require('./cluster')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -33,22 +34,30 @@ const adapter = new adapters[argv.adapter].Adapter(
 
 const tickTimeout = cfg.VALIDATOR_TICK_TIMEOUT || 5000
 
-adapter
-	.init()
-	.then(() => adapter.unlock())
-	.then(function() {
-		if (argv.singleTick) {
-			allChannelsTick().then(() => process.exit(0))
-		} else {
-			loopChannels()
-		}
-	})
-	.catch(function(err) {
-		// eslint-disable-next-line no-console
-		logger.error(err)
-		process.exit(1)
-	})
+if (cfg.CLUSTER_MODE) {
+	createCluster(run)
+} else {
+	// dont run in cluster mode
+	run()
+}
 
+function run() {
+	adapter
+		.init()
+		.then(() => adapter.unlock())
+		.then(function() {
+			if (argv.singleTick) {
+				allChannelsTick().then(() => process.exit(0))
+			} else {
+				loopChannels()
+			}
+		})
+		.catch(function(err) {
+			// eslint-disable-next-line no-console
+			logger.error(err)
+			process.exit(1)
+		})
+}
 function getChannels(pageNumber) {
 	const page = pageNumber && `&page=${pageNumber}`
 	const defaultUrl = `${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`

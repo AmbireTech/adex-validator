@@ -11,6 +11,7 @@ const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
 const channelCreate = require('../routes/channelCreate')
 const logger = require('../services/lib')('sentry')
+const createCluster = require('./cluster')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -33,14 +34,23 @@ app.use('/channel', channelCreate.forAdapter(adapter))
 app.use('/cfg', (_, res) => res.send(cfg))
 app.use(errors())
 
-db.connect()
-	.then(function() {
-		return adapter.init()
-	})
-	.then(function() {
-		app.listen(port, () => logger.info(`Sentry listening on port ${port}!`))
-	})
-	.catch(function(err) {
-		logger.error(err)
-		process.exit(1)
-	})
+if (cfg.CLUSTER_MODE) {
+	createCluster(run)
+} else {
+	// dont run in cluster mode
+	run()
+}
+
+function run() {
+	db.connect()
+		.then(function() {
+			return adapter.init()
+		})
+		.then(function() {
+			app.listen(port, () => logger.info(`Sentry listening on port ${port}!`))
+		})
+		.catch(function(err) {
+			logger.error(err)
+			process.exit(1)
+		})
+}
