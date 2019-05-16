@@ -7,7 +7,7 @@ const adapters = require('../adapters')
 const leader = require('../services/validatorWorker/leader')
 const follower = require('../services/validatorWorker/follower')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
-const logger = require('../services/lib')('validatorWorker')
+const logger = require('../services/logger')('validatorWorker')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')

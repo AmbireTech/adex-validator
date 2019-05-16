@@ -1,6 +1,6 @@
 const { mergeAggrs } = require('./lib/mergeAggrs')
 const { toBNMap } = require('./lib')
-const logger = require('../lib')('validatorWorker(producer)')
+const logger = require('../logger')('validatorWorker(producer)')
 
 async function tick(iface, channel) {
 	const accounting = (await iface.getOurLatestMsg('Accounting')) || {
