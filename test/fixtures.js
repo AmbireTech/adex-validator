@@ -245,6 +245,16 @@ module.exports = {
 			'channel.validators: all addresses are checksummed'
 		],
 		[
+			// invalidChannel channel.depositAsset is not whitelisted
+			{
+				...validChannel
+			},
+			{
+				TOKEN_ADDRESS_WHITELIST: ['0x']
+			},
+			'channel.depositAsset is not whitelisted'
+		],
+		[
 			// invalidChannelNotValidatedByUs
 			{
 				...validChannel,

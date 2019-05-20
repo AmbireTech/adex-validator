@@ -42,7 +42,7 @@ else
 	# start ganache cli 
 	# Ethereum local testnet
 	./test/scripts/ethereum.sh
-	
+
 	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js
 fi
 
