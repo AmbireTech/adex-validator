@@ -32,4 +32,4 @@ else
 fi
 
 # the ganache-cli need time to start up
-sleep 3
+sleep 5
