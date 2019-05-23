@@ -1,6 +1,6 @@
-# adex-validator-stack-js
+# adex-validator
 
-Reference implementation of the [AdEx validator stack](https://github.com/adexnetwork/adex-protocol#validator-stack-platform).
+Reference implementation of the [AdEx validator stack](https://github.com/adexnetwork/adex-protocol#validator-stack-platform), in JavaScript (nodeJS).
 
 Components:
 
