@@ -19,6 +19,13 @@ router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorM
 
 // event aggregates information
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
+// event aggregates with timeframe information
+router.get(
+	'/:id/events-aggregates/:earner',
+	celebrate({ body: schema.eventTimeAggr }),
+	channelLoad,
+	getEventTimeAggregate
+)
 
 // Submitting events/messages: requires auth
 router.post(
@@ -33,6 +40,61 @@ router.post('/:id/events', celebrate({ body: schema.events }), channelIfActive, 
 // Implementations
 function getStatus(req, res) {
 	res.send({ channel: req.channel })
+}
+
+function getEventTimeAggregate(req, res, next) {
+	const { earner } = req.params
+	const {
+		eventType = 'IMPRESSION',
+		metric = 'eventCounts',
+		timeframe = 'year',
+		limit = 100
+	} = req.query
+	const eventsCol = db.getMongo().collection('eventAggregates')
+	const channel = req.channel
+	const group = getGroup(timeframe)
+
+	const pipeline = [
+		{
+			$addFields: {
+				value: {
+					$toInt: `$events.${eventType}.${metric}.${earner}`
+				}
+			}
+		},
+		{
+			$match: {
+				channelId: channel.id,
+				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
+			}
+		},
+		{
+			$project: {
+				value: 1,
+				created: 1,
+				year: { $year: '$created' },
+				month: { $month: '$created' },
+				week: { $week: '$created' },
+				day: { $dayOfMonth: '$created' },
+				hour: { $hour: '$created' },
+				minutes: { $minute: '$created' }
+			}
+		},
+		{ $sort: { created: 1 } },
+		{
+			$group: {
+				_id: { ...group },
+				value: { $sum: '$value' }
+			}
+		},
+		{ $limit: limit }
+	]
+
+	return eventsCol
+		.aggregate(pipeline)
+		.toArray()
+		.then(aggr => res.send({ channel, aggr }))
+		.catch(next)
 }
 
 function getEventAggregates(req, res, next) {
@@ -205,6 +267,36 @@ function authRequired(req, res, next) {
 		return
 	}
 	next()
+}
+
+function getGroup(timeframe) {
+	if (timeframe === 'month') {
+		return { year: '$year', month: '$month' }
+	}
+
+	if (timeframe === 'week') {
+		return { year: '$year', week: '$week' }
+	}
+
+	if (timeframe === 'day') {
+		return { year: '$year', month: '$month', day: '$day' }
+	}
+
+	if (timeframe === 'hour') {
+		return { year: '$year', month: '$month', day: '$day', hour: '$hour' }
+	}
+
+	if (timeframe === 'minute') {
+		return {
+			year: '$year',
+			week: '$week',
+			month: '$month',
+			day: '$day',
+			hour: '$hour',
+			minutes: '$minutes'
+		}
+	}
+	return { year: '$year' }
 }
 
 // Export it
