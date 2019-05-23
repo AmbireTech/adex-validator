@@ -131,7 +131,7 @@ tape('new states are not produced when there are no new aggregates', async funct
 	t.end()
 })
 
-tape('/channel/{id}/events-aggregates', async function(t) {
+tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
 	const id = 'eventAggregateCountTest'
 	const channel = { ...dummyVals.channel, id }
 
@@ -143,8 +143,8 @@ tape('/channel/{id}/events-aggregates', async function(t) {
 
 	// post events for that channel for multiple publishers
 	const publishers = [
-		[dummyVals.auth.publisher, genEvents(1, dummyVals.ids.publisher)],
-		[dummyVals.auth.publisher2, genEvents(1, dummyVals.ids.publisher2)]
+		[dummyVals.auth.creator, genEvents(3, dummyVals.ids.publisher)],
+		[dummyVals.auth.creator, genEvents(3, dummyVals.ids.publisher2)]
 	]
 
 	await Promise.all(
@@ -153,7 +153,6 @@ tape('/channel/{id}/events-aggregates', async function(t) {
 		)
 	)
 	await aggrAndTick()
-
 	const eventAggrFilterfixtures = [
 		// if we're a non superuser (validator) returns our event
 		[dummyVals.auth.publisher, 1],
@@ -161,6 +160,7 @@ tape('/channel/{id}/events-aggregates', async function(t) {
 		// if we're a superuser (validator) returns all events
 		[dummyVals.auth.leader, 2]
 	]
+
 	const url = `${leaderUrl}/channel/${id}/events-aggregates`
 
 	await Promise.all(
@@ -177,6 +177,32 @@ tape('/channel/{id}/events-aggregates', async function(t) {
 			t.ok(resp.events, 'has resp.events')
 			t.ok(resp.events.length === eventLength, `should have events of length ${eventLength}`)
 			t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
+		})
+	)
+
+	const timeAggrFilterFixtures = [
+		['?metric=eventPayouts'],
+		['?metric=eventCounts'],
+		['?timeframe=minute'],
+		['?timeframe=year'],
+		['?timeframe=hour'],
+		['?timeframe=day'],
+		['?timeframe=week'],
+		['?timeframe=month']
+	]
+
+	await Promise.all(
+		timeAggrFilterFixtures.map(async fixture => {
+			const [query] = fixture
+			const resp = await fetch(`${url}/${dummyVals.ids.publisher}${query}`, {
+				method: 'GET',
+				headers: {
+					'content-type': 'application/json'
+				}
+			}).then(res => res.json())
+			t.ok(resp.channel, 'has resp.channel')
+			// 3 is number of events submitted by publisher in url param
+			t.ok(resp.aggr[0].value === 3, 'has correct aggr value')
 		})
 	)
 
