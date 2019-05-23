@@ -131,7 +131,7 @@ tape('new states are not produced when there are no new aggregates', async funct
 	t.end()
 })
 
-tape('/channel/{id}/events-aggregates/{publisher}', async function(t) {
+tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
 	const id = 'eventAggregateCountTest'
 	const channel = { ...dummyVals.channel, id }
 

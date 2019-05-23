@@ -1,11 +1,21 @@
 services:
-        - mongodb
         - redis
 language: node_js
 node_js:
         - "10"
+before_script:
+        - mkdir -p ./database 
+        - mongod --fork --logpath /dev/null --dbpath ./database
+        - sleep 5
 script:
         - npm run lint
         - npm test
         - npm run test-integration
         #- npm run test-integration-external
+addons:
+  apt:
+    sources:
+        - mongodb-4.0-xenial
+    packages:
+        - mongodb-org-server
+        - mongodb-org-shell
