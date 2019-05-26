@@ -1,12 +1,11 @@
 const express = require('express')
 const { celebrate } = require('celebrate')
-const cfg = require('../cfg')
 const schema = require('./schemas')
 const db = require('../db')
 
 function forAdapter(adapter) {
 	const router = express.Router()
-	router.post('/', celebrate({ body: schema.createChannel(cfg) }), function(req, res, next) {
+	router.post('/', celebrate({ body: schema.createChannel }), function(req, res, next) {
 		const channelsCol = db.getMongo().collection('channels')
 		const channel = {
 			...req.body,

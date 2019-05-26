@@ -274,8 +274,8 @@ tape('should never allow exceeding the deposit', function(t) {
 // channel schema;
 //
 tape('create channel schema', function(t) {
-	fixtures.createChannel.forEach(function([data, conf, expected]) {
-		Joi.validate(data, schema.createChannel(conf), function(err) {
+	fixtures.createChannel.forEach(function([data, expected]) {
+		Joi.validate(data, schema.createChannel, function(err) {
 			let error = null
 			if (err) error = err.toString()
 			t.equal(error, expected, 'Should validate object properly')

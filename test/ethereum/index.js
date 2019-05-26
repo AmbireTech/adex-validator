@@ -1,6 +1,3 @@
-const Web3 = require('web3')
-
-const web3 = new Web3('http://localhost:8545')
 const assert = require('assert')
 const { ContractFactory, Contract, Wallet, providers } = require('ethers')
 const formatAddress = require('ethers').utils.getAddress
@@ -52,7 +49,7 @@ async function channelOpen(channel) {
 }
 
 async function sampleChannel() {
-	const blockTime = (await web3.eth.getBlock('latest')).timestamp
+	const blockTime = (await provider.getBlock('latest')).timestamp
 
 	return {
 		...dummyVals.channel,

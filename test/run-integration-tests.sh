@@ -31,18 +31,18 @@ PORT=$FOLLOW_PORT DB_MONGO_NAME=$FOLLOW_MONGO bin/sentry.js $FOLLOW_ARGS &
 sleep 2
 
 # Run the integration tests
-if [ $SUBCOMMAND == 'external' ]; then
+if [ "$SUBCOMMAND" == "external" ]; then
 	echo "Running external tests"
 	cd ./node_modules/adex-validator-stack-test
 	npm run test-local
-elif [ $SUBCOMMAND == 'benchmark' ]; then
+elif [ "$SUBCOMMAND" == "benchmark" ]; then
 	echo "Running benchmark"
 	./test/benchmark/benchmark.sh
 else 
 	# start ganache cli 
 	# Ethereum local testnet
 	./test/scripts/ethereum.sh
-	
+
 	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js
 fi
 

@@ -2,7 +2,7 @@ const fetch = require('node-fetch')
 const assert = require('assert')
 const cfg = require('../../../cfg')
 const { sentry } = require('../../../routes/schemas')
-const logger = require('../../lib')('sentryInterface')
+const logger = require('../../logger')('sentryInterface')
 
 // Using ES5-style initiation rather than ES6 classes
 // cause we want private properties

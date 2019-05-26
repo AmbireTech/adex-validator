@@ -3,7 +3,7 @@ const db = require('../../db')
 const cfg = require('../../cfg')
 const eventReducer = require('./lib/eventReducer')
 const checkAccess = require('./lib/access')
-const logger = require('../lib')('sentry')
+const logger = require('../logger')('sentry')
 
 const recorders = new Map()
 

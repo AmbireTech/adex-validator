@@ -1,12 +1,5 @@
-const cfg = {
-	CREATORS_WHITELIST: null,
-	TOKEN_ADDRESS_WHITELIST: null,
-	MINIMAL_DEPOSIT: 1000,
-	VALIDATORS_WHITELIST: ['0xa95743F561db3618D204C9a7c3ca55cDf0625107']
-}
 const dummyVals = require('./prep-db/mongo')
 
-const GOERLI_TST = '0x7af963cf6d228e564e2a0aa0ddbf06210b38615d'
 const validatorMessage = {
 	type: 'NewState',
 	stateRoot: '0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951',
@@ -19,20 +12,8 @@ module.exports = {
 	createChannel: [
 		[
 			{
-				...dummyVals.channel,
-				depositAsset: 'something'
-			},
-			{
-				...cfg,
-				TOKEN_ADDRESS_WHITELIST: [GOERLI_TST]
-			},
-			`ValidationError: child "depositAsset" fails because ["depositAsset" must be one of [${GOERLI_TST}]]`
-		],
-		[
-			{
 				id: 'awesomeTestChannel'
 			},
-			cfg,
 			`ValidationError: child "depositAsset" fails because ["depositAsset" is required]`
 		],
 		[
@@ -40,7 +21,6 @@ module.exports = {
 				...dummyVals.channel,
 				id: undefined
 			},
-			cfg,
 			`ValidationError: child "id" fails because ["id" is required]`
 		],
 		[
@@ -50,10 +30,6 @@ module.exports = {
 					...dummyVals.channel.spec,
 					minPerImpression: '1acb'
 				}
-			},
-			{
-				...cfg,
-				VALIDATORS_WHITELIST: null
 			},
 			'ValidationError: child "spec" fails because [child "minPerImpression" fails because ["minPerImpression" with value "1acb" fails to match the required pattern: /^\\d+$/]]'
 		],
@@ -76,7 +52,6 @@ module.exports = {
 					]
 				}
 			},
-			cfg,
 			'ValidationError: child "spec" fails because [child "validators" fails because ["validators" at position 0 fails because [child "fee" fails because ["fee" with value "-100" fails to match the required pattern: /^\\d+$/]]]]'
 		],
 		[
@@ -84,16 +59,11 @@ module.exports = {
 				...dummyVals.channel,
 				creator: 8
 			},
-			cfg,
 			`ValidationError: child "creator" fails because ["creator" must be a string]`
 		],
 		[
 			{
 				...dummyVals.channel
-			},
-			{
-				...cfg,
-				VALIDATORS_WHITELIST: null
 			},
 			null
 		],
@@ -110,7 +80,6 @@ module.exports = {
 					]
 				}
 			},
-			cfg,
 			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" must contain 2 items]]`
 		],
 		[
@@ -118,15 +87,7 @@ module.exports = {
 				...dummyVals.channel,
 				spec: undefined
 			},
-			cfg,
 			`ValidationError: child "spec" fails because ["spec" is required]`
-		],
-		[
-			{
-				...dummyVals.channel
-			},
-			cfg,
-			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" at position 0 fails because [child "id" fails because ["id" must be one of [0xa95743F561db3618D204C9a7c3ca55cDf0625107]]]]]`
 		],
 		// correct adunit spec
 		[
@@ -135,10 +96,6 @@ module.exports = {
 				spec: {
 					...dummyVals.channel.spec
 				}
-			},
-			{
-				...cfg,
-				VALIDATORS_WHITELIST: null
 			},
 			null
 		]
@@ -286,6 +243,16 @@ module.exports = {
 			},
 			{},
 			'channel.validators: all addresses are checksummed'
+		],
+		[
+			// invalidChannel channel.depositAsset is not whitelisted
+			{
+				...validChannel
+			},
+			{
+				TOKEN_ADDRESS_WHITELIST: ['0x']
+			},
+			'channel.depositAsset is not whitelisted'
 		],
 		[
 			// invalidChannelNotValidatedByUs

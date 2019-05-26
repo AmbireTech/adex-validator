@@ -22,6 +22,18 @@ async function isChannelValid(cfg, channel, address) {
 			'channel.creator is not whitelisted'
 		)
 	}
+	if (cfg.TOKEN_ADDRESS_WHITELIST && cfg.TOKEN_ADDRESS_WHITELIST.length) {
+		const depositAsset = channel.depositAsset
+
+		assert.ok(
+			cfg.TOKEN_ADDRESS_WHITELIST.every(
+				id =>
+					addrEq(id, depositAsset) ||
+					cfg.TOKEN_ADDRESS_WHITELIST.includes(depositAsset.toLowerCase())
+			),
+			'channel.depositAsset is not whitelisted'
+		)
+	}
 	assert.ok(
 		new BN(channel.depositAmount).gte(new BN(cfg.MINIMAL_DEPOSIT || 0)),
 		'channel.depositAmount is less than MINIMAL_DEPOSIT'
