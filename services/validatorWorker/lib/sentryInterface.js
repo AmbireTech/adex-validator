@@ -94,7 +94,6 @@ function onPropagationError(adapter, recv, msgs, e) {
 }
 
 function logPropagate(adapter, recvs, channel, msgs) {
-	// @TODO detailed log for some types of messages, e.g. RejectState
 	logger.info(
 		`(${adapter.whoami()}) - channel ${channel.id}: propagating ${summarizeMsgs(msgs)} to ${
 			recvs.length

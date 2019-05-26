@@ -62,9 +62,9 @@ function makeRecorder(channelId) {
 			return hasAccess
 		}
 
-		// @TODO keep in mind that at one point validator messages will be able to change payment/bidding information
-		// that needs to be passed into the eventReducer
-		// this will probably be implemented an updateRecorder() function
+		// Keep in mind that at one point validator messages will be able to change payment/bidding information
+		// this will be saved in the channel object, which is passed into the eventReducer
+
 		// Record the events
 		aggr = events.reduce(eventReducer.reduce.bind(null, channel), aggr)
 		if (cfg.AGGR_THROTTLE) {
