@@ -112,7 +112,12 @@ function getTimeout(recv) {
 }
 
 function summarizeMsgs(messages) {
-	return messages.map(x => x.type).join(', ')
+	return messages
+		.map(x => {
+			if (x.type === 'RejectState') return `${x.type} (${x.reason})`
+			return x.type
+		})
+		.join(', ')
 }
 
 module.exports = SentryInterface

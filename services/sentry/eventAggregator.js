@@ -24,7 +24,6 @@ function makeRecorder(channelId) {
 
 	// persist each individual aggregate
 	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
-	// @TODO figure out if this will leak memory (cause of the long promise chain we are creating)
 	let saveQueue = Promise.resolve()
 	const persist = function(toSave) {
 		saveQueue = saveQueue.then(function() {
