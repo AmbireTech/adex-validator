@@ -64,5 +64,6 @@ module.exports = {
 	getDummySig,
 	forceTick,
 	wait,
-	fetchPost
+	fetchPost,
+	exec
 }

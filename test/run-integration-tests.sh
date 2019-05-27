@@ -43,7 +43,12 @@ else
 	# Ethereum local testnet
 	./test/scripts/ethereum.sh
 
+	# Run integration tests
 	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js
+
+	# Run prune tests
+	./test/prune.js
+
 fi
 
 exitCode=$?

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const yargs = require('yargs')
-const db = require('../db')
+const db = require('../db').connect()
 const logger = require('../services/logger')('prunning')
 
 const { argv } = yargs
@@ -10,7 +10,7 @@ const { argv } = yargs
 
 async function prune() {
 	const channel = argv.channel
-	const threshold = new Date(argv.threshold) || defaultThreshold()
+	const threshold = new Date(parseInt(argv.threshold, 10)) || defaultThreshold()
 	const { approveState } = await retrieveLastApproved(channel).catch(e => console.error(e))
 	let removeConditions = [
 		// prune heartbeat messages
