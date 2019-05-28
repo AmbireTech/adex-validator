@@ -12,11 +12,11 @@
 
 `GET`
 
-- URL Params
+- Query Params
 
 `page=[integer]`
-
-`limit=[integer]`
+`creator=[string]`
+`validUntil=[timestamp]`
 
 - Response
 
@@ -286,6 +286,42 @@ Get event aggregates received by a validator
 
         * Code: 401
         Message: Unauthorized
+
+#### Event Aggregates by Timeframe
+Get event aggregates received by a earner
+
+- URL
+/:id/events-aggregates/:earner
+
+- METHOD
+
+`GET`
+
+- URL Params
+`id=[string] channel id`
+`earner=[string] earner id`
+
+- Query Params
+`eventType=[string] (default='IMPRESSION')`
+`metric=[string] (default='eventCounts') can be either eventCounts|eventPayouts`
+`timeframe=[string] (default='year') timeframe=day|week|year|month|minute|hour`
+`limit=[number] (default= 100)`
+
+- Response
+
+    * Success
+
+    ```javascript
+        [
+            {
+                channel: {}
+                aggr: [
+                    {_id: {year: 2019 } value: 100},
+                    {_id: {year: 2018 } value: 100},
+                ]
+            }
+        ]
+    ```
 
 #### POST Events
 
