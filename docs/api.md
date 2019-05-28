@@ -15,7 +15,9 @@
 - Query Params
 
 `page=[integer]`
+
 `creator=[string]`
+
 `validUntil=[timestamp]`
 
 - Response
@@ -139,6 +141,7 @@ Event to close a channel. Only a channel creator is allowed to close a channel
 - URL Params
 
 `uid=[string] (optional)`
+
 `type=[string] (optional)`
 
 - Query
@@ -231,6 +234,7 @@ Get chanel validator last approved `NewState` and `ApproveState` messages
 - URL Params
 
 `uid=[string] (optional)`
+
 `type=[string] (optional)`
 
 - Response
@@ -269,6 +273,7 @@ Get event aggregates received by a validator
 - URL Params
 
 `uid=[string] (optional)`
+
 `type=[string] (optional)`
 
 - Response
@@ -298,13 +303,19 @@ Get event aggregates received by a earner
 `GET`
 
 - URL Params
+
 `id=[string] channel id`
+
 `earner=[string] earner id`
 
 - Query Params
+
 `eventType=[string] (default='IMPRESSION')`
+
 `metric=[string] (default='eventCounts') can be either eventCounts|eventPayouts`
+
 `timeframe=[string] (default='year') timeframe=day|week|year|month|minute|hour`
+
 `limit=[number] (default= 100)`
 
 - Response
@@ -336,7 +347,9 @@ Submit channel events to a validator sentry
 `POST`
 
 - HEADERS
+    
     `authorization [ eg. 'Bearer xxx']`
+
     `content-type [application/json]`
 
 - Data Params
