@@ -14,11 +14,11 @@
 
 - Query Params
 
-`page=[integer]`
+`page=[integer]` (optional) default: 0
 
-`creator=[string]`
+`creator=[string]` (optional)
 
-`validUntil=[timestamp]`
+`validUntil=[timestamp]` (optional) filters per `channel.validUntil` > `validUntil`
 
 - Response
 
