@@ -1,4 +1,6 @@
 const BN = require('bn.js')
+const assert = require('assert')
+const db = require('../../../db')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
@@ -18,9 +20,24 @@ function reduce(channel, initialAggr, ev) {
 				[creator]: depositAmount
 			}
 		}
+	} else if (ev.type === 'UPDATE_IMPRESSION_PRICE') {
+		const price = new BN(ev.price, 10)
+		assert.ok(isPriceOk(price, channel), 'invalid price per impression')
+		// set the current price per impression
+		const channelsCol = db.getMongo().collection('channels')
+		channelsCol
+			.updateOne({ id: channel.id }, { $set: { currentPricePerImpression: ev.price } })
+			.then(function() {})
 	}
 
 	return aggr
+}
+// price must be within the min and max price impression
+function isPriceOk(price, channel) {
+	const minPrice = new BN(channel.spec.minPerImpression, 10)
+	const maxPrice = new BN(channel.spec.maxPerImpression, 10)
+
+	return price.gte(minPrice) && price.lte(maxPrice)
 }
 
 function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, channel) {
@@ -28,6 +45,10 @@ function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, e
 		eventCounts: { ...initialMap.eventCounts },
 		eventPayouts: { ...initialMap.eventPayouts }
 	}
+
+	const price = new BN(channel.currentPricePerImpression || channel.spec.minPerImpression, 10)
+	assert.ok(isPriceOk(price, channel), 'invalid price per impression')
+
 	if (typeof ev.publisher !== 'string') return map
 	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
@@ -38,12 +59,9 @@ function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, e
 
 	// current publisher payout
 	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
-	// add the minimum price per impression
-	// to the current amount
-	map.eventPayouts[ev.publisher] = addAndToString(
-		currentAmount,
-		new BN(channel.spec.minPerImpression || 1)
-	)
+	// add the price per impression
+	// to the current eventPayouts for the publisher
+	map.eventPayouts[ev.publisher] = addAndToString(currentAmount, price)
 	return map
 }
 

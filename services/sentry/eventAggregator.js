@@ -19,9 +19,6 @@ function makeRecorder(channelId) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const channelsCol = db.getMongo().collection('channels')
 
-	// get the channel
-	const channelPromise = channelsCol.findOne({ _id: channelId })
-
 	// persist each individual aggregate
 	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
 	let saveQueue = Promise.resolve()
@@ -55,7 +52,7 @@ function makeRecorder(channelId) {
 
 	// return a recorder
 	return async function(session, events) {
-		const channel = await channelPromise
+		const channel = await channelsCol.findOne({ _id: channelId })
 
 		const hasAccess = await checkAccess(channel, session, events)
 		if (!hasAccess.success) {

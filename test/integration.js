@@ -38,6 +38,7 @@ function aggrAndTick() {
 
 tape('submit events and ensure they are accounted for', async function(t) {
 	const evs = genEvents(3).concat(genEvents(2, 'anotherPublisher'))
+
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
@@ -492,7 +493,6 @@ tape('should prevent sending heartbeat on exhausted channels', async function(t)
 			withdrawPeriodStart
 		}
 	}
-
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -512,6 +512,42 @@ tape('should prevent sending heartbeat on exhausted channels', async function(t)
 	t.end()
 })
 
+tape('should update the price per impression for channel', async function(t) {
+	const channel = { ...dummyVals.channel, id: 'updatePrice' }
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// 1 event pays 1 token for now
+	await postEvents(leaderUrl, channel.id, genEvents(10))
+	// post update channel price event
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
+		events: [{ type: 'UPDATE_IMPRESSION_PRICE', price: '3' }]
+	})
+
+	await aggrAndTick()
+
+	// 1 event pays 3 tokens now;
+	await postEvents(leaderUrl, channel.id, genEvents(10))
+
+	await aggrAndTick()
+
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	// the total eventpayout is 40 i.e. (3 * 10) + (1 * 10) = 32 + 4 + 4
+	t.equal(
+		balances[dummyVals.ids.publisher],
+		'32',
+		'publisher balance should be charged according to new price'
+	)
+	t.equal(balances[dummyVals.ids.leader], '4', 'should have correct leader validator fee')
+	t.equal(balances[dummyVals.ids.follower], '4', 'should have correct follower validator fee')
+
+	t.end()
+})
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
