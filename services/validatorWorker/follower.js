@@ -51,7 +51,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		{
 			type: 'ApproveState',
 			stateRoot,
-			isHealthy: isHealthy(balances, proposedBalances),
+			isHealthy: isHealthy(channel, balances, proposedBalances),
 			signature
 		}
 	])

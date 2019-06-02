@@ -209,37 +209,6 @@ tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
 	t.end()
 })
 
-tape('health works correctly', async function(t) {
-	const toFollower = 10
-	const toLeader = 1
-	const diff = toFollower - toLeader
-
-	await Promise.all(
-		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, dummyVals.channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
-		)
-	)
-
-	// wait for the events to be aggregated and new states to be issued
-	await aggrAndTick()
-	await forceTick()
-
-	const lastApprove = await iface.getLatestMsg(dummyVals.ids.follower, 'ApproveState')
-	// @TODO: Should we assert balances numbers?
-	// @TODO assert number of messages; this will be easy once we create a separate channel for each test
-	t.equal(lastApprove.isHealthy, false, 'channel is registered as unhealthy')
-
-	// send events to the leader so it catches up
-	await postEvents(leaderUrl, dummyVals.channel.id, genEvents(diff))
-	await aggrAndTick()
-	await forceTick()
-
-	// check if healthy
-	const lastApproveHealthy = await iface.getLatestMsg(dummyVals.ids.follower, 'ApproveState')
-	t.equal(lastApproveHealthy.isHealthy, true, 'channel is registered as healthy')
-	t.end()
-})
-
 tape('heartbeat has been emitted', async function(t) {
 	// This also checks if the propagation works, cause it tries to get the followers
 	// message through the leader Sentry
@@ -375,6 +344,56 @@ tape('cannot exceed channel deposit', async function(t) {
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
 	t.equal(sum, expectDeposit, 'balance does not exceed the deposit, but equals it')
+	t.end()
+})
+
+tape('health works correctly', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'healthTest',
+		depositAmount: '30',
+		spec: {
+			...dummyVals.channel.spec,
+			validators: [
+				{ ...dummyVals.channel.spec.validators[0], fee: '0' },
+				{ ...dummyVals.channel.spec.validators[1], fee: '0' }
+			]
+		}
+	}
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+	const toFollower = 10
+	const toLeader = 1
+	const diff = toFollower - toLeader
+
+	await Promise.all(
+		[leaderUrl, followerUrl].map(url =>
+			postEvents(url, channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
+		)
+	)
+
+	// wait for the events to be aggregated and new states to be issued
+	await aggrAndTick()
+	await forceTick()
+
+	const lastApprove = await channelIface.getLatestMsg(dummyVals.ids.follower, 'ApproveState')
+	// @TODO: Should we assert balances numbers?
+	// @TODO assert number of messages; this will be easy once we create a separate channel for each test
+	t.equal(lastApprove.isHealthy, false, 'channel is registered as unhealthy')
+
+	// send events to the leader so it catches up
+	await postEvents(leaderUrl, channel.id, genEvents(diff))
+	await aggrAndTick()
+	await forceTick()
+
+	// check if healthy
+	const lastApproveHealthy = await channelIface.getLatestMsg(dummyVals.ids.follower, 'ApproveState')
+	t.equal(lastApproveHealthy.isHealthy, true, 'channel is registered as healthy')
 	t.end()
 })
 
