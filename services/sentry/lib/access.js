@@ -43,64 +43,34 @@ async function checkAccess(channel, session, events) {
 		return false
 	})
 
-	let response = { success: true }
+	const noLimitRule = rules.find(r => !r.rateLimit)
+	if (noLimitRule) {
+		// We matched a rule that has no rateLimit, so we're good
+		return { success: true }
+	}
 
-	const checkRules = rules
-		.map(rule => {
-			const type = rule.rateLimit && rule.rateLimit.type
-			const ourUid = session.uid || null
+	const ifErr = await Promise.all(
+		rules.map(async rule => {
+			// Matching rule has no rateLimit, so we're good
+			if (!rule.rateLimit) return null
 
-			if (rule.uids && rule.uids.length > 0 && rule.uids.includes(ourUid)) {
-				// check if uid is allowed to submit whatever it likes
-				return { allowAny: true }
-			}
-
-			if (rule && rule.rateLimit && type === 'ip') {
-				if (events.length !== 1) {
-					return new Error('rateLimit: only allows 1 event')
-				}
-			}
-
-			if (rule && rule.rateLimit && type === 'sid') {
-				// if unauthenticated reject request
+			const type = rule.rateLimit.type
+			let key
+			if (type === 'sid') {
 				if (!session.uid) {
 					return new Error('rateLimit: unauthenticated request')
 				}
-			}
-			return null
-		})
-		.filter(e => e !== null)
-
-	// uid is allowed to submit whatever it likes
-	if (checkRules.find(e => e.allowAny === true)) return response
-	// check for error
-	if (checkRules.length > 0) {
-		// return the first error message
-		response = { success: false, statusCode: 429, message: checkRules[0].message }
-		return response
-	}
-
-	const limitKeys = rules
-		.map(rule => {
-			const type = rule.rateLimit && rule.rateLimit.type
-
-			if (rule && rule.rateLimit && type === 'sid') {
-				return { rule, key: `adexRateLimit:${channel.id}:${session.uid}` }
+				key = `adexRateLimit:${channel.id}:${session.uid}`
+			} else if (type === 'ip') {
+				if (events.length !== 1) {
+					return new Error('rateLimit: only allows 1 event')
+				}
+				key = `adexRateLimit:${channel.id}:${session.ip}`
+			} else {
+				// unsupported limit type
+				return null
 			}
 
-			if (rule && rule.rateLimit && type === 'ip') {
-				return { rule, key: `adexRateLimit:${channel.id}:${session.ip}` }
-			}
-
-			return null
-		})
-		.filter(e => e !== null)
-
-	if (limitKeys.length === 0) return response
-
-	const ifErr = await Promise.all(
-		limitKeys.map(async limitKey => {
-			const { rule, key } = limitKey
 			if (await redisExists(key)) {
 				return new Error('rateLimit: too many requests')
 			}
@@ -111,10 +81,10 @@ async function checkAccess(channel, session, events) {
 	).then(result => result.filter(e => e !== null))
 
 	if (ifErr.length > 0) {
-		response = { success: false, statusCode: 429, message: ifErr[0].message }
+		return { success: false, statusCode: 429, message: ifErr[0].message }
 	}
 
-	return response
+	return { success: true }
 }
 
 module.exports = checkAccess

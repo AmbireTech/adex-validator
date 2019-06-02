@@ -134,7 +134,7 @@ tape('should validate channel properly', async function(t) {
 	t.end()
 })
 
-tape('shoud not validate channel with invalid id', async function(t) {
+tape('should not validate channel with invalid id', async function(t) {
 	const { core } = await deployContracts()
 	const ethereumAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
 
@@ -217,6 +217,12 @@ async function getValidChannel() {
 	const channel = await sampleChannel()
 	const ethChannel = ethereum.toEthereumChannel(channel)
 	channel.id = ethChannel.hashHex(core.address)
+
+	// cannot validate if its not onchain
+	await tryCatchAsync(
+		() => ethereumAdapter.validateChannel(channel),
+		'channel is not Active on ethereum'
+	)
 
 	// open channel onchain
 	await channelOpen(ethChannel)

@@ -50,9 +50,9 @@ adapter
 	})
 
 function getChannels(pageNumber) {
-	const page = pageNumber && `&page=${pageNumber}`
+	const page = pageNumber ? `&page=${pageNumber}` : null
 	const defaultUrl = `${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`
-	const url = (page && `${defaultUrl}${page}`) || defaultUrl
+	const url = page ? `${defaultUrl}${page}` : defaultUrl
 
 	return fetch(url, {
 		timeout: cfg.LIST_TIMEOUT
@@ -63,16 +63,15 @@ async function allChannelsTick(currentPage) {
 	// get page 0
 	const { channels, total } = await getChannels(currentPage)
 	// start from page 1 to end
-	const pages = range(1, total)
+	const pages = range(1, total - 1)
 
-	const otherChannels = await Promise.all(pages.map(getChannels)).then(result =>
-		result.map(item => item.channels)
+	const otherChannelsResp = await Promise.all(pages.map(getChannels))
+	const otherChannels = otherChannelsResp.map(r => r.channels).reduce((a, b) => a.concat(b), [])
+
+	const allChannels = channels.concat(otherChannels)
+	const allResults = await Promise.all(allChannels.map(validatorTick)).catch(e =>
+		logger.error('allChannelsTick failed', e)
 	)
-	const flattenOtherChannels = [].concat(...otherChannels)
-
-	const allResults = await Promise.all(
-		[...channels, ...flattenOtherChannels].map(validatorTick)
-	).catch(e => logger.error('allChannelsTick failed', e))
 
 	logPostChannelsTick(allResults)
 }
