@@ -351,14 +351,7 @@ tape('health works correctly', async function(t) {
 	const channel = {
 		...dummyVals.channel,
 		id: 'healthTest',
-		depositAmount: '30',
-		spec: {
-			...dummyVals.channel.spec,
-			validators: [
-				{ ...dummyVals.channel.spec.validators[0], fee: '0' },
-				{ ...dummyVals.channel.spec.validators[1], fee: '0' }
-			]
-		}
+		depositAmount: '1000'
 	}
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
@@ -367,7 +360,7 @@ tape('health works correctly', async function(t) {
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
-	const toFollower = 10
+	const toFollower = 60
 	const toLeader = 1
 	const diff = toFollower - toLeader
 
