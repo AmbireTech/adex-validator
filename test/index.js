@@ -361,7 +361,6 @@ tape('eventReducer: reduce', function(t) {
 	}
 
 	const result = eventReducer.reduce(channel, aggr, event)
-	console.log(result.events.IMPRESSION)
 	t.equal(result.channelId, channel.id, 'should have same channel id')
 	t.equal(
 		result.events.IMPRESSION.eventCounts.myAwesomePublisher,
