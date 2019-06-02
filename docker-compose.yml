@@ -1,42 +1,32 @@
-version: "3"
+version: '3.7'
+
 services:
-  leader:
-    container_name: adex_leader
+  sentry:
     build: .
-    ports: 
-      - 8005:8005
-    environment: 
+    restart: always
+    command: bin/sentry.js --keystoreFile=/app/keystore.json
+    volumes:
+      - /root/keystore.json:/app/keystore.json
+    environment:
       - PORT=8005
-      - IDENTITY=awesomeLeader
-      - ADAPTER=ethereum
       - DB_MONGO_URL=mongodb://mongodb:27017
-      - DB_MONGO_NAME=adexValidator
-      - KEYSTORE_FILE=/home/resources/keystore.json
-      - KEYSTORE_PASSWORD=
+      - NODE_ENV=production
     depends_on: 
       - mongodb
-    volumes:
-      - ./resources/leader:/home/resources/
-  follower:
-    container_name: adex_follower
+    ports:
+      - "8005:8005"
+  validator:
     build: .
-    ports: 
-      - 8006:8006
-    environment: 
-      - PORT=8006
+    command: bin/validatorWorker.js --keystoreFile=/app/keystore.json --sentryUrl=http://localhost:8005
+    restart: always
+    environment:
+      - PORT=8005
       - DB_MONGO_URL=mongodb://mongodb:27017
-      - DB_MONGO_NAME=adexValidatorFollower
-      - IDENTITY=awesomeFollower
-      - ADAPTER=ethereum
-      - KEYSTORE_FILE=/home/resources/keystore.json
-      - KEYSTORE_PASSWORD=
-    depends_on: 
-      - mongodb
+      - NODE_ENV=production
     volumes:
-      - ./resources/follower:/home/resources/
-  mongodb:
-    container_name: mongodb
-    image: mongo
-    ports: 
-      - 28000:27017
+      - /root/keystore.json:/app/keystore.json
+    env_file:
+      - validator.env
+    depends_on:
+      - sentry
 
