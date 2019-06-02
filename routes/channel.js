@@ -59,6 +59,7 @@ function getEventTimeAggregate(req, res, next) {
 		{
 			$match: {
 				channelId: channel.id,
+				// @TODO: use created to optimize the input to $group
 				// created: { $gt: new Date(Date.now() - ) },
 				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
 			}
@@ -89,6 +90,7 @@ function getEventTimeAggregate(req, res, next) {
 				value: { $sum: '$value' }
 			}
 		},
+		{ $sort: { _id: 1 } },
 		{ $limit: appliedLimit }
 	]
 
