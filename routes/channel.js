@@ -50,7 +50,7 @@ function getEventTimeAggregate(req, res, next) {
 		timeframe = 'hour',
 		limit = 100
 	} = req.query
-	const appliedLimit = Math.min(100, limit)
+	const appliedLimit = Math.min(200, limit)
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const channel = req.channel
 	const group = getGroup(timeframe)
