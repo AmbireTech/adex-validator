@@ -15,28 +15,26 @@
 //
 // Options
 // ------------------------------------
-// channelId (required)
-// timestamp ( default = current date ) e.g. 2015-01-01
-// all (required) (default = adexValidator)
+// --channelId (required) prunes heartbeat validator messages for an unexpired channel and all validator messages for expired channel
+// --timestamp ( default = current date ) should be used with `--channelId` to indicate when to prune validator messages from
+// --all (optional) prune all expired channels validator messages
 //
 //
 //
 // Example
 // ----------------------------------------
 //
-// Prune validator messages from an expired channel in database X
+// Prune validator messages from `expiredChannel` in database X
 // DB_MONGO_NAME='x' ./scripts/prune.js --channelId='expiredChannel'
 //
 // Prune validator messages from a specific date
-// ./sccripts/prune.js --timestamp='2012-01-01' --channelId='testing'
+// ./scripts/prune.js --timestamp='2012-01-01' --channelId='testing'
 //
 // Delete validator Messages for epxired channel
-// ./sccripts/prune.js testValStackLeader1558782672 --channelId='testing'
+// ./scripts/prune.js --channelId='testing'
 //
 // Prune validator messages for all expired channels
 // ./scripts/prune.js --all
-//
-//
 //
 
 const assert = require('assert')

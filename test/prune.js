@@ -48,7 +48,7 @@ tape('prune.sh: prune all validator messages for an expired channel', async t =>
 
 tape('prune.sh: prune validator messages for expired channels', async t => {
 	const { channels } = await fetch(`${leaderUrl}/channel/list`).then(res => res.json())
-	// update all channels create to expired channels
+	// update all channels created to expired channels
 	const channelCol = db.getMongo().collection('channels')
 	await channelCol.updateMany({}, { $set: { validUntil: 100 } })
 
