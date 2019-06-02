@@ -3,8 +3,9 @@ version: '3.7'
 services:
   sentry:
     build: .
+    container_name: 'adexnetwork/validator'
     restart: always
-    command: bin/sentry.js --keystoreFile=/app/keystore.json
+    command: bin/sentry.js --keystoreFile=/app/keystore.json --clustered
     volumes:
       - /root/keystore.json:/app/keystore.json
     environment:
@@ -17,6 +18,7 @@ services:
       - "8005:8005"
   validator:
     build: .
+    container_name: 'adexnetwork/validator'
     command: bin/validatorWorker.js --keystoreFile=/app/keystore.json --sentryUrl=http://localhost:8005
     restart: always
     environment:
