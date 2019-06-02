@@ -65,14 +65,13 @@ async function allChannelsTick(currentPage) {
 	// start from page 1 to end
 	const pages = range(1, total - 1)
 
-	const otherChannels = await Promise.all(pages.map(getChannels)).then(result =>
-		result.map(item => item.channels)
-	)
-	const flattenOtherChannels = [].concat(...otherChannels)
+	const otherChannelsResp = await Promise.all(pages.map(getChannels))
+	const otherChannels = otherChannelsResp.map(r => r.channels).reduce((a, b) => a.concat(b), [])
 
-	const allResults = await Promise.all(
-		[...channels, ...flattenOtherChannels].map(validatorTick)
-	).catch(e => logger.error('allChannelsTick failed', e))
+	const allChannels = channels.concat(otherChannels)
+	const allResults = await Promise.all(allChannels.map(validatorTick)).catch(e =>
+		logger.error('allChannelsTick failed', e)
+	)
 
 	logPostChannelsTick(allResults)
 }
