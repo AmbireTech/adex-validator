@@ -58,6 +58,14 @@ function forceTick() {
 	])
 }
 
+let validUntil = new Date()
+validUntil.setFullYear(validUntil.getFullYear() + 1)
+validUntil = Math.floor(validUntil.getTime() / 1000)
+
+let withdrawPeriodStart = new Date()
+withdrawPeriodStart.setMonth(withdrawPeriodStart.getMonth() + 6)
+withdrawPeriodStart = withdrawPeriodStart.getTime()
+
 module.exports = {
 	postEvents,
 	genEvents,
@@ -65,5 +73,7 @@ module.exports = {
 	forceTick,
 	wait,
 	fetchPost,
-	exec
+	exec,
+	validUntil,
+	withdrawPeriodStart
 }

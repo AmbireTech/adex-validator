@@ -10,7 +10,7 @@ async function isChannelValid(cfg, channel, address) {
 	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
 	assert.ok(
 		channel.validUntil * 1000 <= inOneYear.getTime(),
-		'channe.validUntil should not be greater than one year'
+		'channel.validUntil should not be greater than one year'
 	)
 
 	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {

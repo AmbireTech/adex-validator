@@ -1,30 +1,30 @@
 #/usr/bin/env bash
 
-# Description
-# 
-# 
-# Prune heartbeat validatorMessages from the database
-# An optional database and date param can be passed or it prunes HeartBeat messages
-# that are less than the current date and uses adexValidator as its default database
-# 
-# 
-# Options
-# ------------------------------------
-# timestamp ( default= current date ) e.g. 2015-01-01
-# channel (required)
-# database (required) (default = adexValidator)
-# expired (optional) (values = true ) IMPORTANT: if set deletes all validator messages should be used for expired channelsonly
-# 
-# 
-# Example
-# 
-# Delete Heartbeat messages from a specific date
-# ./sccripts/prune.sh -database testValStackLeader1558782672 -timestamp 2012-01-01 -channel testing
-# 
-# Delete validator Messages for epxired channel
-# ./sccripts/prune.sh testValStackLeader1558782672 -expired true -channel testing
-# 
-# 
+Description
+
+
+Prune heartbeat validatorMessages from the database
+An optional database and date param can be passed or it prunes HeartBeat messages
+that are less than the current date and uses adexValidator as its default database
+
+
+Options
+------------------------------------
+timestamp ( default= current date ) e.g. 2015-01-01
+channel (required)
+database (required) (default = adexValidator)
+expired (optional) (values = true ) IMPORTANT: if set deletes all validator messages should be used for expired channelsonly
+
+
+Example
+
+Delete Heartbeat messages from a specific date
+./sccripts/prune.sh -database testValStackLeader1558782672 -timestamp 2012-01-01 -channel testing
+
+Delete validator Messages for epxired channel
+./sccripts/prune.sh testValStackLeader1558782672 -expired true -channel testing
+
+
 
 DB_MONGO_NAME=''
 TIMESTAMP=`date +”%Y-%m-%d”`

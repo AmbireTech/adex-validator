@@ -2,7 +2,7 @@
 
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
-const { postEvents, fetchPost, wait, genEvents } = require('./lib')
+const { postEvents, fetchPost, wait, genEvents, withdrawPeriodStart, validUntil } = require('./lib')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -129,6 +129,7 @@ tape('POST /channel: should not work with invalid withdrawPeriodStart', async fu
 	const channel = {
 		...dummyVals.channel,
 		id: dummyChannelId2,
+		validUntil,
 		spec: {
 			...dummyVals.channel.spec,
 			withdrawPeriodStart: new Date('2200-01-01').getTime(),
@@ -172,7 +173,7 @@ tape('POST /channel: should reject validUntil greater than one year', async func
 	)
 	t.equal(
 		resp.message,
-		'channe.validUntil should not be greater than one year',
+		'channel.validUntil should not be greater than one year',
 		'should throw invalid validUntil error'
 	)
 	t.end()
@@ -182,10 +183,12 @@ tape('POST /channel: create channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,
 		id: dummyChannelId2,
+		validUntil,
 		spec: {
 			...dummyVals.channel.spec,
 			minPerImpression: '1',
 			maxPerImpression: '1',
+			withdrawPeriodStart,
 			adUnits: [],
 			targeting: [{ tag: 'gender_female', score: 17 }],
 			validators: [
@@ -280,7 +283,12 @@ tape(
 		const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, {
 			...dummyVals.channel,
 			id: 'zeroDepositChannel',
-			depositAmount: '0'
+			depositAmount: '0',
+			validUntil,
+			spec: {
+				...dummyVals.channel.spec,
+				withdrawPeriodStart
+			}
 		})
 		t.equal(resp.status, 400, 'status must be BadRequest')
 		const err = await resp.json()

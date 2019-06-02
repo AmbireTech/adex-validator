@@ -4,7 +4,16 @@ const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
-const { forceTick, wait, postEvents, genEvents, getDummySig, fetchPost } = require('./lib')
+const {
+	forceTick,
+	wait,
+	postEvents,
+	genEvents,
+	getDummySig,
+	fetchPost,
+	withdrawPeriodStart,
+	validUntil
+} = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
@@ -133,7 +142,15 @@ tape('new states are not produced when there are no new aggregates', async funct
 
 tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
 	const id = 'eventAggregateCountTest'
-	const channel = { ...dummyVals.channel, id }
+	const channel = {
+		...dummyVals.channel,
+		id,
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
@@ -323,7 +340,15 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 })
 
 tape('cannot exceed channel deposit', async function(t) {
-	const channel = { ...dummyVals.channel, id: 'exceedDepositTest' }
+	const channel = {
+		...dummyVals.channel,
+		id: 'exceedDepositTest',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
 
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
@@ -391,7 +416,16 @@ tape('health works correctly', async function(t) {
 })
 
 tape('should close channel', async function(t) {
-	const channel = { ...dummyVals.channel, id: 'closeTest' }
+	const channel = {
+		...dummyVals.channel,
+		id: 'closeTest',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
+
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
