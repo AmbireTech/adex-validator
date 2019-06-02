@@ -47,25 +47,28 @@ function getEventTimeAggregate(req, res, next) {
 	const {
 		eventType = 'IMPRESSION',
 		metric = 'eventCounts',
-		timeframe = 'year',
+		timeframe = 'hour',
 		limit = 100
 	} = req.query
+	const appliedLimit = Math.min(100, limit)
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const channel = req.channel
 	const group = getGroup(timeframe)
 
 	const pipeline = [
 		{
+			$match: {
+				channelId: channel.id,
+				// @TODO: use created to optimize the input to $group
+				// created: { $gt: new Date(Date.now() - ) },
+				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
+			}
+		},
+		{
 			$addFields: {
 				value: {
 					$toInt: `$events.${eventType}.${metric}.${earner}`
 				}
-			}
-		},
-		{
-			$match: {
-				channelId: channel.id,
-				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
 			}
 		},
 		{
@@ -87,7 +90,8 @@ function getEventTimeAggregate(req, res, next) {
 				value: { $sum: '$value' }
 			}
 		},
-		{ $limit: limit }
+		{ $sort: { _id: 1 } },
+		{ $limit: appliedLimit }
 	]
 
 	return eventsCol
