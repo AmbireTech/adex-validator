@@ -63,7 +63,7 @@ async function allChannelsTick(currentPage) {
 	// get page 0
 	const { channels, total } = await getChannels(currentPage)
 	// start from page 1 to end
-	const pages = range(1, total)
+	const pages = range(1, total - 1)
 
 	const otherChannels = await Promise.all(pages.map(getChannels)).then(result =>
 		result.map(item => item.channels)

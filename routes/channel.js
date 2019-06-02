@@ -140,8 +140,7 @@ async function getList(req, res, next) {
 	}
 
 	const channelTotal = await channelsCol.countDocuments(query)
-	// subtract one becuase page counting starts from 0
-	const totalPages = channelTotal > 0 ? Math.ceil(channelTotal / CHANNELS_FIND_LIMIT) - 1 : 0
+	const totalPages = Math.ceil(channelTotal / CHANNELS_FIND_LIMIT)
 	return channelsCol
 		.find(query, { projection: { _id: 0 } })
 		.limit(CHANNELS_FIND_LIMIT)
