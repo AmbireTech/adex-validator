@@ -56,16 +56,16 @@ function getEventTimeAggregate(req, res, next) {
 
 	const pipeline = [
 		{
+			$match: {
+				channelId: channel.id,
+				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
+			}
+		},
+		{
 			$addFields: {
 				value: {
 					$toInt: `$events.${eventType}.${metric}.${earner}`
 				}
-			}
-		},
-		{
-			$match: {
-				channelId: channel.id,
-				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
 			}
 		},
 		{
