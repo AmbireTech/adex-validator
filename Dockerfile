@@ -26,5 +26,5 @@ ADD . .
 RUN npm install --production
 
 CMD PORT=${PORT} node bin/sentry.js --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} && \
-	node bin/validatorWorker.js --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} --keystorePwd=${KEYSTORE_PASSWORD} --sentryUrl=http://127.0.0.1:${PORT}
+	node bin/validatorWorker.js --adapter=${ADAPTER} --keystoreFile=${KEYSTORE_FILE} --sentryUrl=http://127.0.0.1:${PORT}
     
