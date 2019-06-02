@@ -164,15 +164,16 @@ The docker compose file uses volumes to manage the keystore files.
 Put the keystore files for the leader and follower in the `./resources/leader` and `./resources/follower`
 folders respectively.
 
-Required: You have to specify the keystore password via the `KEYSTORE_PWD` environment variable in the `docker-compose.yml` file
+Required: You have to specify the keystore password via the `KEYSTORE_PWD` environment variable in a `validator.env` file, which wil be used by `docker-compose.yml`
 
 
 ### Run
+
 ```sh
 docker-compose up
 ```
 
-Or
+Or, to start the Sentry only
 
 ```
 docker build --tag=adex/adex-validator
