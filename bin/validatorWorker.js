@@ -50,9 +50,9 @@ adapter
 	})
 
 function getChannels(pageNumber) {
-	const page = pageNumber && `&page=${pageNumber}`
+	const page = pageNumber ? `&page=${pageNumber}` : null
 	const defaultUrl = `${argv.sentryUrl}/channel/list?validator=${adapter.whoami()}`
-	const url = (page && `${defaultUrl}${page}`) || defaultUrl
+	const url = page ? `${defaultUrl}${page}` : defaultUrl
 
 	return fetch(url, {
 		timeout: cfg.LIST_TIMEOUT
