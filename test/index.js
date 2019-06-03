@@ -92,32 +92,45 @@ tape('isValidTransition: transition to a state with a negative number', function
 // isHealthy
 //
 tape('isHealthy: the approved balance tree >= our accounting: HEALTHY', function(t) {
-	t.equal(isHealthy({ a: new BN(50) }, { a: new BN(50) }), true)
-	t.equal(isHealthy({ a: new BN(50) }, { a: new BN(60) }), true)
+	t.equal(isHealthy({ depositAmount: 50 }, { a: new BN(50) }, { a: new BN(50) }), true)
+	t.equal(isHealthy({ depositAmount: 50 }, { a: new BN(50) }, { a: new BN(60) }), true)
 	t.end()
 })
 
 tape('isHealthy: the approved balance tree is positive, our accounting is 0: HEALTHY', function(t) {
-	t.equal(isHealthy({}, { a: new BN(50) }), true)
+	t.equal(isHealthy({ depositAmount: 50 }, {}, { a: new BN(50) }), true)
 	t.end()
 })
 
 tape('isHealthy: the approved balance tree has less, but within margin: HEALTHY', function(t) {
-	t.equal(isHealthy({ a: new BN(80) }, { a: new BN(79) }), true)
+	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { a: new BN(79) }), true)
+	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(2) }, { a: new BN(1) }), true)
 	t.end()
 })
 
 tape('isHealthy: the approved balance tree has less: UNHEALTHY', function(t) {
-	t.equal(isHealthy({ a: new BN(80) }, { a: new BN(70) }), false)
+	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { a: new BN(70) }), false)
 	t.end()
 })
 
 tape('isHealthy: they have the same sum, but different entities are earning', function(t) {
-	t.equal(isHealthy({ a: new BN(80) }, { b: new BN(80) }), false)
-	t.equal(isHealthy({ a: new BN(80) }, { b: new BN(40), a: new BN(40) }), false)
-	t.equal(isHealthy({ a: new BN(80) }, { b: new BN(20), a: new BN(60) }), false)
-	t.equal(isHealthy({ a: new BN(80) }, { b: new BN(2), a: new BN(78) }), true)
-	t.equal(isHealthy({ a: new BN(100), b: new BN(1) }, { a: new BN(100) }), true)
+	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(80) }), false)
+	t.equal(
+		isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(40), a: new BN(40) }),
+		false
+	)
+	t.equal(
+		isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(20), a: new BN(60) }),
+		false
+	)
+	t.equal(
+		isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(2), a: new BN(78) }),
+		true
+	)
+	t.equal(
+		isHealthy({ depositAmount: 80 }, { a: new BN(100), b: new BN(1) }, { a: new BN(100) }),
+		true
+	)
 	t.end()
 })
 
