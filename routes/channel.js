@@ -167,7 +167,9 @@ function getValidatorMessages(req, res, next) {
 	let query = { channelId: id }
 	if (typeof uid === 'string') query = { ...query, from: uid }
 	if (typeof type === 'string') {
-		query = { ...query, 'msg.type': { $in: type.split('+') } }
+		const types = type.split('+')
+		const typesQuery = types.length === 1 ? types[0] : { $in: types }
+		query = { ...query, 'msg.type': typesQuery }
 	}
 
 	validatorMsgCol
