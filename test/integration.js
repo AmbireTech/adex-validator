@@ -430,6 +430,7 @@ tape('health works correctly', async function(t) {
 	// send events to the leader so it catches up
 	await postEvents(leaderUrl, channel.id, genEvents(diff))
 	await aggrAndTick()
+	await aggrAndTick()
 	await forceTick()
 
 	// check if healthy
