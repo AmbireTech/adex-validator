@@ -52,13 +52,17 @@ const { argv } = yargs
 	.boolean('all')
 	.describe('all', 'delete validator messages for all expired channels')
 
-async function start() {
+async function pruneAll() {
 	db.connect()
 		.then(async () => {
-			if (argv.all) {
-				await pruneAll()
+			if (!argv.all) {
+				const { channelId, timestamp } = argv
+				assert.ok(typeof channelId === 'string', 'channelId has to be defined')
+				const channelCol = db.getMongo().collection('channels')
+				const channel = await channelCol.findOne({ id: channelId })
+				await pruneChannel(channel, timestamp)
 			} else {
-				await run()
+				await pruneExpired()
 			}
 			process.exit()
 		})
@@ -67,50 +71,40 @@ async function start() {
 		})
 }
 
-async function run() {
-	const { channelId, timestamp } = argv
-	assert.ok(typeof channelId === 'string', 'channelId has to be defined')
-	const channelCol = db.getMongo().collection('channels')
-	const validatorCol = db.getMongo().collection('validatorMessages')
-	const result = await channelCol.findOne({ id: channelId })
-	if (!result) {
+async function pruneChannel(channel, timestamp) {
+	if (!channel) {
 		logger.error('Channel does not exist')
 		return
 	}
+	const validatorCol = db.getMongo().collection('validatorMessages')
 	// if channel not expired prune heartbeat messages
-	if (result.validUntil > new Date().getTime() / 1000) {
-		logger.info(`Deleting all validator hearbeat messages for channel ${channelId}`)
+	if (channel.validUntil > new Date().getTime() / 1000) {
+		logger.info(`Deleting all validator hearbeat messages for channel ${channel.id}`)
 		await validatorCol.deleteMany({
-			channelId,
+			channelId: channel.id,
 			'msg.type': 'Heartbeat',
 			received: { $lte: new Date(timestamp) }
 		})
 	} else {
-		logger.info(`Deleting all validator messages for expired channel ${channelId}`)
+		logger.info(`Deleting all validator messages for expired channel ${channel.id}`)
 		await validatorCol.deleteMany({
-			channelId
+			channelId: channel.id
 		})
 	}
-	logger.info(`Successfully pruned heartbeat messages for channel ${channelId}`)
+
+	logger.info(`Pruned messages for channel`)
 }
 
-async function pruneAll() {
+async function pruneExpired() {
 	const { timestamp } = argv
 	const channelCol = db.getMongo().collection('channels')
-	const validatorCol = db.getMongo().collection('validatorMessages')
 	const channels = await (await channelCol.find({
 		validUntil: { $lte: Math.ceil(new Date(timestamp).getTime() / 1000) }
 	})).toArray()
 
-	const result = await Promise.all(
-		channels.map(async ({ id }) => {
-			return validatorCol.deleteMany({
-				channelId: id
-			})
-		})
-	)
+	const result = await Promise.all(channels.map(async channel => pruneChannel(channel)))
 
 	logger.info(`Succesfully pruned all validator messages for ${result.length} expired channels`)
 }
 
-start().then(function() {})
+pruneAll().then(function() {})
