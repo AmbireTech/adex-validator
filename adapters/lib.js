@@ -2,8 +2,7 @@ const BN = require('bn.js')
 const assert = require('assert')
 
 async function isChannelValid(cfg, channel, address) {
-	const addrEq = (a, b) => a.toLowerCase() === b.toLowerCase()
-	const ourValidator = channel.spec.validators.find(({ id }) => addrEq(address, id))
+	const ourValidator = channel.spec.validators.find(({ id }) => address === id)
 	assert.ok(ourValidator, 'channel is not validated by us')
 
 	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
@@ -11,7 +10,7 @@ async function isChannelValid(cfg, channel, address) {
 	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
 		assert.ok(
 			channel.spec.validators.every(
-				({ id }) => addrEq(id, address) || cfg.VALIDATORS_WHITELIST.includes(id.toLowerCase())
+				({ id }) => id === address || cfg.VALIDATORS_WHITELIST.includes(id.toLowerCase())
 			),
 			'validators are not in the whitelist'
 		)
@@ -28,8 +27,7 @@ async function isChannelValid(cfg, channel, address) {
 		assert.ok(
 			cfg.TOKEN_ADDRESS_WHITELIST.every(
 				id =>
-					addrEq(id, depositAsset) ||
-					cfg.TOKEN_ADDRESS_WHITELIST.includes(depositAsset.toLowerCase())
+					id === depositAsset || cfg.TOKEN_ADDRESS_WHITELIST.includes(depositAsset.toLowerCase())
 			),
 			'channel.depositAsset is not whitelisted'
 		)
