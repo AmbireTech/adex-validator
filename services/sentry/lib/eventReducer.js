@@ -1,6 +1,5 @@
 const BN = require('bn.js')
 const assert = require('assert')
-const db = require('../../../db')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
@@ -8,9 +7,12 @@ function newAggr(channelId) {
 
 function reduce(channel, initialAggr, ev) {
 	const aggr = { ...initialAggr }
+
 	if (ev.type === 'IMPRESSION') {
 		aggr.events.IMPRESSION = mergeImpressionEv(initialAggr.events.IMPRESSION, ev, channel)
-	} else if (ev.type === 'CLOSE') {
+	}
+
+	if (ev.type === 'CLOSE') {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
 			eventCounts: {
@@ -20,14 +22,11 @@ function reduce(channel, initialAggr, ev) {
 				[creator]: depositAmount
 			}
 		}
-	} else if (ev.type === 'UPDATE_IMPRESSION_PRICE') {
+	}
+
+	if (ev.type === 'UPDATE_IMPRESSION_PRICE') {
 		const price = new BN(ev.price, 10)
 		assert.ok(isPriceOk(price, channel), 'invalid price per impression')
-		// set the current price per impression
-		const channelsCol = db.getMongo().collection('channels')
-		channelsCol
-			.updateOne({ id: channel.id }, { $set: { currentPricePerImpression: ev.price } })
-			.then(function() {})
 	}
 
 	return aggr
