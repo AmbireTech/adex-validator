@@ -10,7 +10,7 @@ const db = require('../db')
 db.connect()
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 
-tape('prune.sh: prune heartbeat messages', async t => {
+tape('prune.sh: prune only heartbeat messages for an unepxired channel', async t => {
 	const { DB_MONGO_NAME } = process.env
 	const id = dummyVals.channel.id
 	await exec(`DB_MONGO_NAME='${DB_MONGO_NAME}' ./scripts/prune.js --channelId='${id}'`)
