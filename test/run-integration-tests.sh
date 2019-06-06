@@ -43,7 +43,9 @@ else
 	# Ethereum local testnet
 	./test/scripts/ethereum.sh
 
-	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js
+	# Run integration & prune tests
+	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js && DB_MONGO_NAME=$LEAD_MONGO ./test/prune.js
+
 fi
 
 exitCode=$?

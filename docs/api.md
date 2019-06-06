@@ -179,6 +179,7 @@ Event to close a channel. Only a channel creator is allowed to close a channel
 
 - HEADERS
     `authorization [ eg. 'Bearer xxx']`
+
     `content-type [application/json]`
 
 - Data Params
@@ -349,7 +350,7 @@ Submit channel events to a validator sentry
 - HEADERS
     
     `authorization [ eg. 'Bearer xxx']`
-
+    
     `content-type [application/json]`
 
 - Data Params

@@ -162,7 +162,6 @@ const VALIDATOR_MSGS_PROJ = { _id: 0, channelId: 0 }
 function getValidatorMessages(req, res, next) {
 	const { type, id, uid } = req.params
 	const { limit } = req.query
-
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
 	let query = { channelId: id }
 	if (typeof uid === 'string') query = { ...query, from: uid }
