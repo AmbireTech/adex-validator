@@ -376,8 +376,13 @@ tape('health works correctly', async function(t) {
 	const channel = {
 		...dummyVals.channel,
 		id: 'healthTest',
-		depositAmount: '1000'
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
 	}
+
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
