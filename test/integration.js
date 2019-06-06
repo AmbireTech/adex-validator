@@ -412,10 +412,6 @@ tape('health works correctly', async function(t) {
 
 	// send events to the leader so it catches up
 	await postEvents(leaderUrl, channel.id, genEvents(diff))
-	// await Promise.all([
-	//	postEvents(leaderUrl, channel.id, genEvents(diff + 1)),
-	//	postEvents(leaderUrl, channel.id, genEvents(1))
-	// ])
 	await aggrAndTick()
 	await forceTick()
 
