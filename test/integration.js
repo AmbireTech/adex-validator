@@ -207,7 +207,7 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 		['?timeframe=month']
 	]
 
-	// events-aggregates/{timeframe} with authentication
+	// events-aggregates/timeframe with authentication
 	await Promise.all(
 		timeAggrFilterFixtures.map(async fixture => {
 			const [query] = fixture
@@ -224,7 +224,7 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 		})
 	)
 
-	// events-aggregates/{timeframe} without authentication
+	// events-aggregates/timeframe without authentication
 	await Promise.all(
 		timeAggrFilterFixtures.map(async fixture => {
 			const [query] = fixture
