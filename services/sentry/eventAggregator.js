@@ -77,6 +77,7 @@ function makeRecorder(channelId) {
 		// even while inserting
 		const toSave = aggr
 		aggr = eventReducer.newAggr(channelId)
+		toSave.created = new Date()
 		await eventAggrCol.insertOne(toSave)
 		return { success: true }
 	}

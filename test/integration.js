@@ -363,6 +363,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	const evCount = expectDeposit + 1
 	await postEvents(leaderUrl, channel.id, genEvents(evCount))
 	await aggrAndTick()
+	await forceTick()
 
 	const { balances } = await channelIface.getOurLatestMsg('Accounting')
 	const sum = Object.keys(balances)
