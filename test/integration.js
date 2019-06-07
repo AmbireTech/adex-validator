@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
@@ -39,7 +38,6 @@ function aggrAndTick() {
 
 tape('submit events and ensure they are accounted for', async function(t) {
 	const evs = genEvents(3).concat(genEvents(2, 'anotherPublisher'))
-
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
@@ -494,6 +492,7 @@ tape('should prevent sending heartbeat on exhausted channels', async function(t)
 			withdrawPeriodStart
 		}
 	}
+
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -514,7 +513,16 @@ tape('should prevent sending heartbeat on exhausted channels', async function(t)
 })
 
 tape('should update the price per impression for channel', async function(t) {
-	const channel = { ...dummyVals.channel, id: 'updatePrice' }
+	const channel = {
+		...dummyVals.channel,
+		id: 'updatePrice',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
+
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -551,7 +559,16 @@ tape('should update the price per impression for channel', async function(t) {
 })
 
 tape('should pause channel', async function(t) {
-	const channel = { ...dummyVals.channel, id: 'pauseChannel' }
+	const channel = {
+		...dummyVals.channel,
+		id: 'pauseChannel',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
+
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -571,7 +588,6 @@ tape('should pause channel', async function(t) {
 
 	// 1 event pays 3 tokens now;
 	const result = await postEvents(leaderUrl, channel.id, genEvents(10)).then(res => res.json())
-	// console.log({ result })
 	t.equal(result.success, false, 'should fail to post events on a paused channel')
 	t.equal(result.statusCode, 400, 'should have a 400 status')
 	t.equal(result.message, 'channel is paused', 'should return a channel is paused message')

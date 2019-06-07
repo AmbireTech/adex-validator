@@ -43,6 +43,8 @@ function makeRecorder(channelId) {
 		logAggregate(channelId, toSave)
 		// to ensure we always persist toSave's, we have a separate queue
 		persist(toSave)
+
+		channelPromise = channelsCol.findOne({ _id: channelId })
 	}
 	const throttledPersistAndReset = throttle(persistAndReset, cfg.AGGR_THROTTLE, {
 		leading: false,
