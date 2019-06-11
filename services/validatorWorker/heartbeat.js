@@ -1,4 +1,6 @@
+const BN = require('bn.js')
 const cfg = require('../../cfg')
+const { sumMap } = require('./lib/followerRules')
 
 async function sendHeartbeat(adapter, iface, channel) {
 	const timestamp = Buffer.alloc(32)
@@ -23,14 +25,20 @@ async function sendHeartbeat(adapter, iface, channel) {
 	])
 }
 
-async function heartbeat(adapter, iface, channel) {
+async function heartbeat(adapter, iface, channel, balances) {
 	const heartbeatMsg = await iface.getOurLatestMsg('Heartbeat')
 	const shouldSend =
-		!heartbeatMsg || Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME
+		(!heartbeatMsg ||
+			Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME) &&
+		isChannelNotExhausted(channel, balances)
 
 	if (shouldSend) {
 		await sendHeartbeat(adapter, iface, channel)
 	}
+}
+
+function isChannelNotExhausted(channel, balances) {
+	return !sumMap(balances).eq(new BN(channel.depositAmount))
 }
 
 module.exports = { heartbeat }

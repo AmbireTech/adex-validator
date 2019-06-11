@@ -50,4 +50,4 @@ function sumMins(our, approved) {
 	return sumBNs(Object.keys(our).map(k => BN.min(our[k], approved[k] || new BN(0))))
 }
 
-module.exports = { isValidTransition, isHealthy }
+module.exports = { isValidTransition, isHealthy, sumMap }

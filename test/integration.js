@@ -465,6 +465,50 @@ tape('should close channel', async function(t) {
 	t.end()
 })
 
+tape('should prevent sending heartbeat on exhausted channels', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'exhaustedChannelHeartbeat',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
+
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// to generate initial heartbeat
+	await aggrAndTick()
+	await forceTick()
+
+	const latestHeartbeatMsg = await channelIface.getOurLatestMsg('Heartbeat')
+
+	await postEvents(leaderUrl, channel.id, genEvents(1000))
+	await aggrAndTick()
+	await forceTick()
+
+	// to generate another heartbeat which should not be sent
+	// beacuse the channel is exhausted
+	await aggrAndTick()
+	await forceTick()
+
+	const seclatestHeartbeatMsg = await channelIface.getOurLatestMsg('Heartbeat')
+
+	t.equal(
+		latestHeartbeatMsg.stateRoot,
+		seclatestHeartbeatMsg.stateRoot,
+		'should not send heartbeat on exhausted channel'
+	)
+	t.end()
+})
+
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
