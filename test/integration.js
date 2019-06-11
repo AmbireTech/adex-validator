@@ -484,28 +484,14 @@ tape('should prevent sending heartbeat on exhausted channels', async function(t)
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
 
-	// to generate initial heartbeat
+	await postEvents(leaderUrl, channel.id, genEvents(1000))
+	// should not generate heartbeat beacuse the channel is exhausted
 	await aggrAndTick()
 	await forceTick()
 
 	const latestHeartbeatMsg = await channelIface.getOurLatestMsg('Heartbeat')
 
-	await postEvents(leaderUrl, channel.id, genEvents(1000))
-	await aggrAndTick()
-	await forceTick()
-
-	// to generate another heartbeat which should not be sent
-	// beacuse the channel is exhausted
-	await aggrAndTick()
-	await forceTick()
-
-	const seclatestHeartbeatMsg = await channelIface.getOurLatestMsg('Heartbeat')
-
-	t.equal(
-		latestHeartbeatMsg.stateRoot,
-		seclatestHeartbeatMsg.stateRoot,
-		'should not send heartbeat on exhausted channel'
-	)
+	t.equal(latestHeartbeatMsg, null, 'should not send heartbeat on exhausted channel')
 	t.end()
 })
 
