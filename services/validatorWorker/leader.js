@@ -7,7 +7,7 @@ async function tick(adapter, iface, channel) {
 	if (res.newAccounting) {
 		await onNewAccounting(adapter, iface, channel, res)
 	}
-	await heartbeat(adapter, iface, channel)
+	await heartbeat(adapter, iface, channel, res.balances)
 }
 
 async function onNewAccounting(adapter, iface, channel, { newAccounting, balances }) {

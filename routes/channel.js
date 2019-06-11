@@ -130,13 +130,16 @@ function getEventAggregates(req, res, next) {
 async function getList(req, res, next) {
 	const { CHANNELS_FIND_LIMIT } = cfg
 	// assign 0 default value
-	const { page = 0, creator, validUntil } = req.query
+	const { page = 0, creator, validUntil, withdrawperiod = null } = req.query
 	const channelsCol = db.getMongo().collection('channels')
 	const skip = page && parseInt(page, 10) * CHANNELS_FIND_LIMIT
 	let query = {
 		validUntil: { $gt: parseInt(validUntil, 10) || Math.floor(Date.now() / 1000) }
 	}
 	query = creator ? { ...query, creator } : query
+	if (!withdrawperiod) {
+		query = { ...query, 'spec.withdrawPeriodStart': { $gt: Date.now() } }
+	}
 	if (typeof req.query.validator === 'string') {
 		// This is MongoDB behavior: since validators is an array,
 		// this query will find anything where the array contains an object with this ID

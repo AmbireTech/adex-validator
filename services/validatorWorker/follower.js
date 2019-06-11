@@ -18,7 +18,7 @@ async function tick(adapter, iface, channel) {
 		await onNewState(adapter, iface, channel, balances, newMsg)
 	}
 
-	await heartbeat(adapter, iface, channel)
+	await heartbeat(adapter, iface, channel, balances)
 }
 
 async function onNewState(adapter, iface, channel, balances, newMsg) {
