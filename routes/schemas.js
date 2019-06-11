@@ -152,7 +152,7 @@ module.exports = {
 	eventTimeAggr: {
 		eventType: Joi.string(),
 		metric: Joi.string().valid(['eventCounts', 'eventPayouts']),
-		timeframe: Joi.string().valid(['year', 'month', 'week', 'day', 'minute', 'hour']),
+		timeframe: Joi.string().valid(['month', 'week', 'day', 'minute', 'hour']),
 		limit: Joi.number()
 	}
 }

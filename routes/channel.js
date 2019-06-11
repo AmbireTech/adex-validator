@@ -21,7 +21,7 @@ router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorM
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 // event aggregates with timeframe information
 router.get(
-	'/:id/events-aggregates/:earner',
+	'/:id/events-aggregates/timeframe',
 	celebrate({ body: schema.eventTimeAggr }),
 	channelLoad,
 	getEventTimeAggregate
@@ -43,56 +43,25 @@ function getStatus(req, res) {
 }
 
 function getEventTimeAggregate(req, res, next) {
-	const { earner } = req.params
+	const { uid } = req.session || {}
 	const {
 		eventType = 'IMPRESSION',
 		metric = 'eventCounts',
-		timeframe = 'hour',
-		limit = 100
+		limit = 100,
+		timeframe = 'hour'
 	} = req.query
 	const appliedLimit = Math.min(200, limit)
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const channel = req.channel
-	const group = getGroup(timeframe)
 
-	const pipeline = [
-		{
-			$match: {
-				channelId: channel.id,
-				// @TODO: use created to optimize the input to $group
-				// created: { $gt: new Date(Date.now() - ) },
-				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
-			}
-		},
-		{
-			$addFields: {
-				value: {
-					$toInt: `$events.${eventType}.${metric}.${earner}`
-				}
-			}
-		},
-		{
-			$project: {
-				value: 1,
-				created: 1,
-				year: { $year: '$created' },
-				month: { $month: '$created' },
-				week: { $week: '$created' },
-				day: { $dayOfMonth: '$created' },
-				hour: { $hour: '$created' },
-				minutes: { $minute: '$created' }
-			}
-		},
-		{ $sort: { created: 1 } },
-		{
-			$group: {
-				_id: { ...group },
-				value: { $sum: '$value' }
-			}
-		},
-		{ $sort: { _id: 1 } },
-		{ $limit: appliedLimit }
-	]
+	const pipeline = getPipeline({
+		channelId: channel.id,
+		timeframe,
+		eventType,
+		metric,
+		earner: uid,
+		appliedLimit
+	})
 
 	return eventsCol
 		.aggregate(pipeline)
@@ -276,34 +245,150 @@ function authRequired(req, res, next) {
 	next()
 }
 
-function getGroup(timeframe) {
+function getGroup(timeframe, prefix = '') {
 	if (timeframe === 'month') {
-		return { year: '$year', month: '$month' }
+		return { year: `$${prefix}year`, month: `$${prefix}month` }
 	}
 
 	if (timeframe === 'week') {
-		return { year: '$year', week: '$week' }
+		return { year: `$${prefix}year`, week: `$${prefix}week` }
 	}
 
 	if (timeframe === 'day') {
-		return { year: '$year', month: '$month', day: '$day' }
+		return { year: `$${prefix}year`, month: `$${prefix}month`, day: `$${prefix}day` }
 	}
 
 	if (timeframe === 'hour') {
-		return { year: '$year', month: '$month', day: '$day', hour: '$hour' }
+		return {
+			year: `$${prefix}year`,
+			month: `$${prefix}month`,
+			day: `$${prefix}day`,
+			hour: `$${prefix}hour`
+		}
 	}
 
 	if (timeframe === 'minute') {
 		return {
-			year: '$year',
-			week: '$week',
-			month: '$month',
-			day: '$day',
-			hour: '$hour',
-			minutes: '$minutes'
+			year: `$${prefix}year`,
+			week: `$${prefix}week`,
+			month: `$${prefix}month`,
+			day: `$${prefix}day`,
+			hour: `$${prefix}hour`,
+			minutes: `$${prefix}minutes`
 		}
 	}
 	return { year: '$year' }
+}
+
+function getPipeline({ timeframe, channelId, eventType, metric, earner, appliedLimit }) {
+	const group = getGroup(timeframe)
+	const prefixGroup = getGroup(timeframe, '_id.')
+	const getSingleEarnerPipeline = [
+		{
+			$match: {
+				channelId,
+				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
+			}
+		},
+		{
+			$addFields: {
+				value: {
+					$toInt: `$events.${eventType}.${metric}.${earner}`
+				}
+			}
+		},
+		{
+			$project: {
+				value: 1,
+				created: 1,
+				year: { $year: '$created' },
+				month: { $month: '$created' },
+				week: { $week: '$created' },
+				day: { $dayOfMonth: '$created' },
+				hour: { $hour: '$created' },
+				minutes: { $minute: '$created' }
+			}
+		},
+		{ $sort: { created: 1 } },
+		{
+			$group: {
+				_id: { ...group },
+				value: { $sum: '$value' }
+			}
+		},
+		{ $sort: { _id: 1 } },
+		{ $limit: appliedLimit }
+	]
+
+	const getAllEarnersPipeline = [
+		{ $match: { channelId } },
+		{
+			$project: {
+				channelId: 1,
+				created: 1,
+				year: { $year: '$created' },
+				month: { $month: '$created' },
+				week: { $week: '$created' },
+				day: { $dayOfMonth: '$created' },
+				hour: { $hour: '$created' },
+				minutes: { $minute: '$created' },
+				events: {
+					$map: {
+						input: { $objectToArray: `$events.${eventType}.${metric}` },
+						as: 'item',
+						in: { k: '$$item.k', v: { $toInt: '$$item.v' } }
+					}
+				}
+			}
+		},
+		{ $sort: { created: 1 } },
+		{ $unwind: '$events' },
+		{
+			$group: {
+				_id: {
+					channelId: '$channelId',
+					earner: '$events.k',
+					...group
+				},
+				events: { $push: '$events' }
+			}
+		},
+		{
+			$project: {
+				_id: 1,
+				value: {
+					$sum: {
+						$map: {
+							input: '$events',
+							as: 'item',
+							in: '$$item.v'
+						}
+					}
+				}
+			}
+		},
+		{
+			$group: {
+				_id: {
+					channelId: '$_id.channelId',
+					...prefixGroup
+				},
+				data: {
+					$push: {
+						k: '$_id.earner',
+						v: '$value'
+					}
+				}
+			}
+		},
+		{
+			$addFields: { data: { $arrayToObject: '$data' } }
+		},
+		{ $sort: { _id: 1 } },
+		{ $limit: appliedLimit }
+	]
+
+	return earner ? getSingleEarnerPipeline : getAllEarnersPipeline
 }
 
 // Export it

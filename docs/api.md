@@ -297,7 +297,11 @@ Get event aggregates received by a validator
 Get event aggregates received by a earner
 
 - URL
-/:id/events-aggregates/:earner
+/:id/events-aggregates/timeframe
+
+- HEADERS
+
+    `authorization [ eg. 'Bearer xxx']`
 
 - METHOD
 
@@ -315,13 +319,15 @@ Get event aggregates received by a earner
 
 `metric=[string] (default='eventCounts') can be either eventCounts|eventPayouts`
 
-`timeframe=[string] (default='year') timeframe=day|week|year|month|minute|hour`
+`timeframe=[string] (default='hour') timeframe=day|week|year|month|minute|hour`
 
 `limit=[number] (default= 100)`
 
 - Response
 
     * Success
+    
+    With authorization for earner X
 
     ```javascript
         [
@@ -333,6 +339,21 @@ Get event aggregates received by a earner
                 ]
             }
         ]
+    ```
+
+    Without Authorization
+
+    ```javascript
+        [
+            {
+                channel: {}
+                aggr: [
+                    {_id: { year: 2019 } data: { awesomePublisher: 1, awesomePublisher2: 1} },
+                    {_id: { year: 2018 } data: { awesomePublisher: 1, awesomePublisher2: 1} },
+                ]
+            }
+        ]
+
     ```
 
 #### POST Events

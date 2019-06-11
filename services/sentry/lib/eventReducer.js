@@ -12,7 +12,7 @@ function reduce(channel, initialAggr, ev) {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
 			eventCounts: {
-				[creator]: new BN(1)
+				[creator]: new BN(1).toString()
 			},
 			eventPayouts: {
 				[creator]: depositAmount
