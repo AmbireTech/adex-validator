@@ -115,7 +115,8 @@ module.exports = {
 			Joi.object({
 				type: Joi.string().required(),
 				publisher: Joi.string(),
-				price: Joi.string()
+				price: Joi.string(),
+				adUnit: Joi.string()
 			})
 		)
 	},

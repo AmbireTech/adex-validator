@@ -49,12 +49,14 @@ function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, e
 	assert.ok(isPriceOk(price, channel), 'invalid price per impression')
 
 	if (typeof ev.publisher !== 'string') return map
-	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = new BN(0)
+
+	const eventCountKey = ev.adUnit ? `${ev.publisher}:${ev.adUnit}` : ev.publisher
+	if (!map.eventCounts[ev.publisher]) map.eventCounts[eventCountKey] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
 
 	// increase the event count
-	const newEventCounts = new BN(map.eventCounts[ev.publisher], 10)
-	map.eventCounts[ev.publisher] = addAndToString(newEventCounts, new BN(1))
+	const newEventCounts = new BN(map.eventCounts[eventCountKey], 10)
+	map.eventCounts[eventCountKey] = addAndToString(newEventCounts, new BN(1))
 
 	// current publisher payout
 	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
