@@ -27,6 +27,7 @@ const dummyVals = {
 		validUntil: 4102444800,
 		spec: {
 			minPerImpression: '1',
+			maxPerImpression: '10',
 			withdrawPeriodStart: 4073414400000,
 			validators: [
 				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },

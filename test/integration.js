@@ -512,6 +512,95 @@ tape('should prevent sending heartbeat on exhausted channels', async function(t)
 	t.end()
 })
 
+tape('should update the price per impression for channel', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'updatePrice',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
+
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// 1 event pays 1 token for now
+	await postEvents(leaderUrl, channel.id, genEvents(10))
+	// post update channel price event
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
+		events: [{ type: 'UPDATE_IMPRESSION_PRICE', price: '3' }]
+	})
+
+	await aggrAndTick()
+
+	// 1 event pays 3 tokens now;
+	await postEvents(leaderUrl, channel.id, genEvents(10))
+
+	await aggrAndTick()
+
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	// the total eventpayout is 40 i.e. (3 * 10) + (1 * 10) = 32 + 4 + 4
+	t.equal(
+		balances[dummyVals.ids.publisher],
+		'32',
+		'publisher balance should be charged according to new price'
+	)
+	t.equal(balances[dummyVals.ids.leader], '4', 'should have correct leader validator fee')
+	t.equal(balances[dummyVals.ids.follower], '4', 'should have correct follower validator fee')
+
+	t.end()
+})
+
+tape('should pause channel', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'pauseChannel',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
+
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// 1 event pays 1 token for now
+	await postEvents(leaderUrl, channel.id, genEvents(10))
+	// post update channel price event
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
+		events: [{ type: 'PAUSE_CHANNEL' }]
+	})
+
+	await aggrAndTick()
+
+	// 1 event pays 3 tokens now;
+	const result = await postEvents(leaderUrl, channel.id, genEvents(10)).then(res => res.json())
+	t.equal(result.success, false, 'should fail to post events on a paused channel')
+	t.equal(result.statusCode, 400, 'should have a 400 status')
+	t.equal(result.message, 'channel is paused', 'should return a channel is paused message')
+
+	// ensure publisher balance did not change
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	t.equal(
+		balances[dummyVals.ids.publisher],
+		'8',
+		'publisher balance should be charged according to new price'
+	)
+	t.end()
+})
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt

@@ -11,17 +11,13 @@ function record(id, session, events) {
 	if (!recorders.has(id)) {
 		recorders.set(id, makeRecorder(id))
 	}
-
 	return recorders.get(id)(session, events)
 }
 
 function makeRecorder(channelId) {
 	const eventAggrCol = db.getMongo().collection('eventAggregates')
 	const channelsCol = db.getMongo().collection('channels')
-
-	// get the channel
-	const channelPromise = channelsCol.findOne({ _id: channelId })
-
+	let channelPromise = channelsCol.findOne({ _id: channelId })
 	// persist each individual aggregate
 	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
 	let saveQueue = Promise.resolve()
@@ -47,26 +43,45 @@ function makeRecorder(channelId) {
 		logAggregate(channelId, toSave)
 		// to ensure we always persist toSave's, we have a separate queue
 		persist(toSave)
+
+		channelPromise = channelsCol.findOne({ _id: channelId })
 	}
 	const throttledPersistAndReset = throttle(persistAndReset, cfg.AGGR_THROTTLE, {
 		leading: false,
 		trailing: true
 	})
 
+	const updateChannelPrice = async ev => {
+		const price = ev.type === 'UPDATE_IMPRESSION_PRICE' ? ev.price : '0'
+		await channelsCol.updateOne({ id: channelId }, { $set: { currentPricePerImpression: price } })
+	}
+
 	// return a recorder
 	return async function(session, events) {
 		const channel = await channelPromise
-
 		const hasAccess = await checkAccess(channel, session, events)
 		if (!hasAccess.success) {
 			return hasAccess
 		}
-
-		// Keep in mind that at one point validator messages will be able to change payment/bidding information
-		// this will be saved in the channel object, which is passed into the eventReducer
+		// check if channel is paused
+		if (channel.currentPricePerImpression && channel.currentPricePerImpression === '0') {
+			return { success: false, statusCode: 400, message: 'channel is paused' }
+		}
 
 		// Record the events
 		aggr = events.reduce(eventReducer.reduce.bind(null, channel), aggr)
+
+		// check if events contained any channel price modifying event
+		const priceModifyEvs = events.filter(
+			x => x.type === 'UPDATE_IMPRESSION_PRICE' || x.type === 'PAUSE_CHANNEL'
+		)
+		if (priceModifyEvs.length) {
+			await Promise.all(
+				priceModifyEvs.map(async priceModifyEv => updateChannelPrice(priceModifyEv))
+			)
+			channelPromise = channelsCol.findOne({ _id: channel.id })
+		}
+
 		if (cfg.AGGR_THROTTLE) {
 			throttledPersistAndReset()
 			return { success: true }

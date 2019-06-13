@@ -114,7 +114,8 @@ module.exports = {
 		events: Joi.array().items(
 			Joi.object({
 				type: Joi.string().required(),
-				publisher: Joi.string()
+				publisher: Joi.string(),
+				price: Joi.string()
 			})
 		)
 	},
