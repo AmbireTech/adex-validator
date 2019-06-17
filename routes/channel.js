@@ -81,7 +81,9 @@ function getEventAggregates(req, res, next) {
 		const keyCounts = `events.IMPRESSION.eventCounts.${uid}`
 		const keyPayouts = `events.IMPRESSION.eventPayouts.${uid}`
 		query = { ...query, [keyCounts]: { $exists: true } }
-		projection = { ...projection, created: 1, [keyCounts]: 1, [keyPayouts]: 1 }
+		projection = { ...projection, [keyPayouts]: 1 }
+	} else {
+		projection = { ...projection, 'events.IMPRESSION.eventCounts': 0 }
 	}
 	if (typeof req.query.after === 'string') {
 		const after = parseInt(req.query.after, 10)

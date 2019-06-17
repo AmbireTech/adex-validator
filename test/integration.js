@@ -193,6 +193,10 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 			t.ok(resp.channel, 'has resp.channel')
 			t.ok(resp.events, 'has resp.events')
 			t.ok(resp.events.length === eventLength, `should have events of length ${eventLength}`)
+			t.notOk(
+				resp.events[0].events.IMPRESSION.eventCounts,
+				'should not return eventCounts by defualt'
+			)
 			t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
 		})
 	)
