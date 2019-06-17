@@ -61,9 +61,9 @@ function getChannels(pageNumber) {
 
 async function allChannelsTick(currentPage) {
 	// get page 0
-	const { channels, total } = await getChannels(currentPage)
+	const { channels, totalPages } = await getChannels(currentPage)
 	// start from page 1 to end
-	const pages = range(1, total - 1)
+	const pages = range(1, totalPages - 1)
 
 	const otherChannelsResp = await Promise.all(pages.map(getChannels))
 	const otherChannels = otherChannelsResp.map(r => r.channels).reduce((a, b) => a.concat(b), [])

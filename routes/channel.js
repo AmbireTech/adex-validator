@@ -81,7 +81,7 @@ function getEventAggregates(req, res, next) {
 		const keyCounts = `events.IMPRESSION.eventCounts.${uid}`
 		const keyPayouts = `events.IMPRESSION.eventPayouts.${uid}`
 		query = { ...query, [keyCounts]: { $exists: true } }
-		projection = { ...projection, [keyPayouts]: 1 }
+		projection = { ...projection, created: 1, [keyPayouts]: 1 }
 	} else {
 		projection = { ...projection, 'events.IMPRESSION.eventCounts': 0 }
 	}
@@ -125,7 +125,7 @@ async function getList(req, res, next) {
 		.skip(skip || 0)
 		.toArray()
 		.then(function(channels) {
-			res.send({ channels, total: totalPages, page })
+			res.send({ channels, totalPages, page })
 		})
 		.catch(next)
 }
