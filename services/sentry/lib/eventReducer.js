@@ -51,7 +51,7 @@ function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, e
 	if (typeof ev.publisher !== 'string') return map
 
 	const eventCountKey = ev.adUnit ? `${ev.publisher}:${ev.adUnit}` : ev.publisher
-	if (!map.eventCounts[ev.publisher]) map.eventCounts[eventCountKey] = new BN(0)
+	if (!map.eventCounts[eventCountKey]) map.eventCounts[eventCountKey] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
 
 	// increase the event count

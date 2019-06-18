@@ -37,7 +37,7 @@ function aggrAndTick() {
 }
 
 tape('submit events and ensure they are accounted for', async function(t) {
-	const evs = genEvents(3, null, null, 'legacy_300x250').concat(genEvents(2, 'anotherPublisher'))
+	const evs = genEvents(3, null, null, 'flatAd_123').concat(genEvents(2, 'anotherPublisher'))
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 

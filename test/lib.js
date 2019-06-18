@@ -28,7 +28,7 @@ function genEvents(n, pubName, type, adUnit) {
 		publisher: pubName || defaultPubName
 	}
 	ev = adUnit ? { ...ev, adUnit } : ev
-	for (let i = 0; i < n; i += 1) events.push(ev)
+	for (let i = 0; i < n; i += 1) events.push({ ...ev })
 	return events
 }
 
