@@ -46,9 +46,9 @@ function getEventTimeAggregate(req, res, next) {
 	const { uid } = req.session || {}
 	const {
 		eventType = 'IMPRESSION',
-		metric = 'eventCounts',
-		limit = 100,
-		timeframe = 'hour'
+		metric = 'eventPayouts',
+		timeframe = 'hour',
+		limit = 100
 	} = req.query
 	const appliedLimit = Math.min(200, limit)
 	const eventsCol = db.getMongo().collection('eventAggregates')
@@ -154,9 +154,10 @@ function getValidatorMessages(req, res, next) {
 		.catch(next)
 }
 
-function getLastApprovedMessages(req, res, next) {
-	retrieveLastApproved(req.channel)
-		.then(lastApproved => res.send({ lastApproved }))
+async function getLastApprovedMessages(req, res, next) {
+	const heartbeats = await retreiveLastHeartbeats(req.channel)
+	return retrieveLastApproved(req.channel)
+		.then(lastApproved => res.send({ lastApproved, heartbeats }))
 		.catch(next)
 }
 
@@ -195,6 +196,28 @@ async function retrieveLastApproved(channel) {
 		return { newState, approveState }
 	}
 	return null
+}
+
+async function retreiveLastHeartbeats(channel) {
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	return Promise.all(
+		channel.spec.validators.map(({ id }) => {
+			return validatorMsgCol
+				.find(
+					{
+						channelId: channel.id,
+						from: id,
+						'msg.type': 'Heartbeat'
+					},
+					{
+						projection: VALIDATOR_MSGS_PROJ
+					}
+				)
+				.sort({ received: -1 })
+				.limit(2)
+				.toArray()
+		})
+	)
 }
 
 function postValidatorMessages(req, res, next) {
