@@ -15,6 +15,7 @@ router.get('/:id/status', channelLoad, getStatus)
 // Validator information
 router.get('/:id/validator-messages', channelIfExists, getValidatorMessages)
 router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
+router.get('/:id/last-msgs', channelLoad, getLastApprovedWithHeartbeatMessages)
 router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessages)
 
 // event aggregates information
@@ -46,9 +47,9 @@ function getEventTimeAggregate(req, res, next) {
 	const { uid } = req.session || {}
 	const {
 		eventType = 'IMPRESSION',
-		metric = 'eventPayouts',
-		timeframe = 'hour',
-		limit = 100
+		metric = 'eventCounts',
+		limit = 100,
+		timeframe = 'hour'
 	} = req.query
 	const appliedLimit = Math.min(200, limit)
 	const eventsCol = db.getMongo().collection('eventAggregates')
@@ -154,8 +155,14 @@ function getValidatorMessages(req, res, next) {
 		.catch(next)
 }
 
-async function getLastApprovedMessages(req, res, next) {
-	const heartbeats = await retreiveLastHeartbeats(req.channel)
+function getLastApprovedMessages(req, res, next) {
+	retrieveLastApproved(req.channel)
+		.then(lastApproved => res.send({ lastApproved }))
+		.catch(next)
+}
+
+async function getLastApprovedWithHeartbeatMessages(req, res, next) {
+	const heartbeats = [].concat(...(await retreiveLastHeartbeats(req.channel)))
 	return retrieveLastApproved(req.channel)
 		.then(lastApproved => res.send({ lastApproved, heartbeats }))
 		.catch(next)
