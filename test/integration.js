@@ -562,6 +562,45 @@ tape('should update the price per impression for channel', async function(t) {
 	t.end()
 })
 
+tape('should payout using promilles of price per impression for channel', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'impressionWithCommission',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			minPerImpression: '3',
+			withdrawPeriodStart
+		}
+	}
+
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	const evs = genEvents(2, null, 'IMPRESSION_WITH_COMMISSION', null, null)
+
+	// 1 event pays 3 tokens now;
+	await postEvents(leaderUrl, channel.id, evs)
+	await aggrAndTick()
+
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	t.equal(
+		balances[dummyVals.ids.publisher],
+		'1',
+		'publisher balance should be charged according to promilles'
+	)
+	t.equal(
+		balances[dummyVals.ids.publisher],
+		'1',
+		'publisher balance should be charged according to promilles'
+	)
+	t.end()
+})
+
 tape('should pause channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,

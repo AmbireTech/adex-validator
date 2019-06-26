@@ -21,14 +21,28 @@ function postEvents(url, channelId, events, auth = dummyVals.auth.creator) {
 	return fetchPost(`${url}/channel/${channelId}/events`, auth, { events })
 }
 
-function genEvents(n, pubName, type, adUnit) {
+function genEvents(n, pubName, type, adUnit, earners) {
 	const events = []
 	let ev = {
 		type: type || 'IMPRESSION',
 		publisher: pubName || defaultPubName
 	}
+	if (type === 'IMPRESSION_WITH_COMMISSION') {
+		ev = {
+			type,
+			earners:
+				earners ||
+				[dummyVals.ids.publisher, dummyVals.ids.publisher2].map(earner => ({
+					publisher: earner,
+					promilles: 500
+				}))
+		}
+	}
+
 	ev = adUnit ? { ...ev, adUnit } : ev
-	for (let i = 0; i < n; i += 1) events.push({ ...ev })
+	for (let i = 0; i < n; i += 1) {
+		events.push({ ...ev })
+	}
 	return events
 }
 
