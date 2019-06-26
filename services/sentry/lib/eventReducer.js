@@ -12,6 +12,17 @@ function reduce(channel, initialAggr, ev) {
 		aggr.events.IMPRESSION = mergeImpressionEv(initialAggr.events.IMPRESSION, ev, channel)
 	}
 
+	if (ev.type === 'IMPRESSION_WITH_COMISSION') {
+		const { earners } = ev
+		earners.forEach(({ addr, promilles }) => {
+			aggr.events.IMPRESSION = mergeImpressionEv(
+				initialAggr.events.IMPRESSION,
+				{ publisher: addr, promilles },
+				channel
+			)
+		})
+	}
+
 	if (ev.type === 'CLOSE') {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
@@ -62,7 +73,17 @@ function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, e
 	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
 	// add the price per impression
 	// to the current eventPayouts for the publisher
-	map.eventPayouts[ev.publisher] = addAndToString(currentAmount, price)
+	// also check if promilles is set that means payout
+	// a percentage of the currentAmount to the publisher
+	if (ev.promilles) {
+		const publisherAmount = price
+			.mul(new BN(ev.promilles, 10))
+			.mul(new BN(10, 10).pow(new BN(18, 10)))
+			.div(new BN(1000, 10))
+		map.eventPayouts[ev.publisher] = addAndToString(currentAmount, publisherAmount)
+	} else {
+		map.eventPayouts[ev.publisher] = addAndToString(currentAmount, price)
+	}
 	return map
 }
 
