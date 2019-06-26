@@ -21,13 +21,14 @@ function postEvents(url, channelId, events, auth = dummyVals.auth.creator) {
 	return fetchPost(`${url}/channel/${channelId}/events`, auth, { events })
 }
 
-function genEvents(n, pubName, type = 'IMPRESSION') {
+function genEvents(n, pubName, type, adUnit) {
 	const events = []
-	for (let i = 0; i < n; i += 1)
-		events.push({
-			type,
-			publisher: pubName || defaultPubName
-		})
+	let ev = {
+		type: type || 'IMPRESSION',
+		publisher: pubName || defaultPubName
+	}
+	ev = adUnit ? { ...ev, adUnit } : ev
+	for (let i = 0; i < n; i += 1) events.push({ ...ev })
 	return events
 }
 

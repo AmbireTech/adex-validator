@@ -46,9 +46,9 @@ function getEventTimeAggregate(req, res, next) {
 	const { uid } = req.session || {}
 	const {
 		eventType = 'IMPRESSION',
-		metric = 'eventCounts',
-		limit = 100,
-		timeframe = 'hour'
+		metric = 'eventPayouts',
+		timeframe = 'hour',
+		limit = 100
 	} = req.query
 	const appliedLimit = Math.min(200, limit)
 	const eventsCol = db.getMongo().collection('eventAggregates')
