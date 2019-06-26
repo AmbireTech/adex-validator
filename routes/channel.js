@@ -15,7 +15,6 @@ router.get('/:id/status', channelLoad, getStatus)
 // Validator information
 router.get('/:id/validator-messages', channelIfExists, getValidatorMessages)
 router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
-router.get('/:id/last-msgs', channelLoad, getLastApprovedWithHeartbeatMessages)
 router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessages)
 
 // event aggregates information
@@ -155,16 +154,13 @@ function getValidatorMessages(req, res, next) {
 		.catch(next)
 }
 
-function getLastApprovedMessages(req, res, next) {
+async function getLastApprovedMessages(req, res, next) {
+	const response = {}
+	if (req.query.withHeartbeat === 'true') {
+		response.heartbeats = [].concat(...(await retreiveLastHeartbeats(req.channel)))
+	}
 	retrieveLastApproved(req.channel)
-		.then(lastApproved => res.send({ lastApproved }))
-		.catch(next)
-}
-
-async function getLastApprovedWithHeartbeatMessages(req, res, next) {
-	const heartbeats = [].concat(...(await retreiveLastHeartbeats(req.channel)))
-	return retrieveLastApproved(req.channel)
-		.then(lastApproved => res.send({ lastApproved, heartbeats }))
+		.then(lastApproved => res.send({ lastApproved, ...response }))
 		.catch(next)
 }
 

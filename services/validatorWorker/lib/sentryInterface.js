@@ -63,7 +63,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 	}
 
 	this.getLastMsgs = function() {
-		const lastApprovedUrl = `${baseUrl}/last-msgs`
+		const lastApprovedUrl = `${baseUrl}/last-approved?withHeartbeat=true`
 		return fetchJson(lastApprovedUrl).then(response => {
 			const { err } = sentry.lastApproved.validate(response.lastApproved)
 			if (err) throw new Error(err)
