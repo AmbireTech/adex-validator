@@ -156,9 +156,13 @@ function getValidatorMessages(req, res, next) {
 		.catch(next)
 }
 
-function getLastApprovedMessages(req, res, next) {
+async function getLastApprovedMessages(req, res, next) {
+	const response = {}
+	if (req.query.withHeartbeat === 'true') {
+		response.heartbeats = [].concat(...(await retreiveLastHeartbeats(req.channel)))
+	}
 	retrieveLastApproved(req.channel)
-		.then(lastApproved => res.send({ lastApproved }))
+		.then(lastApproved => res.send({ lastApproved, ...response }))
 		.catch(next)
 }
 
@@ -197,6 +201,28 @@ async function retrieveLastApproved(channel) {
 		return { newState, approveState }
 	}
 	return null
+}
+
+async function retreiveLastHeartbeats(channel) {
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	return Promise.all(
+		channel.spec.validators.map(({ id }) => {
+			return validatorMsgCol
+				.find(
+					{
+						channelId: channel.id,
+						from: id,
+						'msg.type': 'Heartbeat'
+					},
+					{
+						projection: VALIDATOR_MSGS_PROJ
+					}
+				)
+				.sort({ received: -1 })
+				.limit(2)
+				.toArray()
+		})
+	)
 }
 
 function postValidatorMessages(req, res, next) {
