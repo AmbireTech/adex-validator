@@ -644,6 +644,47 @@ tape('should pause channel', async function(t) {
 	)
 	t.end()
 })
+
+tape('should update publisher balance with PAY event', async function(t) {
+	const channel = {
+		...dummyVals.channel,
+		id: 'payEvent',
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart
+		}
+	}
+
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	await postEvents(leaderUrl, channel.id, genEvents(10))
+	await aggrAndTick()
+
+	await postEvents(leaderUrl, channel.id, genEvents(1, null, 'PAY', null, null, null)).then(res =>
+		res.json()
+	)
+	await aggrAndTick()
+
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	t.equal(
+		balances[dummyVals.ids.publisher],
+		'16',
+		'publisher balance should be charged according to pay event'
+	)
+	t.equal(
+		balances[dummyVals.ids.publisher2],
+		'8',
+		'publisher balance should be charged according to pay event'
+	)
+	t.end()
+})
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt

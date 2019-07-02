@@ -132,6 +132,14 @@ module.exports = {
 						)
 						.required(),
 					otherwise: Joi.forbidden()
+				}),
+				outputs: Joi.when('type', {
+					is: 'PAY',
+					then: Joi.object()
+						.keys()
+						.pattern(Joi.string(), Joi.string())
+						.required(),
+					otherwise: Joi.forbidden()
 				})
 			})
 		)

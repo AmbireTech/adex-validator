@@ -21,7 +21,7 @@ function postEvents(url, channelId, events, auth = dummyVals.auth.creator) {
 	return fetchPost(`${url}/channel/${channelId}/events`, auth, { events })
 }
 
-function genEvents(n, pubName, type, adUnit, earners) {
+function genEvents(n, pubName, type, adUnit, earners, outputs) {
 	const events = []
 	let ev = {
 		type: type || 'IMPRESSION',
@@ -38,7 +38,15 @@ function genEvents(n, pubName, type, adUnit, earners) {
 				}))
 		}
 	}
-
+	if (type === 'PAY') {
+		ev = {
+			type,
+			outputs: outputs || {
+				[dummyVals.ids.publisher]: '10',
+				[dummyVals.ids.publisher2]: '10'
+			}
+		}
+	}
 	ev = adUnit ? { ...ev, adUnit } : ev
 	for (let i = 0; i < n; i += 1) {
 		events.push({ ...ev })
