@@ -115,8 +115,32 @@ module.exports = {
 			Joi.object({
 				type: Joi.string().required(),
 				publisher: Joi.string(),
-				price: Joi.string(),
-				adUnit: Joi.string()
+				price: Joi.when('type', {
+					is: 'UPDATE_IMPRESSION_PRICE',
+					then: Joi.string().required(),
+					otherwise: Joi.forbidden()
+				}),
+				adUnit: Joi.string(),
+				earners: Joi.when('type', {
+					is: 'IMPRESSION_WITH_COMMISSION',
+					then: Joi.array()
+						.items(
+							Joi.object({
+								publisher: Joi.string().required(),
+								promilles: Joi.number().required()
+							})
+						)
+						.required(),
+					otherwise: Joi.forbidden()
+				}),
+				outputs: Joi.when('type', {
+					is: 'PAY',
+					then: Joi.object()
+						.keys()
+						.pattern(Joi.string(), Joi.string())
+						.required(),
+					otherwise: Joi.forbidden()
+				})
 			})
 		)
 	},

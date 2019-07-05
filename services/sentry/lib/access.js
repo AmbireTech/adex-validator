@@ -10,7 +10,7 @@ const redisSetex = promisify(redisCli.setex).bind(redisCli)
 async function checkAccess(channel, session, events) {
 	// Check basic access rules
 	// only the creator can send a CLOSE
-	if (session.uid !== channel.creator && events.find(e => e.type === 'CLOSE')) {
+	if (session.uid !== channel.creator && events.find(e => e.type === 'CLOSE' || e.type === 'PAY')) {
 		return { success: false, statusCode: 403 }
 	}
 	const currentTime = Date.now()
