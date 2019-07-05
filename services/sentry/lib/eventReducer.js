@@ -9,13 +9,12 @@ function reduce(channel, initialAggr, ev) {
 	const aggr = { ...initialAggr }
 
 	if (ev.type === 'IMPRESSION') {
-		aggr.events.IMPRESSION = mergeImpressionEv(initialAggr.events.IMPRESSION, ev, channel)
+		aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, ev, channel)
 	}
 
 	if (ev.type === 'IMPRESSION_WITH_COMMISSION') {
-		const { earners } = ev
-		earners.forEach(earner => {
-			aggr.events.IMPRESSION = mergeImpressionEv(initialAggr.events.IMPRESSION, earner, channel)
+		ev.earners.forEach(earner => {
+			aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, earner, channel)
 		})
 	}
 
@@ -35,8 +34,8 @@ function reduce(channel, initialAggr, ev) {
 		const { outputs } = ev
 		const publishers = Object.keys(outputs)
 		publishers.forEach(publisher => {
-			aggr.events.IMPRESSION = mergeImpressionEv(
-				initialAggr.events.IMPRESSION,
+			aggr.events.PAY = mergeEv(
+				initialAggr.events.PAY,
 				{ publisher, output: outputs[publisher] },
 				channel
 			)
@@ -58,7 +57,7 @@ function isPriceOk(price, channel) {
 	return price.gte(minPrice) && price.lte(maxPrice)
 }
 
-function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, channel) {
+function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, channel) {
 	const map = {
 		eventCounts: { ...initialMap.eventCounts },
 		eventPayouts: { ...initialMap.eventPayouts }
