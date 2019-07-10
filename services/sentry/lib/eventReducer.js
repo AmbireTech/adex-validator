@@ -61,9 +61,8 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 	const map = {
 		eventCounts: { ...initialMap.eventCounts },
 		eventPayouts: { ...initialMap.eventPayouts },
-		eventStats: mergeStats(initialMap.eventStats, ev)
+		eventStats: { ...initialMap.eventStats }
 	}
-
 	const price = new BN(channel.currentPricePerImpression || channel.spec.minPerImpression, 10)
 	assert.ok(isPriceOk(price, channel), 'invalid price per impression')
 
@@ -72,7 +71,15 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 	const eventCountKey = ev.adUnit ? `${ev.publisher}:${ev.adUnit}` : ev.publisher
 	if (!map.eventCounts[eventCountKey]) map.eventCounts[eventCountKey] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
-
+	if (!map.eventStats[ev.publisher]) {
+		map.eventStats[ev.publisher] = {
+			location: {},
+			device: {},
+			browser: {},
+			os: {}
+		}
+	}
+	map.eventStats[ev.publisher] = mergeStats(map.eventStats[ev.publisher], ev)
 	// if its a pay event which requires output key
 	// do not increase event count
 	// else increase the event count
@@ -108,15 +115,14 @@ function mergeStats(eventStats, ev) {
 		os: { ...eventStats.os }
 	}
 
-	const statKeys = ['location', 'device', 'browser', 'os']
-	const presentStatKeys = statKeys.filter(key => statKeys.indexOf(key) !== -1)
+	// get the stats in ev object
+	const presentStatKeys = Object.keys(stats).filter(key => ev[key] !== undefined)
 
 	presentStatKeys.forEach(key => {
-		const statValue = ev[key]
-		const currentCount = stats[key][statValue][ev.publisher] || 0
-		stats[key][statValue][ev.publisher] = new BN(currentCount).add(new BN(1)).toString()
+		const statValue = ev[key].toLowerCase()
+		const currentCount = stats[key][statValue] || 0
+		stats[key][statValue] = new BN(currentCount).add(new BN(1)).toString()
 	})
-
 	return stats
 }
 

@@ -80,8 +80,9 @@ function getEventAggregates(req, res, next) {
 	if (!isSuperuser) {
 		const keyCounts = `events.IMPRESSION.eventCounts.${uid}`
 		const keyPayouts = `events.IMPRESSION.eventPayouts.${uid}`
+		const keyStats = `events.IMPRESSION.eventStats.${uid}`
 		query = { ...query, [keyCounts]: { $exists: true } }
-		projection = { ...projection, created: 1, [keyPayouts]: 1 }
+		projection = { ...projection, created: 1, [keyPayouts]: 1, [keyStats]: 1 }
 	} else {
 		projection = { ...projection, 'events.IMPRESSION.eventCounts': 0 }
 	}

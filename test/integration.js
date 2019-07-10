@@ -172,8 +172,24 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 
 	// post events for that channel for multiple publishers
 	const publishers = [
-		[dummyVals.auth.creator, genEvents(3, dummyVals.ids.publisher)],
-		[dummyVals.auth.creator, genEvents(3, dummyVals.ids.publisher2)]
+		[
+			dummyVals.auth.creator,
+			genEvents(3, dummyVals.ids.publisher, null, null, null, null, {
+				device: 'mobile',
+				os: 'Android',
+				browser: 'Safari',
+				location: 'NG'
+			})
+		],
+		[
+			dummyVals.auth.creator,
+			genEvents(3, dummyVals.ids.publisher2, null, null, null, null, {
+				device: 'desktop',
+				os: 'Mac OSX',
+				browser: 'Chrome',
+				location: 'US'
+			})
+		]
 	]
 
 	await Promise.all(
@@ -191,6 +207,20 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 	]
 
 	const url = `${leaderUrl}/channel/${id}/events-aggregates`
+	const expectedStats = [
+		{
+			location: { ng: '3' },
+			device: { mobile: '3' },
+			browser: { safari: '3' },
+			os: { android: '3' }
+		},
+		{
+			location: { us: '3' },
+			device: { desktop: '3' },
+			browser: { chrome: '3' },
+			os: { 'mac osx': '3' }
+		}
+	]
 
 	await Promise.all(
 		eventAggrFilterfixtures.map(async fixture => {
@@ -210,6 +240,23 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 				'should not return eventCounts by defualt'
 			)
 			t.ok(resp.events[0].events.IMPRESSION, 'has a single aggregate with IMPRESSIONS')
+			resp.events.forEach(ev => {
+				const { eventStats } = ev.events.IMPRESSION
+				if (eventStats.myAwesomePublisher) {
+					t.deepEqual(
+						eventStats.myAwesomePublisher,
+						expectedStats[0],
+						'should have valid eventStats'
+					)
+				}
+				if (eventStats.myAwesomePublisher2) {
+					t.deepEqual(
+						eventStats.myAwesomePublisher2,
+						expectedStats[1],
+						'should have valid eventStats'
+					)
+				}
+			})
 		})
 	)
 

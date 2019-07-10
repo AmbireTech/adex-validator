@@ -21,11 +21,12 @@ function postEvents(url, channelId, events, auth = dummyVals.auth.creator) {
 	return fetchPost(`${url}/channel/${channelId}/events`, auth, { events })
 }
 
-function genEvents(n, pubName, type, adUnit, earners, outputs) {
+function genEvents(n, pubName, type, adUnit, earners, outputs, stats) {
 	const events = []
 	let ev = {
 		type: type || 'IMPRESSION',
-		publisher: pubName || defaultPubName
+		publisher: pubName || defaultPubName,
+		...stats
 	}
 	if (type === 'IMPRESSION_WITH_COMMISSION') {
 		ev = {
