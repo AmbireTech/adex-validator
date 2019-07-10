@@ -57,10 +57,11 @@ function isPriceOk(price, channel) {
 	return price.gte(minPrice) && price.lte(maxPrice)
 }
 
-function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, channel) {
+function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {} }, ev, channel) {
 	const map = {
 		eventCounts: { ...initialMap.eventCounts },
-		eventPayouts: { ...initialMap.eventPayouts }
+		eventPayouts: { ...initialMap.eventPayouts },
+		eventStats: mergeStats(initialMap.eventStats, ev)
 	}
 
 	const price = new BN(channel.currentPricePerImpression || channel.spec.minPerImpression, 10)
@@ -97,6 +98,26 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, channel
 		)
 	}
 	return map
+}
+
+function mergeStats(eventStats, ev) {
+	const stats = {
+		location: { ...eventStats.location },
+		device: { ...eventStats.device },
+		browser: { ...eventStats.browser },
+		os: { ...eventStats.os }
+	}
+
+	const statKeys = ['location', 'device', 'browser', 'os']
+	const presentStatKeys = statKeys.filter(key => statKeys.indexOf(key) !== -1)
+
+	presentStatKeys.forEach(key => {
+		const statValue = ev[key]
+		const currentCount = stats[key][statValue][ev.publisher] || 0
+		stats[key][statValue][ev.publisher] = new BN(currentCount).add(new BN(1)).toString()
+	})
+
+	return stats
 }
 
 function addAndToString(first, second) {
