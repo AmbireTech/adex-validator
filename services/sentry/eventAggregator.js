@@ -23,7 +23,8 @@ function makeRecorder(channelId) {
 	let saveQueue = Promise.resolve()
 	const persist = function(toSave) {
 		saveQueue = saveQueue.then(function() {
-			return eventAggrCol.insertOne(toSave).catch(function(err) {
+			// created needs to be set to the latest date right before saving, otherwise we risk data inconsistency when running in clustered mode
+			return eventAggrCol.insertOne({ ...toSave, created: new Date() }).catch(function(err) {
 				logger.error('eventAggregator fatal error; will re-try', err)
 				persist(toSave)
 			})
