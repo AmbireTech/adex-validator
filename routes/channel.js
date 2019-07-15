@@ -67,7 +67,7 @@ function getEventTimeAggregate(req, res, next) {
 		{
 			$addFields: {
 				value: {
-					$toInt: `$events.${eventType}.${metric}.${earner}`
+					$toLong: `$events.${eventType}.${metric}.${earner}`
 				}
 			}
 		},
