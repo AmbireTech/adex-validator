@@ -211,12 +211,7 @@ tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
 	await Promise.all(
 		timeAggrFilterFixtures.map(async fixture => {
 			const [query] = fixture
-			const resp = await fetch(`${url}/${dummyVals.ids.publisher}${query}`, {
-				method: 'GET',
-				headers: {
-					'content-type': 'application/json'
-				}
-			}).then(res => res.json())
+			const resp = await fetch(`${url}/${dummyVals.ids.publisher}${query}`).then(res => res.json())
 			t.ok(resp.channel, 'has resp.channel')
 			// 3 is number of events submitted by publisher in url param
 			t.ok(resp.aggr[0].value === 3, 'has correct aggr value')
