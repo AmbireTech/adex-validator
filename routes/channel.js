@@ -19,11 +19,16 @@ router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorM
 
 // event aggregates information
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
-// event aggregates with timeframe information
+// event aggregates, by timeframe
 router.get(
 	'/:id/events-aggregates/:earner',
 	celebrate({ body: schema.eventTimeAggr }),
 	channelLoad,
+	getEventTimeAggregate
+)
+router.get(
+	'/events-aggregates/:earner',
+	celebrate({ body: schema.eventTimeAggr }),
 	getEventTimeAggregate
 )
 
@@ -58,7 +63,7 @@ function getEventTimeAggregate(req, res, next) {
 	const pipeline = [
 		{
 			$match: {
-				channelId: channel.id,
+				channelId: channel ? channel.id : { $exists: true },
 				// @TODO: use created to optimize the input to $group
 				// created: { $gt: new Date(Date.now() - ) },
 				[`events.${eventType}.${metric}.${earner}`]: { $exists: true, $ne: null }
@@ -67,7 +72,7 @@ function getEventTimeAggregate(req, res, next) {
 		{
 			$addFields: {
 				value: {
-					$toInt: `$events.${eventType}.${metric}.${earner}`
+					$toLong: `$events.${eventType}.${metric}.${earner}`
 				}
 			}
 		},
