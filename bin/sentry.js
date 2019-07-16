@@ -10,6 +10,7 @@ const adapters = require('../adapters')
 const authMiddleware = require('../middlewares/auth')
 const channelRoutes = require('../routes/channel')
 const channelCreate = require('../routes/channelCreate')
+const volumeRoutes = require('../routes/volume')
 const logger = require('../services/logger')('sentry')
 const createCluster = require('../services/cluster')
 
@@ -34,6 +35,7 @@ app.use(authMiddleware.forAdapter(adapter))
 app.use('/channel', channelRoutes)
 app.use('/channel', channelCreate.forAdapter(adapter))
 app.use('/cfg', (_, res) => res.send(cfg))
+app.use('/volume', volumeRoutes)
 app.use(errors())
 
 if (argv.clustered) {
