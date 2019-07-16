@@ -321,7 +321,7 @@ function getPipeline({ timeframe, channelId, eventType, metric, earner, appliedL
 		{
 			$addFields: {
 				value: {
-					$toInt: `$events.${eventType}.${metric}.${earner}`
+					$toLong: `$events.${eventType}.${metric}.${earner}`
 				}
 			}
 		},
@@ -364,7 +364,7 @@ function getPipeline({ timeframe, channelId, eventType, metric, earner, appliedL
 					$map: {
 						input: { $objectToArray: `$events.${eventType}.${metric}` },
 						as: 'item',
-						in: { k: '$$item.k', v: { $toInt: '$$item.v' } }
+						in: { k: '$$item.k', v: { $toLong: '$$item.v' } }
 					}
 				}
 			}
