@@ -9,7 +9,7 @@ const redisSetex = promisify(redisCli.setex).bind(redisCli)
 
 async function checkAccess(channel, session, events) {
 	// Check basic access rules
-	// only the creator can send a CLOSE, PAY, UPDATE_IMPRESSION_PRICE
+	// only the creator can send a CLOSE, PAY, UPDATE_IMPRESSION_PRICE, PAUSE_CHANNEL
 	if (
 		session.uid !== channel.creator &&
 		events.find(
