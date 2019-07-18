@@ -720,6 +720,7 @@ tape('should update publisher balance with PAY event', async function(t) {
 	)
 	t.end()
 })
+
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt

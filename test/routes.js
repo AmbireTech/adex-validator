@@ -392,3 +392,12 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 
 	t.end()
 })
+
+tape('GET /volume: should get channel volume', async function(t) {
+	const resp = await fetch(`${leaderUrl}/volume`).then(res => res.json())
+	t.ok(resp.aggr[0].value, 'has value')
+	t.ok(resp.aggr[0].time, 'has time')
+	t.equal(typeof resp.aggr[0].value, 'string', 'value of have type of string')
+	t.ok(parseInt(resp.aggr[0].value, 10) > 0, 'should have aggregate value greater than 0')
+	t.end()
+})
