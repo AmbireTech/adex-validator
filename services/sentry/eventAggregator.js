@@ -68,7 +68,6 @@ function makeRecorder(channelId) {
 		if (channel.currentPricePerImpression && channel.currentPricePerImpression === '0') {
 			return { success: false, statusCode: 400, message: 'channel is paused' }
 		}
-
 		// Record the events
 		aggr = events.reduce(eventReducer.reduce.bind(null, channel), aggr)
 

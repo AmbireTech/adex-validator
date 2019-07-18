@@ -5,20 +5,21 @@ const dummyVals = require('./prep-db/mongo')
 const defaultPubName = dummyVals.ids.publisher
 
 // note that the dummy adapter just requires the ID as an auth token
-function fetchPost(url, authToken, body) {
+function fetchPost(url, authToken, body, headers) {
 	return fetch(url, {
 		method: 'POST',
 		headers: {
 			authorization: `Bearer ${authToken}`,
-			'content-type': 'application/json'
+			'content-type': 'application/json',
+			...headers
 		},
 		body: JSON.stringify(body)
 	})
 }
 
-function postEvents(url, channelId, events, auth = dummyVals.auth.creator) {
+function postEvents(url, channelId, events, auth = dummyVals.auth.creator, headers) {
 	// It is important to use creator auth, otherwise we'd hit rate limits
-	return fetchPost(`${url}/channel/${channelId}/events`, auth, { events })
+	return fetchPost(`${url}/channel/${channelId}/events`, auth, { events }, headers)
 }
 
 function genEvents(n, pubName, type, adUnit, earners, outputs, stats) {

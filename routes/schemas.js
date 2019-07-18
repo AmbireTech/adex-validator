@@ -140,11 +140,7 @@ module.exports = {
 						.pattern(Joi.string(), Joi.string())
 						.required(),
 					otherwise: Joi.forbidden()
-				}),
-				location: Joi.string(),
-				device: Joi.string(),
-				browser: Joi.string(),
-				os: Joi.string()
+				})
 			})
 		)
 	},

@@ -174,27 +174,27 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 	const publishers = [
 		[
 			dummyVals.auth.creator,
-			genEvents(3, dummyVals.ids.publisher, null, null, null, null, {
-				device: 'mobile',
-				os: 'Android',
-				browser: 'Safari',
-				location: 'NG'
-			})
+			genEvents(3, dummyVals.ids.publisher),
+			{
+				'CF-IPcountry': 'NG',
+				'User-Agent':
+					'Mozilla/5.0 (Linux; Android 4.4.2; Nexus 7 Build/KOT49H) AppleWebKit/535.2 (KHTML, like Gecko) Ubuntu/11.10 Chromium/15.0.874.106 Chrome/15.0.874.106 Safari/535.2'
+			}
 		],
 		[
 			dummyVals.auth.creator,
-			genEvents(3, dummyVals.ids.publisher2, null, null, null, null, {
-				device: 'desktop',
-				os: 'Mac OSX',
-				browser: 'Chrome',
-				location: 'US'
-			})
+			genEvents(3, dummyVals.ids.publisher2),
+			{
+				'CF-IPcountry': 'US',
+				'User-Agent':
+					'Mozilla/5.0 (iPhone; CPU iPhone OS 7_0 like Mac OS X) AppleWebKit/535.2 (KHTML, like Gecko) Ubuntu/11.10 Chromium/15.0.874.106 Chrome/15.0.874.106 Safari/535.2'
+			}
 		]
 	]
 
 	await Promise.all(
-		publishers.map(async ([auth, event]) =>
-			postEvents(leaderUrl, id, event, auth).then(res => res.json())
+		publishers.map(async ([auth, event, headers]) =>
+			postEvents(leaderUrl, id, event, auth, headers).then(res => res.json())
 		)
 	)
 	await aggrAndTick()
@@ -210,15 +210,15 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 	const expectedStats = [
 		{
 			location: { ng: '3' },
-			device: { mobile: '3' },
-			browser: { safari: '3' },
+			device: { 'nexus 7': '3' },
+			browser: { chromium: '3' },
 			os: { android: '3' }
 		},
 		{
 			location: { us: '3' },
-			device: { desktop: '3' },
-			browser: { chrome: '3' },
-			os: { 'mac osx': '3' }
+			device: { iphone: '3' },
+			browser: { chromium: '3' },
+			os: { ubuntu: '3' }
 		}
 	]
 
