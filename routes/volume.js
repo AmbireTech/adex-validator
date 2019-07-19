@@ -35,7 +35,7 @@ router.get('/', function(req, res, next) {
 			}
 		},
 		{ $sort: { _id: 1 } },
-		{ $project: { value: '$value', time: '$_id', _id: 0 } }
+		{ $project: { value: { $toString: '$value' }, time: '$_id', _id: 0 } }
 	]
 
 	return eventsCol
