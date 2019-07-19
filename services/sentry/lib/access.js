@@ -9,8 +9,17 @@ const redisSetex = promisify(redisCli.setex).bind(redisCli)
 
 async function checkAccess(channel, session, events) {
 	// Check basic access rules
-	// only the creator can send a CLOSE
-	if (session.uid !== channel.creator && events.find(e => e.type === 'CLOSE' || e.type === 'PAY')) {
+	// only the creator can send a CLOSE, PAY, UPDATE_IMPRESSION_PRICE, PAUSE_CHANNEL
+	if (
+		session.uid !== channel.creator &&
+		events.find(
+			e =>
+				e.type === 'CLOSE' ||
+				e.type === 'PAY' ||
+				e.type === 'UPDATE_IMPRESSION_PRICE' ||
+				e.type === 'PAUSE_CHANNEL'
+		)
+	) {
 		return { success: false, statusCode: 403 }
 	}
 	const currentTime = Date.now()
@@ -23,6 +32,10 @@ async function checkAccess(channel, session, events) {
 		!events.every(e => e.type === 'CLOSE')
 	) {
 		return { success: false, statusCode: 400, message: 'channel is past withdraw period' }
+	}
+	// if its sent by channel.creator don't rate limit
+	if (session.uid === channel.creator) {
+		return { success: true }
 	}
 
 	// Enforce access limits
