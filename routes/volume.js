@@ -1,9 +1,14 @@
 const express = require('express')
+const url = require('url')
+const { promisify } = require('util')
 const db = require('../db')
+
+const redisCli = db.getRedis()
+const redisGet = promisify(redisCli.get).bind(redisCli)
 
 const router = express.Router()
 
-function volumeRoute(monthlyImpressions, req, res, next) {
+function volumeRoute(monthlyImpressions) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const DAY = 24 * 60 * 60 * 1000
 	const period = monthlyImpressions ? 30 * DAY : DAY
@@ -42,11 +47,33 @@ function volumeRoute(monthlyImpressions, req, res, next) {
 	return eventsCol
 		.aggregate(pipeline)
 		.toArray()
-		.then(aggr => res.send({ aggr }))
-		.catch(next)
+		.then(aggr => ({ aggr }))
 }
 
-router.get('/', volumeRoute.bind(null, false))
-router.get('/monthly-impressions', volumeRoute.bind(null, true))
+// takes seconds: Number, fn: fn(req: object) -> object
+function redisCached(seconds, fn) {
+	return function(req, res, next) {
+		const pathname = url.parse(req.originalUrl).pathname
+		const key = `CACHE:${pathname}`
+
+		redisGet(key)
+			.then(cached => {
+				if (cached) {
+					res.setHeader('Content-Type', 'application/json')
+					res.send(cached)
+					return Promise.resolve()
+				}
+				return fn(req).then(resp => {
+					// no need to wait for that
+					redisCli.setex(key, seconds, JSON.stringify(resp))
+					res.send(resp)
+				})
+			})
+			.catch(next)
+	}
+}
+
+router.get('/', redisCached(60, volumeRoute.bind(null, false)))
+router.get('/monthly-impressions', redisCached(120, volumeRoute.bind(null, true)))
 
 module.exports = router
