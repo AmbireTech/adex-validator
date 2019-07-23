@@ -5,6 +5,7 @@ const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
+const { authRequired } = require('../middlewares/auth')
 
 const router = express.Router()
 
@@ -228,14 +229,6 @@ function postEvents(req, res, next) {
 			res.status(resp.statusCode || 200).send(resp)
 		})
 		.catch(next)
-}
-
-function authRequired(req, res, next) {
-	if (!req.session) {
-		res.sendStatus(401)
-		return
-	}
-	next()
 }
 
 // Export it

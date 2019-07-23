@@ -152,7 +152,7 @@ tape('new states are not produced when there are no new aggregates', async funct
 	t.end()
 })
 
-tape('/channel/{id}/events-aggregates, /analytics/:id, /analytics', async function(t) {
+tape('/channel/{id}/events-aggregates, /analytics/:id', async function(t) {
 	const id = 'eventAggregateCountTest'
 	const channel = {
 		...dummyVals.channel,
@@ -232,7 +232,6 @@ tape('/channel/{id}/events-aggregates, /analytics/:id, /analytics', async functi
 					'content-type': 'application/json'
 				}
 			}).then(res => res.json())
-			// console.log(resp.aggr)
 			t.ok(resp.aggr[0].time, 'has resp.channel')
 			// 3 is number of events submitted by publisher in authorization
 			t.ok(resp.aggr[0].value === '3', 'has correct aggr value')

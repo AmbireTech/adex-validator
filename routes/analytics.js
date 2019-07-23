@@ -28,22 +28,13 @@ const DAY = 24 * 60 * 60 * 1000
 
 function getTimeframe(authenticated, timeframe) {
 	let result = {}
-
-	if (timeframe === 'year') {
-		// every month in one year
-		result = { period: 365 * DAY, interval: 30 * DAY }
-	}
-
-	if (timeframe === 'month') {
-		// every day in one month
-		result = { period: 30 * DAY, interval: DAY }
-	}
-
-	if (timeframe === 'day') {
-		// every hour in one day
-		result = { period: DAY, interval: DAY / 24 }
-	}
-	// if unauthenticated there are restrictions on the data points
+	// every month in one year
+	if (timeframe === 'year') result = { period: 365 * DAY, interval: 30 * DAY }
+	// every day in one month
+	if (timeframe === 'month') result = { period: 30 * DAY, interval: DAY }
+	// every hour in one day
+	if (timeframe === 'day') result = { period: DAY, interval: DAY / 24 }
+	// if unauthenticated there is a period restriction on the data
 	// being fetched
 	return authenticated ? { ...result, period: 0 } : result
 }

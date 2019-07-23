@@ -393,7 +393,7 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 	t.end()
 })
 
-tape('GET /volume: should get channel volume', async function(t) {
+tape('GET /analytics: should get channel analytics', async function(t) {
 	const resp = await fetch(`${leaderUrl}/analytics`).then(res => res.json())
 	t.ok(resp.aggr[0].value, 'has value')
 	t.ok(resp.aggr[0].time, 'has time')
