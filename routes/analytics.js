@@ -1,6 +1,8 @@
 const express = require('express')
+const { celebrate } = require('celebrate')
 // const url = require('url')
 const { promisify } = require('util')
+const schema = require('./schemas')
 const { channelLoad } = require('../middlewares/channel')
 const { authRequired } = require('../middlewares/auth')
 const db = require('../db')
@@ -9,29 +11,44 @@ const router = express.Router()
 const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
 
-router.get('/', redisCached(60, analytics))
-router.get('/:id', authRequired, channelLoad, redisCached(120, analytics))
+router.get(
+	'/',
+	celebrate({ body: schema.eventTimeAggr }),
+	redisCached(60, analytics.bind(null, true))
+)
+router.get(
+	'/:id',
+	celebrate({ body: schema.eventTimeAggr }),
+	authRequired,
+	channelLoad,
+	redisCached(120, analytics.bind(null, false))
+)
 
 const DAY = 24 * 60 * 60 * 1000
-function getTimeframe(timeframe) {
+
+function getTimeframe(authenticated, timeframe) {
+	let result = {}
+
 	if (timeframe === 'year') {
 		// every month in one year
-		return { period: 365 * DAY, interval: 30 * DAY }
+		result = { period: 365 * DAY, interval: 30 * DAY }
 	}
 
 	if (timeframe === 'month') {
 		// every day in one month
-		return { period: 30 * DAY, interval: DAY }
+		result = { period: 30 * DAY, interval: DAY }
 	}
 
 	if (timeframe === 'day') {
 		// every hour in one day
-		return { period: DAY, interval: DAY / 24 }
+		result = { period: DAY, interval: DAY / 24 }
 	}
-	return {}
+	// if unauthenticated there are restrictions on the data points
+	// being fetched
+	return authenticated ? { ...result, period: 0 } : result
 }
 
-function analytics(req) {
+function analytics(global, req) {
 	const { uid } = req.session || {}
 	const {
 		eventType = 'IMPRESSION',
@@ -43,15 +60,16 @@ function analytics(req) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
 
 	let match = {}
-	const { period, interval } = getTimeframe(timeframe) || {}
-	if (uid) {
+	const { period, interval } = getTimeframe(!!uid, timeframe) || {}
+	if (!global && uid) {
 		match[`events.${eventType}.${metric}.${uid}`] = { $exists: true, $ne: null }
 	}
 	if (req.channel) {
 		match = { ...match, channelId: req.channel.id }
 	}
 	if (period) {
-		match = { ...match, created: { $gt: new Date(Date.now() - period) } }
+		const after = +req.query.after || 0
+		match = { ...match, created: { $gt: new Date(new Date(after).getTime() - period) } }
 	}
 
 	const pipeline = [
@@ -73,9 +91,7 @@ function analytics(req) {
 		{
 			$group: {
 				_id: {
-					$toDate: {
-						$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, interval] }]
-					}
+					$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, interval] }]
 				},
 				value: { $sum: '$value' }
 			}
@@ -88,7 +104,7 @@ function analytics(req) {
 	return eventsCol
 		.aggregate(pipeline)
 		.toArray()
-		.then(aggr => ({ aggr }))
+		.then(aggr => ({ limit: appliedLimit, aggr }))
 }
 
 function redisCached(seconds, fn) {
