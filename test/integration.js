@@ -208,18 +208,8 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 
 	const url = `${leaderUrl}/channel/${id}/events-aggregates`
 	const expectedStats = [
-		{
-			location: { ng: '3' },
-			device: { 'nexus 7': '3' },
-			browser: { chromium: '3' },
-			os: { android: '3' }
-		},
-		{
-			location: { us: '3' },
-			device: { iphone: '3' },
-			browser: { chromium: '3' },
-			os: { ubuntu: '3' }
-		}
+		[{ stat: 'NG:Chromium:Android:tablet', count: 3 }],
+		[{ stat: 'US:Chromium:Ubuntu:mobile', count: 3 }]
 	]
 
 	await Promise.all(

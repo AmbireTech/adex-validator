@@ -259,21 +259,16 @@ function postEvents(req, res, next) {
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
-	const location = req.headers['cf-ipcountry'] || null
+	const location = req.headers['cf-ipcountry'] || ''
 	// parse user agent
 	if (req.headers['x-device-user-agent'] || req.headers['user-agent']) {
 		const parser = new UAParser()
 		parser.setUA(req.headers['x-device-user-agent'] || req.headers['user-agent'])
 		const result = parser.getResult()
 		// enrich events with additional stats
-		events = events.map(event => {
-			const ev = { ...event }
-			if (location) ev.location = location
-			if (result.browser) ev.browser = result.browser.name
-			if (result.os) ev.os = result.os.name
-			if (result.device) ev.device = result.device.model
-			return ev
-		})
+		const stat = `${location || ''}:${result.browser.name || ''}:${result.os.name || ''}:${result
+			.device.type || ''}`
+		events = events.map(event => ({ ...event, stat }))
 	}
 	eventAggrService
 		.record(req.params.id, { ...req.session, ip }, events)

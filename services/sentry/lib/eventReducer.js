@@ -72,12 +72,7 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 	if (!map.eventCounts[eventCountKey]) map.eventCounts[eventCountKey] = new BN(0)
 	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
 	if (!map.eventStats[ev.publisher]) {
-		map.eventStats[ev.publisher] = {
-			location: {},
-			device: {},
-			browser: {},
-			os: {}
-		}
+		map.eventStats[ev.publisher] = []
 	}
 	map.eventStats[ev.publisher] = mergeStats(map.eventStats[ev.publisher], ev)
 	// if its a pay event which requires output key
@@ -108,21 +103,14 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 }
 
 function mergeStats(eventStats, ev) {
-	const stats = {
-		location: { ...eventStats.location },
-		device: { ...eventStats.device },
-		browser: { ...eventStats.browser },
-		os: { ...eventStats.os }
+	// eventStats [ { stat: 'android', count: 1} ]
+	const stats = [...eventStats]
+	const exists = stats.findIndex(stat => stat.stat === ev.stat)
+	if (exists === -1) {
+		stats.push({ stat: ev.stat, count: 1 })
+	} else {
+		stats[exists].count += 1
 	}
-
-	// get the stats in ev object
-	const presentStatKeys = Object.keys(stats).filter(key => ev[key] !== undefined)
-
-	presentStatKeys.forEach(key => {
-		const statValue = ev[key].toLowerCase()
-		const currentCount = stats[key][statValue] || 0
-		stats[key][statValue] = new BN(currentCount).add(new BN(1)).toString()
-	})
 	return stats
 }
 
