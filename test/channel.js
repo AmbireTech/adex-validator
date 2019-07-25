@@ -255,7 +255,7 @@ tape('should payout price per impression case for stat key', async function(t) {
 						price: '2'
 					},
 					{
-						stat: 'US:Chromium:Ubuntu:mobile',
+						stat: `${dummyVals.ids.publisher2}:US:Chromium:Ubuntu:mobile`,
 						price: '4'
 					}
 				]

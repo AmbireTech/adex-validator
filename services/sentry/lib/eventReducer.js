@@ -70,7 +70,10 @@ function getPrice(channel, ev) {
 	if (channel.pricePerImpressionCase && ev.stat) {
 		// check if there is a unique price case
 		// for the event stat
-		const result = channel.pricePerImpressionCase.find(priceCase => priceCase.stat === ev.stat)
+		// it can be publisher prefixed for a specific publisher
+		const result = channel.pricePerImpressionCase.find(
+			priceCase => priceCase.stat === ev.stat || priceCase.stat === `${ev.publisher}:${ev.stat}`
+		)
 		// if there a match set price to the impression case
 		price = result ? new BN(result.price, 10) : price
 	}
