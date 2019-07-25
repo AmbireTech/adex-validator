@@ -1,5 +1,6 @@
 const BN = require('bn.js')
 const assert = require('assert')
+const { eventTypes } = require('../../constants')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
@@ -8,17 +9,17 @@ function newAggr(channelId) {
 function reduce(channel, initialAggr, ev) {
 	const aggr = { ...initialAggr }
 
-	if (ev.type === 'IMPRESSION') {
+	if (ev.type === eventTypes.IMPRESSION) {
 		aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, ev, channel)
 	}
 
-	if (ev.type === 'IMPRESSION_WITH_COMMISSION') {
+	if (ev.type === eventTypes.IMPRESSION_WITH_COMMISSION) {
 		ev.earners.forEach(earner => {
 			aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, earner, channel)
 		})
 	}
 
-	if (ev.type === 'CLOSE') {
+	if (ev.type === eventTypes.CLOSE) {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
 			eventCounts: {
@@ -30,7 +31,7 @@ function reduce(channel, initialAggr, ev) {
 		}
 	}
 
-	if (ev.type === 'PAY') {
+	if (ev.type === eventTypes.PAY) {
 		const { outputs } = ev
 		const publishers = Object.keys(outputs)
 		publishers.forEach(publisher => {
@@ -42,9 +43,16 @@ function reduce(channel, initialAggr, ev) {
 		})
 	}
 
-	if (ev.type === 'UPDATE_IMPRESSION_PRICE') {
+	if (ev.type === eventTypes.UPDATE_IMPRESSION_PRICE) {
 		const price = new BN(ev.price, 10)
 		assert.ok(isPriceOk(price, channel), 'invalid price per impression')
+	}
+
+	if (ev.type === eventTypes.IMPRESSION_PRICE_PER_CASE) {
+		ev.cases.forEach(priceCase => {
+			const price = new BN(priceCase.price, 10)
+			assert.ok(isPriceOk(price, channel), 'invalid price per impression')
+		})
 	}
 
 	return aggr
@@ -56,6 +64,18 @@ function isPriceOk(price, channel) {
 
 	return price.gte(minPrice) && price.lte(maxPrice)
 }
+// returns the price per impression
+function getPrice(channel, ev) {
+	let price = new BN(channel.currentPricePerImpression || channel.spec.minPerImpression, 10)
+	if (channel.pricePerImpressionCase && ev.stat) {
+		// check if there is a unique price case
+		// for the event stat
+		const result = channel.pricePerImpressionCase.find(priceCase => priceCase.stat === ev.stat)
+		// if there a match set price to the impression case
+		price = result ? new BN(result.price, 10) : price
+	}
+	return price
+}
 
 function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {} }, ev, channel) {
 	const map = {
@@ -63,7 +83,8 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 		eventPayouts: { ...initialMap.eventPayouts },
 		eventStats: { ...initialMap.eventStats }
 	}
-	const price = new BN(channel.currentPricePerImpression || channel.spec.minPerImpression, 10)
+
+	const price = getPrice(channel, ev)
 	assert.ok(isPriceOk(price, channel), 'invalid price per impression')
 
 	if (typeof ev.publisher !== 'string') return map

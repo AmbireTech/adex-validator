@@ -1,6 +1,7 @@
 const BN = require('bn.js')
 const cfg = require('../../cfg')
 const { sumMap } = require('./lib/followerRules')
+const { validatorMsgTypes } = require('../constants')
 
 async function sendHeartbeat(adapter, iface, channel) {
 	const timestamp = Buffer.alloc(32)
@@ -17,7 +18,7 @@ async function sendHeartbeat(adapter, iface, channel) {
 	const stateRoot = stateRootRaw.toString('hex')
 	return iface.propagate([
 		{
-			type: 'Heartbeat',
+			type: validatorMsgTypes.HEARTBEAT,
 			timestamp: new Date(),
 			signature,
 			stateRoot
@@ -26,7 +27,7 @@ async function sendHeartbeat(adapter, iface, channel) {
 }
 
 async function heartbeat(adapter, iface, channel, balances) {
-	const heartbeatMsg = await iface.getOurLatestMsg('Heartbeat')
+	const heartbeatMsg = await iface.getOurLatestMsg(validatorMsgTypes.HEARTBEAT)
 	const shouldSend =
 		(!heartbeatMsg ||
 			Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME) &&

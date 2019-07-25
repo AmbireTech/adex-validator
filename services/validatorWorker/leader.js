@@ -1,6 +1,7 @@
 const { getStateRootHash } = require('./lib')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
+const { validatorMsgTypes } = require('../constants')
 
 async function tick(adapter, iface, channel) {
 	const res = await producer.tick(iface, channel)
@@ -16,7 +17,7 @@ async function onNewAccounting(adapter, iface, channel, { newAccounting, balance
 	const stateRoot = stateRootRaw.toString('hex')
 	return iface.propagate([
 		{
-			type: 'NewState',
+			type: validatorMsgTypes.NEW_STATE,
 			balances: newAccounting.balances,
 			stateRoot,
 			signature
