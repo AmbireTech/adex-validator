@@ -457,6 +457,29 @@ tape('health works correctly', async function(t) {
 	t.end()
 })
 
+tape('deny non-creator from sending creator only events', async function(t) {
+	const evs = [
+		[{ type: 'UPDATE_IMPRESSION_PRICE', price: '3' }],
+		genEvents(1, null, 'PAY', null, null, null),
+		[{ type: 'PAUSE_CHANNEL' }],
+		genEvents(1, null, 'CLOSE')
+	]
+
+	await Promise.all(
+		evs.map(async ev => {
+			const result = await postEvents(
+				leaderUrl,
+				dummyVals.channel.id,
+				ev,
+				dummyVals.auth.leader
+			).then(res => res.json())
+			t.equal(result.success, false, 'should fail to post creator only events')
+			t.equal(result.statusCode, 403, 'should have a unauthorized status')
+		})
+	)
+	t.end()
+})
+
 tape('should update publisher balance with PAY event', async function(t) {
 	const channel = {
 		...dummyVals.channel,
