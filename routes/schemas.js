@@ -1,4 +1,5 @@
 const { Joi } = require('celebrate')
+const { eventTypes } = require('../services/constants')
 
 const numericString = Joi.string().regex(/^\d+$/)
 
@@ -116,13 +117,13 @@ module.exports = {
 				type: Joi.string().required(),
 				publisher: Joi.string(),
 				price: Joi.when('type', {
-					is: 'UPDATE_IMPRESSION_PRICE',
+					is: eventTypes.UPDATE_IMPRESSION_PRICE,
 					then: Joi.string().required(),
 					otherwise: Joi.forbidden()
 				}),
 				adUnit: Joi.string(),
 				earners: Joi.when('type', {
-					is: 'IMPRESSION_WITH_COMMISSION',
+					is: eventTypes.IMPRESSION_WITH_COMMISSION,
 					then: Joi.array()
 						.items(
 							Joi.object({
@@ -134,12 +135,23 @@ module.exports = {
 					otherwise: Joi.forbidden()
 				}),
 				outputs: Joi.when('type', {
-					is: 'PAY',
+					is: eventTypes.PAY,
 					then: Joi.object()
 						.keys()
 						.pattern(Joi.string(), Joi.string())
 						.required(),
 					otherwise: Joi.forbidden()
+				}),
+				cases: Joi.when('type', {
+					is: eventTypes.IMPRESSION_PRICE_PER_CASE,
+					then: Joi.array()
+						.items(
+							Joi.object({
+								stat: Joi.string().required(),
+								price: Joi.string().required()
+							})
+						)
+						.required()
 				})
 			})
 		)

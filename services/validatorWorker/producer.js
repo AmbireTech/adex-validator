@@ -1,9 +1,10 @@
 const { mergeAggrs } = require('./lib/mergeAggrs')
 const { toBNMap } = require('./lib')
 const logger = require('../logger')('validatorWorker(producer)')
+const { validatorMsgTypes } = require('../constants')
 
 async function tick(iface, channel) {
-	const accounting = (await iface.getOurLatestMsg('Accounting')) || {
+	const accounting = (await iface.getOurLatestMsg(validatorMsgTypes.ACCOUNTING)) || {
 		balancesBeforeFees: {},
 		balances: {},
 		lastEvAggr: new Date(0)

@@ -2,6 +2,7 @@ const assert = require('assert')
 const BN = require('bn.js')
 const { toBNStringMap, toBNMap } = require('./')
 const { getBalancesAfterFeesTree } = require('./fees')
+const { validatorMsgTypes } = require('../../constants')
 
 // Pure, should not mutate inputs
 // mergeAggrs(accounting, aggrs, channel) -> { balances, newAccounting }
@@ -9,7 +10,7 @@ const { getBalancesAfterFeesTree } = require('./fees')
 function mergeAggrs(accounting, aggrs, channel) {
 	const depositAmount = new BN(channel.depositAmount, 10)
 	const newAccounting = {
-		type: 'Accounting',
+		type: validatorMsgTypes.ACCOUNTING,
 		balancesBeforeFees: {},
 		balances: {},
 		lastEvAggr: new Date(accounting.lastEvAggr)

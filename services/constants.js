@@ -1,0 +1,18 @@
+module.exports = Object.freeze({
+	validatorMsgTypes: {
+		NEW_STATE: 'NewState',
+		APPROVE_STATE: 'ApproveState',
+		HEARTBEAT: 'Heartbeat',
+		ACCOUNTING: 'Accounting',
+		REJECT_STATE: 'RejectState'
+	},
+	eventTypes: {
+		IMPRESSION: 'IMPRESSION',
+		IMPRESSION_WITH_COMMISSION: 'IMPRESSION_WITH_COMMISSION',
+		PAY: 'PAY',
+		CLOSE: 'CLOSE',
+		PAUSE_CHANNEL: 'PAUSE_CHANNEL',
+		IMPRESSION_PRICE_PER_CASE: 'IMPRESSION_PRICE_PER_CASE',
+		UPDATE_IMPRESSION_PRICE: 'UPDATE_IMPRESSION_PRICE'
+	}
+})

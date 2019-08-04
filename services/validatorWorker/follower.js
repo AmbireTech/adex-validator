@@ -2,12 +2,13 @@ const { getStateRootHash, onError, toBNMap } = require('./lib')
 const { isValidTransition, isHealthy } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
+const { validatorMsgTypes } = require('../constants')
 
 async function tick(adapter, iface, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
 	// SEE https://github.com/AdExNetwork/adex-validator-stack-js/issues/4
 	const [newMsg, responseMsg] = await Promise.all([
-		iface.getLatestMsg(channel.spec.validators[0].id, 'NewState'),
+		iface.getLatestMsg(channel.spec.validators[0].id, validatorMsgTypes.NEW_STATE),
 		iface.getOurLatestMsg('ApproveState+RejectState')
 	])
 	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
@@ -49,7 +50,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 	const signature = await adapter.sign(stateRootRaw)
 	return iface.propagate([
 		{
-			type: 'ApproveState',
+			type: validatorMsgTypes.APPROVE_STATE,
 			stateRoot,
 			isHealthy: isHealthy(channel, balances, proposedBalances),
 			signature
