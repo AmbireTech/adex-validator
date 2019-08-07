@@ -71,7 +71,7 @@ function analytics(global, req) {
 				value: {
 					$sum: {
 						$map: {
-							input: { $objectToArray: `$events.IMPRESSION.eventPayouts` },
+							input: { $objectToArray: `$events.${eventType}.${metric}` },
 							as: 'item',
 							in: { $toLong: '$$item.v' }
 						}
