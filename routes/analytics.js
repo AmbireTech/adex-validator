@@ -1,6 +1,5 @@
 const express = require('express')
 const { celebrate } = require('celebrate')
-// const url = require('url')
 const { promisify } = require('util')
 const schema = require('./schemas')
 const { channelLoad } = require('../middlewares/channel')
