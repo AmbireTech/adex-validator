@@ -85,6 +85,7 @@ module.exports = {
 		spec: Joi.object({
 			adUnits: Joi.array().items(Joi.object()),
 			targeting: Joi.array().items(Joi.object()),
+			minTargetingScore: Joi.number().integer().allow(null).optional(),
 			validators: Joi.array()
 				.items(
 					Joi.object({
