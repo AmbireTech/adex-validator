@@ -99,6 +99,7 @@ module.exports = {
 				.required()
 				.length(2),
 			withdrawPeriodStart: Joi.number().required(),
+			minTargetingScore: Joi.number(),
 			minPerImpression: numericString.default('1'),
 			maxPerImpression: numericString.default('1'),
 			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
