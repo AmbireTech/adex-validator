@@ -83,7 +83,6 @@ function getEventTimeAggregate(req, res, next) {
 				minutes: { $minute: '$created' }
 			}
 		},
-		{ $sort: { created: 1 } },
 		{
 			$group: {
 				_id: { ...group },
