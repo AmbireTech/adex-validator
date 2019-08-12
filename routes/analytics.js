@@ -63,7 +63,7 @@ function analytics(global, req) {
 	}
 
 	const pipeline = [
-		{ $match: { ...match } },
+		{ $match: match },
 		{
 			$project: {
 				created: 1,
@@ -86,13 +86,13 @@ function analytics(global, req) {
 				value: { $sum: '$value' }
 			}
 		},
-		{ $sort: { _id: 1 } },
+		{ $sort: { _id: 1, channelId: 1, created: 1 } },
 		{ $limit: appliedLimit },
 		{ $project: { value: { $toString: '$value' }, time: '$_id', _id: 0 } }
 	]
 
 	return eventsCol
-		.aggregate(pipeline)
+		.aggregate(pipeline, { allowDiskUse: true })
 		.toArray()
 		.then(aggr => ({ limit: appliedLimit, aggr }))
 }
