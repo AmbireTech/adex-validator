@@ -99,9 +99,12 @@ async function pruneChannel(channel, timestamp) {
 async function pruneExpired() {
 	const { timestamp } = argv
 	const channelCol = db.getMongo().collection('channels')
-	const channels = await (await channelCol.find({
-		validUntil: { $lte: Math.ceil(new Date(timestamp).getTime() / 1000) }
-	})).toArray()
+	const channels = await channelCol
+		.find({
+			validUntil: { $lte: Math.ceil(new Date(timestamp).getTime() / 1000) }
+		})
+		.toArray()
+		.catch(e => logger.error(e))
 
 	const result = await Promise.all(channels.map(async channel => pruneChannel(channel)))
 

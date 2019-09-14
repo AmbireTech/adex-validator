@@ -4,6 +4,7 @@ const cfg = require('../../cfg')
 const eventReducer = require('./lib/eventReducer')
 const checkAccess = require('./lib/access')
 const logger = require('../logger')('sentry')
+const { eventTypes } = require('../constants')
 
 const recorders = new Map()
 
@@ -51,10 +52,13 @@ function makeRecorder(channelId) {
 		leading: false,
 		trailing: true
 	})
-
 	const updateChannelPrice = async ev => {
-		const price = ev.type === 'UPDATE_IMPRESSION_PRICE' ? ev.price : '0'
-		await channelsCol.updateOne({ id: channelId }, { $set: { currentPricePerImpression: price } })
+		if (ev.type === eventTypes.IMPRESSION_PRICE_PER_CASE) {
+			await channelsCol.updateOne({ id: channelId }, { $set: { pricePerImpressionCase: ev.cases } })
+		} else {
+			const price = ev.type === eventTypes.UPDATE_IMPRESSION_PRICE ? ev.price : '0'
+			await channelsCol.updateOne({ id: channelId }, { $set: { currentPricePerImpression: price } })
+		}
 	}
 
 	// return a recorder
@@ -68,13 +72,15 @@ function makeRecorder(channelId) {
 		if (channel.currentPricePerImpression && channel.currentPricePerImpression === '0') {
 			return { success: false, statusCode: 400, message: 'channel is paused' }
 		}
-
 		// Record the events
 		aggr = events.reduce(eventReducer.reduce.bind(null, channel), aggr)
 
 		// check if events contained any channel price modifying event
 		const priceModifyEvs = events.filter(
-			x => x.type === 'UPDATE_IMPRESSION_PRICE' || x.type === 'PAUSE_CHANNEL'
+			ev =>
+				ev.type === eventTypes.UPDATE_IMPRESSION_PRICE ||
+				ev.type === eventTypes.PAUSE_CHANNEL ||
+				ev.type === eventTypes.IMPRESSION_PRICE_PER_CASE
 		)
 		if (priceModifyEvs.length) {
 			await Promise.all(

@@ -1,5 +1,6 @@
 const express = require('express')
 const { celebrate } = require('celebrate')
+const UAParser = require('ua-parser-js')
 const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
@@ -80,8 +81,9 @@ function getEventAggregates(req, res, next) {
 	if (!isSuperuser) {
 		const keyCounts = `events.IMPRESSION.eventCounts.${uid}`
 		const keyPayouts = `events.IMPRESSION.eventPayouts.${uid}`
+		const keyStats = `events.IMPRESSION.eventStats.${uid}`
 		query = { ...query, [keyCounts]: { $exists: true } }
-		projection = { ...projection, created: 1, [keyPayouts]: 1 }
+		projection = { ...projection, created: 1, [keyPayouts]: 1, [keyStats]: 1 }
 	} else {
 		projection = { ...projection, 'events.IMPRESSION.eventCounts': 0 }
 	}
@@ -253,10 +255,21 @@ function postValidatorMessages(req, res, next) {
 }
 
 function postEvents(req, res, next) {
-	const { events } = req.body
+	let { events } = req.body
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
+	const location = req.headers['cf-ipcountry'] || ''
+	// parse user agent
+	if (req.headers['x-device-user-agent'] || req.headers['user-agent']) {
+		const parser = new UAParser()
+		parser.setUA(req.headers['x-device-user-agent'] || req.headers['user-agent'])
+		const result = parser.getResult()
+		// enrich events with additional stats
+		const stat = `${location || ''}:${result.browser.name || ''}:${result.os.name || ''}:${result
+			.device.type || ''}`
+		events = events.map(event => ({ ...event, stat }))
+	}
 	eventAggrService
 		.record(req.params.id, { ...req.session, ip }, events)
 		.then(function(resp) {
@@ -321,7 +334,7 @@ function getPipeline({ timeframe, channelId, eventType, metric, earner, appliedL
 		{
 			$addFields: {
 				value: {
-					$toInt: `$events.${eventType}.${metric}.${earner}`
+					$toLong: `$events.${eventType}.${metric}.${earner}`
 				}
 			}
 		},
@@ -364,7 +377,7 @@ function getPipeline({ timeframe, channelId, eventType, metric, earner, appliedL
 					$map: {
 						input: { $objectToArray: `$events.${eventType}.${metric}` },
 						as: 'item',
-						in: { k: '$$item.k', v: { $toInt: '$$item.v' } }
+						in: { k: '$$item.k', v: { $toLong: '$$item.v' } }
 					}
 				}
 			}
