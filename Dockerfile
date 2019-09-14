@@ -17,7 +17,9 @@ RUN echo 'http://dl-3.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositor
 RUN apk add --update alpine-sdk
 RUN apk add --update python
 
-RUN curl 'https://support.cloudflare.com/hc/en-us/article_attachments/360033402631/cloudflare_origin_ecc.pem' > /usr/local/share/ca-certificates/cloudflare_origin.crt && curl 'https://support.cloudflare.com/hc/en-us/article_attachments/360033413832/cloudflare_origin_rsa.pem' >> /usr/local/share/ca-certificates/cloudflare_origin.crt && update-ca-certificates
+COPY cloudflare_origin.crt /usr/local/share/ca-certificates/
+
+RUN update-ca-certificates
 
 ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/cloudflare_origin.crt
 
