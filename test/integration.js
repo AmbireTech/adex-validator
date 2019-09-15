@@ -152,7 +152,7 @@ tape('new states are not produced when there are no new aggregates', async funct
 	t.end()
 })
 
-tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
+tape('/channel/{id}/events-aggregates, /analytics/:id', async function(t) {
 	const id = 'eventAggregateCountTest'
 	const channel = {
 		...dummyVals.channel,
@@ -250,49 +250,30 @@ tape('/channel/{id}/events-aggregates/{timeframe}', async function(t) {
 		})
 	)
 
-	const timeAggrFilterFixtures = [
+	const analyticsFilterFixtures = [
 		['?metric=eventPayouts'],
 		['?metric=eventCounts'],
-		['?timeframe=minute'],
-		['?timeframe=hour'],
+		['?timeframe=year'],
 		['?timeframe=day'],
-		['?timeframe=week'],
 		['?timeframe=month']
 	]
 
-	// events-aggregates/timeframe with authentication
+	//  with authentication
 	await Promise.all(
-		timeAggrFilterFixtures.map(async fixture => {
+		analyticsFilterFixtures.map(async fixture => {
 			const [query] = fixture
-			const resp = await fetch(`${url}/timeframe${query}`, {
+			const resp = await fetch(`${leaderUrl}/analytics/${channel.id}${query}`, {
 				method: 'GET',
 				headers: {
 					authorization: `Bearer ${dummyVals.auth.publisher}`,
 					'content-type': 'application/json'
 				}
 			}).then(res => res.json())
-			t.ok(resp.channel, 'has resp.channel')
+			t.ok(resp.aggr[0].time, 'has resp.channel')
 			// 3 is number of events submitted by publisher in authorization
-			t.ok(resp.aggr[0].value === 3, 'has correct aggr value')
+			t.ok(resp.aggr[0].value === '3', 'has correct aggr value')
 		})
 	)
-
-	// events-aggregates/timeframe without authentication
-	await Promise.all(
-		timeAggrFilterFixtures.map(async fixture => {
-			const [query] = fixture
-			const resp = await fetch(`${url}/timeframe${query}`, {
-				method: 'GET',
-				headers: {
-					'content-type': 'application/json'
-				}
-			}).then(res => res.json())
-			t.ok(resp.aggr, 'has resp.aggr')
-			t.equal(resp.aggr[0].data.myAwesomePublisher2, 3, 'has correct aggr value')
-			t.equal(resp.aggr[0].data.myAwesomePublisher, 3, 'has correct aggr value')
-		})
-	)
-
 	t.end()
 })
 

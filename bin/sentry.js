@@ -12,7 +12,7 @@ const channelRoutes = require('../routes/channel')
 const channelCreate = require('../routes/channelCreate')
 const logger = require('../services/logger')('sentry')
 const createCluster = require('../services/cluster')
-const volumeRoutes = require('../routes/volume')
+const analyticsRoutes = require('../routes/analytics')
 
 const { argv } = yargs
 	.usage('Usage $0 [options]')
@@ -34,7 +34,7 @@ app.use(bodyParser.json())
 app.use(authMiddleware.forAdapter(adapter))
 app.use('/channel', channelRoutes)
 app.use('/channel', channelCreate.forAdapter(adapter))
-app.use('/volume', volumeRoutes)
+app.use('/analytics', analyticsRoutes)
 app.use('/cfg', (_, res) => res.send(cfg))
 app.use(errors())
 

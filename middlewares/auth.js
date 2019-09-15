@@ -22,4 +22,12 @@ function forAdapter(adapter) {
 	}
 }
 
-module.exports = { forAdapter }
+function authRequired(req, res, next) {
+	if (!req.session) {
+		res.sendStatus(401)
+		return
+	}
+	next()
+}
+
+module.exports = { forAdapter, authRequired }
