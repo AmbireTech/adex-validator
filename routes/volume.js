@@ -41,13 +41,18 @@ function volumeRoute(monthlyImpressions) {
 			}
 		},
 		{ $sort: { _id: 1 } },
-		{ $project: { value: { $toString: '$value' }, time: '$_id', _id: 0 } }
+		{ $project: { value: '$value', time: '$_id', _id: 0 } }
 	]
 
 	return eventsCol
 		.aggregate(pipeline)
 		.toArray()
-		.then(aggr => ({ aggr }))
+		.then(aggr => ({
+			aggr: aggr.map(x => ({
+				...x,
+				value: x.value.toLocaleString('fullwide', { useGrouping: false })
+			}))
+		}))
 }
 
 // takes seconds: Number, fn: fn(req: object) -> object
