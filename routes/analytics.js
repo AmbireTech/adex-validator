@@ -89,13 +89,19 @@ function analytics(global, req) {
 		},
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
 		{ $limit: appliedLimit },
-		{ $project: { value: { $toString: '$value' }, time: '$_id', _id: 0 } }
+		{ $project: { value: '$value', time: '$_id', _id: 0 } }
 	]
 
 	return eventsCol
 		.aggregate(pipeline)
 		.toArray()
-		.then(aggr => ({ limit: appliedLimit, aggr }))
+		.then(aggr => ({
+			limit: appliedLimit,
+			aggr: aggr.map(x => ({
+				...x,
+				value: x.value.toLocaleString('fullwide', { useGrouping: false })
+			}))
+		}))
 }
 
 function redisCached(seconds, fn) {
