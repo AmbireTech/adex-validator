@@ -13,7 +13,7 @@ const redisGet = promisify(redisCli.get).bind(redisCli)
 router.get(
 	'/',
 	celebrate({ body: schema.eventTimeAggr }),
-	redisCached(60, analytics.bind(null, true))
+	redisCached(300, analytics.bind(null, true))
 )
 router.get(
 	'/:id',
