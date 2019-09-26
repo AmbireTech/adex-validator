@@ -2,7 +2,7 @@ const express = require('express')
 const { celebrate } = require('celebrate')
 const { promisify } = require('util')
 const schema = require('./schemas')
-const { channelLoad } = require('../middlewares/channel')
+const { channelIfExists } = require('../middlewares/channel')
 const { authRequired } = require('../middlewares/auth')
 const db = require('../db')
 
@@ -15,11 +15,12 @@ router.get(
 	celebrate({ body: schema.eventTimeAggr }),
 	redisCached(300, analytics.bind(null, true))
 )
+// :id is channelId: needs to be named that way cause of channelIfExists
 router.get(
 	'/:id',
 	celebrate({ body: schema.eventTimeAggr }),
 	authRequired,
-	channelLoad,
+	channelIfExists,
 	redisCached(120, analytics.bind(null, false))
 )
 
@@ -54,8 +55,8 @@ function analytics(global, req) {
 	if (!global && uid) {
 		match[`events.${eventType}.${metric}.${uid}`] = { $exists: true, $ne: null }
 	}
-	if (req.channel) {
-		match = { ...match, channelId: req.channel.id }
+	if (req.params.id) {
+		match = { ...match, channelId: req.params.id }
 	}
 	if (period) {
 		const after = +req.query.after || 0
