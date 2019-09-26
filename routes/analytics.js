@@ -93,7 +93,7 @@ function analytics(global, req) {
 	]
 
 	return eventsCol
-		.aggregate(pipeline, { allowDiskUse: true })
+		.aggregate(pipeline)
 		.toArray()
 		.then(aggr => ({ limit: appliedLimit, aggr }))
 }
