@@ -59,8 +59,8 @@ function analytics(global, req) {
 		match = { ...match, channelId: req.params.id }
 	}
 	if (period) {
-		const after = +req.query.after || 0
-		match = { ...match, created: { $gt: new Date(new Date(after).getTime() - period) } }
+		const after = new Date(req.query.after ? parseInt(req.query.after, 10) : 0)
+		match = { ...match, created: { $gt: after } }
 	}
 
 	const pipeline = [
