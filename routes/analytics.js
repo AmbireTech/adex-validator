@@ -24,7 +24,9 @@ router.get(
 	redisCached(120, analytics.bind(null, false))
 )
 
-const DAY = 24 * 60 * 60 * 1000
+const MINUTE = 60 * 1000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
 
 function getTimeframe(authenticated, timeframe) {
 	let result = {}
@@ -33,7 +35,9 @@ function getTimeframe(authenticated, timeframe) {
 	// every day in one month
 	if (timeframe === 'month') result = { period: 30 * DAY, interval: DAY }
 	// every hour in one day
-	if (timeframe === 'day') result = { period: DAY, interval: DAY / 24 }
+	if (timeframe === 'day') result = { period: DAY, interval: HOUR }
+	// every minute in an hour
+	if (timeframe === 'hour') result = { period: HOUR, interval: MINUTE }
 	// if unauthenticated there is a period restriction on the data
 	// being fetched
 	return authenticated ? { ...result, period: 0 } : result
@@ -43,7 +47,7 @@ function analytics(global, req) {
 	const { uid } = req.session || {}
 	const {
 		eventType = 'IMPRESSION',
-		metric = 'eventPayouts',
+		metric = 'eventCounts',
 		timeframe = 'day',
 		limit = 100
 	} = req.query
