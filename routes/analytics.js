@@ -54,18 +54,15 @@ function analytics(global, req) {
 	const appliedLimit = Math.min(200, limit)
 	const eventsCol = db.getMongo().collection('eventAggregates')
 
-	let match = {}
 	const { period, interval } = getTimeframe(!!uid, timeframe) || {}
+	let match = { created: { $gt: new Date(Date.now() - period) } }
 	if (!global && uid) {
 		match[`events.${eventType}.${metric}.${uid}`] = { $exists: true, $ne: null }
 	}
 	if (req.params.id) {
 		match = { ...match, channelId: req.params.id }
 	}
-	if (period) {
-		const after = new Date(req.query.after ? parseInt(req.query.after, 10) : 0)
-		match = { ...match, created: { $gt: after } }
-	}
+	// @TODO handle ?after
 
 	const pipeline = [
 		{ $match: match },
