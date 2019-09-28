@@ -3,10 +3,10 @@ const BN = require('bn.js')
 
 function getStateRootHash(adapter, channel, balances) {
 	// Note: MerkleTree takes care of deduplicating and sorting
-	const elems = Object.keys(balances).map(acc => adapter.getBalanceLeaf(acc, balances[acc]))
+	const elems = Object.entries(balances).map(([acc, bal]) => adapter.getBalanceLeaf(acc, bal))
 	const tree = new adapter.MerkleTree(elems)
 	const balanceRoot = tree.getRoot()
-	// keccak256(channelId, balanceRoot)
+	// For Ethereum, this is keccak256(channelId, balanceRoot)
 	return adapter.getSignableStateRoot(channel.id, balanceRoot)
 }
 
