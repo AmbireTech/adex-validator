@@ -9,65 +9,55 @@ const db = require('../db')
 const router = express.Router()
 const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
+const validate = celebrate({ body: schema.eventTimeAggr })
+const analyticsNotCached = (req, res) => analytics(req).then(res.json.bind(res))
 
-router.get(
-	'/',
-	celebrate({ body: schema.eventTimeAggr }),
-	redisCached(300, analytics.bind(null, true))
-)
+// Global statistics
+router.get('/', validate, redisCached(300, analytics))
+router.get('/for-user', validate, authRequired, analyticsNotCached)
+
 // :id is channelId: needs to be named that way cause of channelIfExists
-router.get(
-	'/:id',
-	celebrate({ body: schema.eventTimeAggr }),
-	authRequired,
-	channelIfExists,
-	redisCached(120, analytics.bind(null, false))
-)
+router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
+router.get('/for-user/:id', validate, authRequired, channelIfExists, analyticsNotCached)
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
-
-function getTimeframe(authenticated, timeframe) {
-	let result = {}
+function getTimeframe(timeframe) {
 	// every month in one year
-	if (timeframe === 'year') result = { period: 365 * DAY, interval: 30 * DAY }
+	if (timeframe === 'year') return { period: 365 * DAY, interval: 30 * DAY }
 	// every day in one month
-	if (timeframe === 'month') result = { period: 30 * DAY, interval: DAY }
+	if (timeframe === 'month') return { period: 30 * DAY, interval: DAY }
 	// every hour in one day
-	if (timeframe === 'day') result = { period: DAY, interval: HOUR }
+	if (timeframe === 'day') return { period: DAY, interval: HOUR }
 	// every minute in an hour
-	if (timeframe === 'hour') result = { period: HOUR, interval: MINUTE }
-	// if unauthenticated there is a period restriction on the data
-	// being fetched
-	return authenticated ? { ...result, period: 0 } : result
+	if (timeframe === 'hour') return { period: HOUR, interval: MINUTE }
+
+	// default is day
+	return { period: DAY, interval: HOUR }
 }
 
-function analytics(global, req) {
-	const { uid } = req.session || {}
-	const {
-		eventType = 'IMPRESSION',
-		metric = 'eventCounts',
-		timeframe = 'day',
-		limit = 100
-	} = req.query
-	const appliedLimit = Math.min(200, limit)
-	const eventsCol = db.getMongo().collection('eventAggregates')
-
-	const { period, interval } = getTimeframe(!!uid, timeframe) || {}
-	let match = { created: { $gt: new Date(Date.now() - period) } }
-	if (!global && uid) {
-		match[`events.${eventType}.${metric}.${uid}`] = { $exists: true, $ne: null }
-	}
-	if (req.params.id) {
-		match = { ...match, channelId: req.params.id }
-	}
-	// @TODO handle ?after
-
-	const pipeline = [
-		{ $match: match },
-		{
-			$project: {
+const allowedEventTypes = ['IMPRESSION', 'CLICK']
+const allowedMetrics = ['eventCounts', 'eventPayouts']
+function getProjAndMatch(session, channelId, period, eventTypeParam, metricParam) {
+	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
+	const eventType = allowedEventTypes.includes(eventTypeParam)
+		? eventTypeParam
+		: allowedEventTypes[0]
+	const metric = allowedMetrics.includes(metricParam) ? metricParam : allowedMetrics[0]
+	const filteredMatch = session
+		? {
+				...timeMatch,
+				[`events.${eventType}.${metric}.${session.uid}`]: { $exists: true }
+		  }
+		: timeMatch
+	const match = channelId ? { ...filteredMatch, channelId } : filteredMatch
+	const project = session
+		? {
+				created: 1,
+				value: { $toLong: `events.${eventType}.${metric}.${session.uid}` }
+		  }
+		: {
 				created: 1,
 				value: {
 					$sum: {
@@ -78,8 +68,24 @@ function analytics(global, req) {
 						}
 					}
 				}
-			}
-		},
+		  }
+	return { match, project }
+}
+
+function analytics(req) {
+	const eventsCol = db.getMongo().collection('eventAggregates')
+	const {
+		limit = 100,
+		timeframe = 'day',
+		eventType = allowedEventTypes[0],
+		metric = allowedMetrics[0]
+	} = req.query
+	const { period, interval } = getTimeframe(timeframe)
+	const { project, match } = getProjAndMatch(req.session, req.params.id, period, eventType, metric)
+	const appliedLimit = Math.min(200, limit)
+	const pipeline = [
+		{ $match: match },
+		{ $project: project },
 		{
 			$group: {
 				_id: {
