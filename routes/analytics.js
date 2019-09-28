@@ -52,23 +52,21 @@ function getProjAndMatch(session, channelId, period, eventTypeParam, metricParam
 		  }
 		: timeMatch
 	const match = channelId ? { ...filteredMatch, channelId } : filteredMatch
-	const project = session
-		? {
-				created: 1,
-				value: { $toLong: `events.${eventType}.${metric}.${session.uid}` }
-		  }
+	const projectValue = session
+		? { $toLong: `$events.${eventType}.${metric}.${session.uid}` }
 		: {
-				created: 1,
-				value: {
-					$sum: {
-						$map: {
-							input: { $objectToArray: `$events.${eventType}.${metric}` },
-							as: 'item',
-							in: { $toLong: '$$item.v' }
-						}
+				$sum: {
+					$map: {
+						input: { $objectToArray: `$events.${eventType}.${metric}` },
+						as: 'item',
+						in: { $toLong: '$$item.v' }
 					}
 				}
 		  }
+	const project = {
+		created: 1,
+		value: projectValue
+	}
 	return { match, project }
 }
 
