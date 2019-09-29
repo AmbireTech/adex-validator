@@ -1,5 +1,6 @@
 const BN = require('bn.js')
 const assert = require('assert')
+const toBalancesKey = require('./toBalancesKey')
 const { eventTypes } = require('../../constants')
 
 function newAggr(channelId) {
@@ -23,10 +24,10 @@ function reduce(channel, initialAggr, ev) {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
 			eventCounts: {
-				[creator]: new BN(1).toString()
+				[toBalancesKey(creator)]: new BN(1).toString()
 			},
 			eventPayouts: {
-				[creator]: depositAmount
+				[toBalancesKey(creator)]: depositAmount
 			}
 		}
 	}
@@ -85,14 +86,15 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 	assert.ok(isPriceOk(price, channel), 'invalid price per impression')
 
 	if (typeof ev.publisher !== 'string') return map
+	const publisher = toBalancesKey(ev.publisher)
 
-	const eventCountKey = ev.adUnit ? `${ev.publisher}:${ev.adUnit}` : ev.publisher
+	const eventCountKey = ev.adUnit ? `${publisher}:${ev.adUnit}` : publisher
 	if (!map.eventCounts[eventCountKey]) map.eventCounts[eventCountKey] = new BN(0)
-	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
-	if (!map.eventStats[ev.publisher]) {
-		map.eventStats[ev.publisher] = []
+	if (!map.eventPayouts[publisher]) map.eventPayouts[publisher] = new BN(0)
+	if (!map.eventStats[publisher]) {
+		map.eventStats[publisher] = []
 	}
-	map.eventStats[ev.publisher] = mergeStats(map.eventStats[ev.publisher], ev)
+	map.eventStats[publisher] = mergeStats(map.eventStats[publisher], ev)
 	// if its a pay event which requires output key
 	// do not increase event count
 	// else increase the event count
@@ -102,17 +104,17 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 	}
 
 	// current publisher payout
-	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
+	const currentAmount = new BN(map.eventPayouts[publisher], 10)
 	// check if promilles is set that means payout
 	// a percentage of the currentAmount to the publisher
 	if (ev.promilles) {
 		const publisherAmount = price.mul(new BN(ev.promilles, 10)).div(new BN(1000, 10))
-		map.eventPayouts[ev.publisher] = addAndToString(currentAmount, publisherAmount)
+		map.eventPayouts[publisher] = addAndToString(currentAmount, publisherAmount)
 	} else {
 		// add the output if set (pay event) else
 		// add the price per impression
 		// to the current eventPayouts for the publisher
-		map.eventPayouts[ev.publisher] = addAndToString(
+		map.eventPayouts[publisher] = addAndToString(
 			currentAmount,
 			(ev.output && new BN(ev.output, 10)) || price
 		)

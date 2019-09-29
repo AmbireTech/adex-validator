@@ -2,6 +2,7 @@ const express = require('express')
 const { celebrate } = require('celebrate')
 const { promisify } = require('util')
 const schema = require('./schemas')
+const toBalancesKey = require('../services/sentry/lib/toBalancesKey')
 const { channelIfExists } = require('../middlewares/channel')
 const { authRequired } = require('../middlewares/auth')
 const db = require('../db')
@@ -45,15 +46,16 @@ function getProjAndMatch(session, channelId, period, eventTypeParam, metricParam
 		? eventTypeParam
 		: allowedEventTypes[0]
 	const metric = allowedMetrics.includes(metricParam) ? metricParam : allowedMetrics[0]
-	const filteredMatch = session
+	const uid = session ? toBalancesKey(session.uid) : null
+	const filteredMatch = uid
 		? {
 				...timeMatch,
-				[`events.${eventType}.${metric}.${session.uid}`]: { $exists: true }
+				[`events.${eventType}.${metric}.${uid}`]: { $exists: true }
 		  }
 		: timeMatch
 	const match = channelId ? { ...filteredMatch, channelId } : filteredMatch
-	const projectValue = session
-		? { $toLong: `$events.${eventType}.${metric}.${session.uid}` }
+	const projectValue = uid
+		? { $toLong: `$events.${eventType}.${metric}.${uid}` }
 		: {
 				$sum: {
 					$map: {
