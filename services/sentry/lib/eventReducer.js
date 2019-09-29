@@ -32,14 +32,8 @@ function reduce(channel, initialAggr, ev) {
 	}
 
 	if (ev.type === eventTypes.PAY) {
-		const { outputs } = ev
-		const publishers = Object.keys(outputs)
-		publishers.forEach(publisher => {
-			aggr.events.PAY = mergeEv(
-				initialAggr.events.PAY,
-				{ publisher, output: outputs[publisher] },
-				channel
-			)
+		Object.entries(ev.outputs).forEach(([publisher, output]) => {
+			aggr.events.PAY = mergeEv(initialAggr.events.PAY, { publisher, output }, channel)
 		})
 	}
 
