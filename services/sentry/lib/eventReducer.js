@@ -1,4 +1,5 @@
 const BN = require('bn.js')
+const toBalancesKey = require('./toBalancesKey')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
@@ -12,10 +13,10 @@ function reduce(channel, initialAggr, ev) {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
 			eventCounts: {
-				[creator]: new BN(1)
+				[toBalancesKey(creator)]: new BN(1)
 			},
 			eventPayouts: {
-				[creator]: depositAmount
+				[toBalancesKey(creator)]: depositAmount
 			}
 		}
 	}
@@ -29,18 +30,19 @@ function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, e
 		eventPayouts: { ...initialMap.eventPayouts }
 	}
 	if (typeof ev.publisher !== 'string') return map
-	if (!map.eventCounts[ev.publisher]) map.eventCounts[ev.publisher] = new BN(0)
-	if (!map.eventPayouts[ev.publisher]) map.eventPayouts[ev.publisher] = new BN(0)
+	const earner = toBalancesKey(ev.publisher)
+	if (!map.eventCounts[earner]) map.eventCounts[earner] = new BN(0)
+	if (!map.eventPayouts[earner]) map.eventPayouts[earner] = new BN(0)
 
 	// increase the event count
-	const newEventCounts = new BN(map.eventCounts[ev.publisher], 10)
-	map.eventCounts[ev.publisher] = addAndToString(newEventCounts, new BN(1))
+	const newEventCounts = new BN(map.eventCounts[earner], 10)
+	map.eventCounts[earner] = addAndToString(newEventCounts, new BN(1))
 
-	// current publisher payout
-	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
+	// current earner payout
+	const currentAmount = new BN(map.eventPayouts[earner], 10)
 	// add the minimum price per impression
 	// to the current amount
-	map.eventPayouts[ev.publisher] = addAndToString(
+	map.eventPayouts[earner] = addAndToString(
 		currentAmount,
 		new BN(channel.spec.minPerImpression || 1)
 	)
