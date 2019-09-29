@@ -1,6 +1,8 @@
 const express = require('express')
 const { promisify } = require('util')
+const { celebrate } = require('celebrate')
 const toBalancesKey = require('../services/sentry/lib/toBalancesKey')
+const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
 
@@ -9,14 +11,15 @@ const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
 const authRequired = (req, res, next) => (req.session ? next() : res.sendStatus(401))
 const analyticsNotCached = (req, res) => analytics(req).then(res.json.bind(res))
+const validate = celebrate({ query: schemas.eventTimeAggr })
 
 // Global statistics
-router.get('/', redisCached(300, analytics))
-router.get('/for-user', authRequired, analyticsNotCached)
+router.get('/', validate, redisCached(300, analytics))
+router.get('/for-user', validate, authRequired, analyticsNotCached)
 
 // :id is channelId: needs to be named that way cause of channelIfExists
-router.get('/:id', channelIfExists, redisCached(600, analytics))
-router.get('/for-user/:id', authRequired, channelIfExists, analyticsNotCached)
+router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
+router.get('/for-user/:id', validate, authRequired, channelIfExists, analyticsNotCached)
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
@@ -26,6 +29,8 @@ function getTimeframe(timeframe) {
 	if (timeframe === 'year') return { period: 365 * DAY, interval: 30 * DAY }
 	// every day in one month
 	if (timeframe === 'month') return { period: 30 * DAY, interval: DAY }
+	// every 6 hours in a week
+	if (timeframe === 'week') return { period: 7 * DAY, interval: 6 * HOUR }
 	// every hour in one day
 	if (timeframe === 'day') return { period: DAY, interval: HOUR }
 	// every minute in an hour
@@ -35,14 +40,8 @@ function getTimeframe(timeframe) {
 	return { period: DAY, interval: HOUR }
 }
 
-const allowedEventTypes = ['IMPRESSION', 'CLICK']
-const allowedMetrics = ['eventCounts', 'eventPayouts']
-function getProjAndMatch(session, channelId, period, eventTypeParam, metricParam) {
+function getProjAndMatch(session, channelId, period, eventType, metric) {
 	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
-	const eventType = allowedEventTypes.includes(eventTypeParam)
-		? eventTypeParam
-		: allowedEventTypes[0]
-	const metric = allowedMetrics.includes(metricParam) ? metricParam : allowedMetrics[0]
 	const uid = session ? toBalancesKey(session.uid) : null
 	const filteredMatch = uid
 		? {
@@ -71,12 +70,7 @@ function getProjAndMatch(session, channelId, period, eventTypeParam, metricParam
 
 function analytics(req) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const {
-		limit = 100,
-		timeframe = 'day',
-		eventType = allowedEventTypes[0],
-		metric = allowedMetrics[0]
-	} = req.query
+	const { limit, timeframe, eventType, metric } = req.query
 	const { period, interval } = getTimeframe(timeframe)
 	const { project, match } = getProjAndMatch(req.session, req.params.id, period, eventType, metric)
 	const appliedLimit = Math.min(200, limit)
