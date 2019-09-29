@@ -10,7 +10,7 @@ const db = require('../db')
 const router = express.Router()
 const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
-const validate = celebrate({ body: schema.eventTimeAggr })
+const validate = celebrate({ query: schema.eventTimeAggr })
 const analyticsNotCached = (req, res) => analytics(req).then(res.json.bind(res))
 
 // Global statistics
@@ -29,6 +29,8 @@ function getTimeframe(timeframe) {
 	if (timeframe === 'year') return { period: 365 * DAY, interval: 30 * DAY }
 	// every day in one month
 	if (timeframe === 'month') return { period: 30 * DAY, interval: DAY }
+	// every 6 hours in a week
+	if (timeframe === 'week') return { period: 7 * DAY, interval: 6 * HOUR }
 	// every hour in one day
 	if (timeframe === 'day') return { period: DAY, interval: HOUR }
 	// every minute in an hour
@@ -38,14 +40,8 @@ function getTimeframe(timeframe) {
 	return { period: DAY, interval: HOUR }
 }
 
-const allowedEventTypes = ['IMPRESSION', 'CLICK']
-const allowedMetrics = ['eventCounts', 'eventPayouts']
-function getProjAndMatch(session, channelId, period, eventTypeParam, metricParam) {
+function getProjAndMatch(session, channelId, period, eventType, metric) {
 	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
-	const eventType = allowedEventTypes.includes(eventTypeParam)
-		? eventTypeParam
-		: allowedEventTypes[0]
-	const metric = allowedMetrics.includes(metricParam) ? metricParam : allowedMetrics[0]
 	const uid = session ? toBalancesKey(session.uid) : null
 	const filteredMatch = uid
 		? {
@@ -74,12 +70,7 @@ function getProjAndMatch(session, channelId, period, eventTypeParam, metricParam
 
 function analytics(req) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const {
-		limit = 100,
-		timeframe = 'day',
-		eventType = allowedEventTypes[0],
-		metric = allowedMetrics[0]
-	} = req.query
+	const { limit, timeframe, eventType, metric } = req.query
 	const { period, interval } = getTimeframe(timeframe)
 	const { project, match } = getProjAndMatch(req.session, req.params.id, period, eventType, metric)
 	const appliedLimit = Math.min(200, limit)

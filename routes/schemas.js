@@ -192,9 +192,13 @@ module.exports = {
 		)
 	},
 	eventTimeAggr: {
-		eventType: Joi.string(),
-		metric: Joi.string().valid(['eventCounts', 'eventPayouts']),
-		timeframe: Joi.string().valid(['month', 'week', 'day', 'minute', 'hour']),
-		limit: Joi.number()
+		eventType: Joi.string().default('IMPRESSION'),
+		metric: Joi.string()
+			.valid(['eventCounts', 'eventPayouts'])
+			.default('eventCounts'),
+		timeframe: Joi.string()
+			.valid(['month', 'week', 'day', 'minute', 'hour'])
+			.default('day'),
+		limit: Joi.number().default(100)
 	}
 }
