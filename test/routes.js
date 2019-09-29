@@ -144,8 +144,8 @@ tape('POST /channel: should not work with invalid withdrawPeriodStart', async fu
 			minPerImpression: '1',
 			maxPerImpression: '1',
 			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
+				{ id: dummyVals.ids.leader, url: 'http://localhost:8005', fee: '100' },
+				{ id: dummyVals.ids.follower, url: 'http://localhost:8006', fee: '100' }
 			]
 		}
 	}
@@ -171,8 +171,8 @@ tape('POST /channel: should reject validUntil greater than one year', async func
 			minPerImpression: '1',
 			maxPerImpression: '1',
 			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
+				{ id: dummyVals.ids.leader, url: 'http://localhost:8005', fee: '100' },
+				{ id: dummyVals.ids.follower, url: 'http://localhost:8006', fee: '100' }
 			]
 		}
 	}
@@ -200,8 +200,8 @@ tape('POST /channel: create channel', async function(t) {
 			adUnits: [],
 			targeting: [{ tag: 'gender_female', score: 17 }],
 			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
+				{ id: dummyVals.ids.leader, url: 'http://localhost:8005', fee: '100' },
+				{ id: dummyVals.ids.follower, url: 'http://localhost:8006', fee: '100' }
 			]
 		}
 	}
@@ -239,8 +239,8 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				depositAmount: '1000',
 				spec: {
 					validators: [
-						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
+						{ id: dummyVals.ids.leader, url: 'http://localhost:8005', fee: '100' },
+						{ id: dummyVals.ids.follower, url: 'http://localhost:8006', fee: '100' }
 					]
 				}
 			},
@@ -256,8 +256,8 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				depositAmount: '1000',
 				spec: {
 					validators: [
-						{ id: 'awesomeLeader', url: 'http://localhost:8005' },
-						{ id: 'awesomeFollower', url: 'http://localhost:8006' }
+						{ id: dummyVals.ids.leader, url: 'http://localhost:8005' },
+						{ id: dummyVals.ids.follower, url: 'http://localhost:8006' }
 					]
 				}
 			},
@@ -269,8 +269,8 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 				depositAmount: '1000',
 				spec: {
 					validators: [
-						{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-						{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' },
+						{ id: dummyVals.ids.leader, url: 'http://localhost:8005', fee: '100' },
+						{ id: dummyVals.ids.follower, url: 'http://localhost:8006', fee: '100' },
 						{ id: 'awesomeFollower2', url: 'http://localhost:8006', fee: '100' }
 					]
 				}

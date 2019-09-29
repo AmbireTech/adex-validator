@@ -74,10 +74,14 @@ function exec(cmd) {
 function forceTick() {
 	return Promise.all([
 		exec(
-			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeLeader --sentryUrl=http://localhost:8005`
+			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=${
+				dummyVals.ids.leader
+			} --sentryUrl=http://localhost:8005`
 		),
 		exec(
-			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeFollower --sentryUrl=http://localhost:8006`
+			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=${
+				dummyVals.ids.follower
+			} --sentryUrl=http://localhost:8006`
 		)
 	])
 }
