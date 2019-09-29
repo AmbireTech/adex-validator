@@ -38,6 +38,10 @@ function Adapter(opts, cfg) {
 		return Promise.resolve(signer === from)
 	}
 
+	this.toBalancesKey = function(addr) {
+		return addr
+	}
+
 	this.validateChannel = async function(channel) {
 		await lib.isChannelValid(cfg, channel, identity)
 		return parseInt(channel.depositAmount, 10) > 0
