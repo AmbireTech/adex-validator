@@ -64,12 +64,6 @@ function Adapter(opts, cfg, ethProvider) {
 		return Promise.resolve(signer === from)
 	}
 
-	this.toBalancesKey = function(addr) {
-		// formatAddress will throw an exception if the address is invalid
-		// and toLowerCase() is needed cause this is our convention in the balances map
-		return formatAddress(addr).toLowerCase()
-	}
-
 	this.validateChannel = async function(channel) {
 		const ethChannel = toEthereumChannel(channel)
 
