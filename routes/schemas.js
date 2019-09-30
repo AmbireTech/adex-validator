@@ -160,7 +160,7 @@ module.exports = {
 			.valid(['eventCounts', 'eventPayouts'])
 			.default('eventCounts'),
 		timeframe: Joi.string()
-			.valid(['month', 'week', 'day', 'minute', 'hour'])
+			.valid(['year', 'month', 'week', 'day', 'hour'])
 			.default('hour'),
 		limit: Joi.number().default(100)
 	}
