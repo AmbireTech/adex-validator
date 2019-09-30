@@ -11,7 +11,7 @@ module.exports = {
 	FETCH_TIMEOUT: 10000,
 	LIST_TIMEOUT: 10000,
 	VALIDATOR_TICK_TIMEOUT: 10000,
-	IP_RATE_LIMIT: { type: 'ip', timeframe: 20000 },
+	IP_RATE_LIMIT: { type: 'ip', timeframe: 60000 },
 	CREATORS_WHITELIST: [],
 	MINIMAL_DEPOSIT: 0,
 	MINIMAL_FEE: 0,
