@@ -155,7 +155,9 @@ module.exports = {
 		)
 	},
 	eventTimeAggr: {
-		eventType: Joi.string().default('IMPRESSION'),
+		eventType: Joi.string()
+			.valid(['IMPRESSION'])
+			.default('IMPRESSION'),
 		metric: Joi.string()
 			.valid(['eventCounts', 'eventPayouts'])
 			.default('eventCounts'),
