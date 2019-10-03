@@ -11,15 +11,18 @@ const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
 const authRequired = (req, res, next) => (req.session ? next() : res.sendStatus(401))
 const analyticsNotCached = (req, res) => analytics(req).then(res.json.bind(res))
+const getAdvertiserAnalyticsNotCached = (req, res) =>
+	advertiserAnalytics(req).then(res.json.bind(res))
 const validate = celebrate({ query: schemas.eventTimeAggr })
 
 // Global statistics
 router.get('/', validate, redisCached(300, analytics))
-router.get('/for-user', validate, authRequired, analyticsNotCached)
+router.get('/for-publisher', validate, authRequired, analyticsNotCached)
+router.get('/for-advertiser', validate, authRequired, getAdvertiserAnalyticsNotCached)
 
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
-router.get('/for-user/:id', validate, authRequired, channelIfExists, analyticsNotCached)
+router.get('/for-publisher/:id', validate, authRequired, channelIfExists, analyticsNotCached)
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
@@ -40,9 +43,9 @@ function getTimeframe(timeframe) {
 	return { period: DAY, interval: HOUR }
 }
 
-function getProjAndMatch(session, channelId, period, eventType, metric) {
+function getProjAndMatch(session, channelId, period, eventType, metric, channels) {
 	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
-	const uid = session ? toBalancesKey(session.uid) : null
+	const uid = !channels && session ? toBalancesKey(session.uid) : null
 	const filteredMatch = uid
 		? {
 				...timeMatch,
@@ -50,6 +53,11 @@ function getProjAndMatch(session, channelId, period, eventType, metric) {
 		  }
 		: timeMatch
 	const match = channelId ? { ...filteredMatch, channelId } : filteredMatch
+
+	if (channels && channels.length) {
+		match.channelId = { $in: channels }
+	}
+
 	const projectValue = uid
 		? { $toLong: `$events.${eventType}.${metric}.${uid}` }
 		: {
@@ -68,11 +76,18 @@ function getProjAndMatch(session, channelId, period, eventType, metric) {
 	return { match, project }
 }
 
-function analytics(req) {
+function analytics(req, channels) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const { limit, timeframe, eventType, metric } = req.query
 	const { period, interval } = getTimeframe(timeframe)
-	const { project, match } = getProjAndMatch(req.session, req.params.id, period, eventType, metric)
+	const { project, match } = getProjAndMatch(
+		req.session,
+		req.params.id,
+		period,
+		eventType,
+		metric,
+		channels
+	)
 	const appliedLimit = Math.min(200, limit)
 	const pipeline = [
 		{ $match: match },
@@ -100,6 +115,22 @@ function analytics(req) {
 				value: x.value.toLocaleString('fullwide', { useGrouping: false })
 			}))
 		}))
+}
+
+function advertiserAnalytics(req) {
+	return getAdvertiserChannels(req).then(channels => analytics(req, channels))
+}
+
+function getAdvertiserChannels(req) {
+	const uid = toBalancesKey(req.session.uid)
+	const channelsCol = db.getMongo().collection('channels')
+
+	const advChannels = channelsCol
+		.find({ creator: uid }, { projection: { _id: 0, id: 1 } })
+		.toArray()
+		.then(res => res.map(x => x.id))
+
+	return advChannels
 }
 
 function redisCached(seconds, fn) {
