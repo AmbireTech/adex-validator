@@ -36,6 +36,7 @@ app.use('/channel', channelRoutes)
 app.use('/channel', channelCreate.forAdapter(adapter))
 app.use('/analytics', analyticsRoutes)
 app.use('/cfg', (_, res) => res.send(cfg))
+app.use('/.well-known', express.static('.well-known'))
 app.use(errors())
 
 if (argv.clustered) {
