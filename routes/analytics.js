@@ -43,23 +43,19 @@ function getTimeframe(timeframe) {
 	return { period: DAY, interval: HOUR }
 }
 
-function getProjAndMatch(session, channelId, period, eventType, metric, channels) {
+function getProjAndMatch(session, channels, period, eventType, metric, skipPublisherFiltering) {
 	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
-	const uid = !channels && session ? toBalancesKey(session.uid) : null
-	const filteredMatch = uid
+	const publisherId = !skipPublisherFiltering && session ? toBalancesKey(session.uid) : null
+	const filteredMatch = publisherId
 		? {
 				...timeMatch,
-				[`events.${eventType}.${metric}.${uid}`]: { $exists: true }
+				[`events.${eventType}.${metric}.${publisherId}`]: { $exists: true }
 		  }
 		: timeMatch
-	const match = channelId ? { ...filteredMatch, channelId } : filteredMatch
+	const match = channels ? { ...filteredMatch, channelId: { $in: channels } } : filteredMatch
 
-	if (channels && channels.length) {
-		match.channelId = { $in: channels }
-	}
-
-	const projectValue = uid
-		? { $toLong: `$events.${eventType}.${metric}.${uid}` }
+	const projectValue = publisherId
+		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
 		: {
 				$sum: {
 					$map: {
@@ -76,17 +72,17 @@ function getProjAndMatch(session, channelId, period, eventType, metric, channels
 	return { match, project }
 }
 
-function analytics(req, channels) {
+function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const { limit, timeframe, eventType, metric } = req.query
 	const { period, interval } = getTimeframe(timeframe)
 	const { project, match } = getProjAndMatch(
 		req.session,
-		req.params.id,
+		advertiserChannels || [req.params.id],
 		period,
 		eventType,
 		metric,
-		channels
+		skipPublisherFiltering
 	)
 	const appliedLimit = Math.min(200, limit)
 	const pipeline = [
@@ -118,7 +114,7 @@ function analytics(req, channels) {
 }
 
 function advertiserAnalytics(req) {
-	return getAdvertiserChannels(req).then(channels => analytics(req, channels))
+	return getAdvertiserChannels(req).then(channels => analytics(req, channels, true))
 }
 
 function getAdvertiserChannels(req) {
