@@ -59,7 +59,8 @@ function getProjAndMatch(session, channels, period, eventType, metric, skipPubli
 				[`events.${eventType}.${metric}.${publisherId}`]: { $exists: true }
 		  }
 		: timeMatch
-	const match = channels ? { ...filteredMatch, channelId: { $in: channels } } : filteredMatch
+	const match =
+		channels && channels.length ? { ...filteredMatch, channelId: { $in: channels } } : filteredMatch
 
 	const projectValue = publisherId
 		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
@@ -85,7 +86,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const { period, interval } = getTimeframe(timeframe)
 	const { project, match } = getProjAndMatch(
 		req.session,
-		advertiserChannels || [req.params.id],
+		advertiserChannels || (req.params.id ? [req.params.id] : null),
 		period,
 		eventType,
 		metric,
@@ -122,7 +123,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 
 function advertiserAnalytics(req) {
 	if (req.params.id) {
-		return analytics(req, null, true)
+		return analytics(req, [req.params.id], true)
 	}
 	return getAdvertiserChannels(req).then(channels => analytics(req, channels, true))
 }
