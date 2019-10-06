@@ -132,10 +132,10 @@ function getAdvertiserChannels(req) {
 	const channelsCol = db.getMongo().collection('channels')
 
 	const advChannels = channelsCol
-		// @NOTE: _id might work?
-		.find({ creator: uid }, { projection: { _id: 0, id: 1 } })
+		.find({ creator: uid }, { projection: { _id: 1 } })
 		.toArray()
-		.then(res => res.map(x => x.id))
+		// eslint-disable-next-line no-underscore-dangle
+		.then(res => res.map(x => x._id))
 
 	return advChannels
 }
