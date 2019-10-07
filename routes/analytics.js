@@ -50,7 +50,7 @@ function getTimeframe(timeframe) {
 	return { period: DAY, interval: HOUR }
 }
 
-function getProjAndMatch(session, channels, period, eventType, metric, skipPublisherFiltering) {
+function getProjAndMatch(session, channelMatch, period, eventType, metric, skipPublisherFiltering) {
 	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
 	const publisherId = !skipPublisherFiltering && session ? toBalancesKey(session.uid) : null
 	const filteredMatch = publisherId
@@ -59,9 +59,7 @@ function getProjAndMatch(session, channels, period, eventType, metric, skipPubli
 				[`events.${eventType}.${metric}.${publisherId}`]: { $exists: true }
 		  }
 		: timeMatch
-	const match =
-		channels && channels.length ? { ...filteredMatch, channelId: { $in: channels } } : filteredMatch
-
+	const match = channelMatch ? { ...filteredMatch, channelId: channelMatch } : filteredMatch
 	const projectValue = publisherId
 		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
 		: {
@@ -84,9 +82,10 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const { limit, timeframe, eventType, metric } = req.query
 	const { period, interval } = getTimeframe(timeframe)
+	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
 		req.session,
-		advertiserChannels || (req.params.id ? [req.params.id] : null),
+		channelMatch,
 		period,
 		eventType,
 		metric,
@@ -121,11 +120,11 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		}))
 }
 
-function advertiserAnalytics(req) {
+async function advertiserAnalytics(req) {
 	if (req.params.id) {
 		return analytics(req, [req.params.id], true)
 	}
-	return getAdvertiserChannels(req).then(channels => analytics(req, channels, true))
+	return analytics(req, await getAdvertiserChannels(req), true)
 }
 
 function getAdvertiserChannels(req) {
@@ -133,9 +132,10 @@ function getAdvertiserChannels(req) {
 	const channelsCol = db.getMongo().collection('channels')
 
 	const advChannels = channelsCol
-		.find({ creator: uid }, { projection: { _id: 0, id: 1 } })
+		.find({ creator: uid }, { projection: { _id: 1 } })
 		.toArray()
-		.then(res => res.map(x => x.id))
+		// eslint-disable-next-line no-underscore-dangle
+		.then(res => res.map(x => x._id))
 
 	return advChannels
 }
