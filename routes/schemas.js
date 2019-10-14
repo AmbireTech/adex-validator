@@ -85,7 +85,10 @@ module.exports = {
 		spec: Joi.object({
 			adUnits: Joi.array().items(Joi.object()),
 			targeting: Joi.array().items(Joi.object()),
-			minTargetingScore: Joi.number().integer().allow(null).optional(),
+			minTargetingScore: Joi.number()
+				.integer()
+				.allow(null)
+				.optional(),
 			validators: Joi.array()
 				.items(
 					Joi.object({
@@ -189,9 +192,15 @@ module.exports = {
 		)
 	},
 	eventTimeAggr: {
-		eventType: Joi.string(),
-		metric: Joi.string().valid(['eventCounts', 'eventPayouts']),
-		timeframe: Joi.string().valid(['month', 'week', 'day', 'minute', 'hour']),
-		limit: Joi.number()
+		eventType: Joi.string()
+			.valid(['IMPRESSION'])
+			.default('IMPRESSION'),
+		metric: Joi.string()
+			.valid(['eventCounts', 'eventPayouts'])
+			.default('eventCounts'),
+		timeframe: Joi.string()
+			.valid(['year', 'month', 'week', 'day', 'hour'])
+			.default('hour'),
+		limit: Joi.number().default(100)
 	}
 }
