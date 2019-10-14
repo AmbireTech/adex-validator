@@ -23,13 +23,6 @@ router.get('/for-advertiser', validate, authRequired, getAdvertiserAnalyticsNotC
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, analyticsNotCached)
-router.get(
-	'/for-advertiser/:id',
-	validate,
-	authRequired,
-	channelIfExists,
-	getAdvertiserAnalyticsNotCached
-)
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
