@@ -93,7 +93,7 @@ module.exports = {
 								scheme: ['http', 'https']
 							})
 							.required(),
-						fee: numericString.required()
+						fee: numericString.default('0').required()
 					})
 				)
 				.required()
