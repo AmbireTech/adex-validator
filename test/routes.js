@@ -125,6 +125,14 @@ tape('POST /channel/{id}/events: CLOSE: a publisher but not a creator', async fu
 	t.end()
 })
 
+tape('POST /channel/validate: invalid schema', async function(t) {
+	const resp = await fetchPost(`${followerUrl}/channel/validate`, dummyVals.auth.leader, {}).then(
+		r => r.json()
+	)
+	t.equal(resp.statusCode, 400)
+	t.ok(resp.validation)
+	t.end()
+})
 tape('POST /channel: should not work with invalid withdrawPeriodStart', async function(t) {
 	const channel = {
 		...dummyVals.channel,

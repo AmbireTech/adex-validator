@@ -5,6 +5,9 @@ const db = require('../db')
 
 function forAdapter(adapter) {
 	const router = express.Router()
+	router.post('/validate', celebrate({ body: schema.createChannel }), function(_req, res) {
+		res.send({ success: true })
+	})
 	router.post('/', celebrate({ body: schema.createChannel }), function(req, res, next) {
 		const channelsCol = db.getMongo().collection('channels')
 		const channel = {
