@@ -11,7 +11,7 @@ const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
 
-const dummyChannelId2 = 'awesomeTestChannel2'
+const dummyChannelId2 = '0x7698f4ca3d772949066c4f278566086a96342085870e557357d21f23d9bb0bab'
 
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
@@ -142,11 +142,7 @@ tape('POST /channel: should not work with invalid withdrawPeriodStart', async fu
 			...dummyVals.channel.spec,
 			withdrawPeriodStart: new Date('2200-01-01').getTime(),
 			minPerImpression: '1',
-			maxPerImpression: '1',
-			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
-			]
+			maxPerImpression: '1'
 		}
 	}
 	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(r =>
@@ -169,11 +165,7 @@ tape('POST /channel: should reject validUntil greater than one year', async func
 			...dummyVals.channel.spec,
 			withdrawPeriodStart: new Date('2200-01-01').getTime(),
 			minPerImpression: '1',
-			maxPerImpression: '1',
-			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
-			]
+			maxPerImpression: '1'
 		}
 	}
 	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(r =>
@@ -198,11 +190,7 @@ tape('POST /channel: create channel', async function(t) {
 			maxPerImpression: '1',
 			withdrawPeriodStart,
 			adUnits: [],
-			targeting: [{ tag: 'gender_female', score: 17 }],
-			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
-			]
+			targeting: [{ tag: 'gender_female', score: 17 }]
 		}
 	}
 
@@ -290,7 +278,7 @@ tape(
 	async function(t) {
 		const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, {
 			...dummyVals.channel,
-			id: 'zeroDepositChannel',
+			id: '0x3d69a4d75d871e662e007e3b71bfeacb2d3f12186968df94382452e83c517599',
 			depositAmount: '0',
 			validUntil,
 			spec: {
@@ -340,7 +328,7 @@ tape('POST /channel/{id}/events: rate limits', async function(t) {
 tape('should prevent submitting events for expired channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'expiredChannelTest',
+		id: '0x93d068a2157a063f7749d4e98921a955618f04bae86d099cb8577f364077a0fb',
 		validUntil: Math.ceil(Date.now() / 1000) + 1,
 		spec: {
 			...dummyVals.channel.spec,
@@ -365,7 +353,7 @@ tape('should prevent submitting events for expired channel', async function(t) {
 tape('should prevent submitting events for a channel in withdraw period', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'withdrawPeriodTest',
+		id: '0xe49831d1b9e1a83f6ba6b672c6ddaf045a975d7c3175fe1399c83dca5174c71c',
 		validUntil: Math.floor(Date.now() / 1000) + 20,
 		spec: {
 			...dummyVals.channel.spec,

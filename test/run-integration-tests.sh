@@ -8,11 +8,11 @@ SUBCOMMAND=$1
 
 LEAD_PORT=8005
 LEAD_MONGO="testValStackLeader${TIMESTAMP}"
-LEAD_ARGS="--adapter=dummy --dummyIdentity=awesomeLeader"
+LEAD_ARGS="--adapter=dummy --dummyIdentity=0xce07cbb7e054514d590a0262c93070d838bfba2e"
 
 FOLLOW_PORT=8006
 FOLLOW_MONGO="testValStackFollower${TIMESTAMP}"
-FOLLOW_ARGS="--adapter=dummy --dummyIdentity=awesomeFollower"
+FOLLOW_ARGS="--adapter=dummy --dummyIdentity=0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3"
 
 # Seeding the database
 echo "Using MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"
@@ -41,10 +41,10 @@ elif [ "$SUBCOMMAND" == "benchmark" ]; then
 else 
 	# start ganache cli 
 	# Ethereum local testnet
-	./test/scripts/ethereum.sh
-
+	# ./test/scripts/ethereum.sh
+	./test/integration.js
 	# Run integration & prune tests
-	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js && DB_MONGO_NAME=$LEAD_MONGO ./test/prune.js
+	# ./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js && DB_MONGO_NAME=$LEAD_MONGO ./test/prune.js
 
 fi
 

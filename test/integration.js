@@ -37,7 +37,7 @@ function aggrAndTick() {
 }
 
 tape('submit events and ensure they are accounted for', async function(t) {
-	const evs = genEvents(3).concat(genEvents(2, 'anotherPublisher'))
+	const evs = genEvents(3).concat(genEvents(2, '0x48b6d5748885988cb657a06647c05fc2af1ffacf'))
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
@@ -141,7 +141,7 @@ tape('new states are not produced when there are no new aggregates', async funct
 })
 
 tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
-	const id = 'eventAggregateCountTest'
+	const id = '0xf7cb2d80ed33480ea985833642dab086bcda70e9912d4d6dc0b137d73ec15274'
 	const channel = {
 		...dummyVals.channel,
 		id,
@@ -257,6 +257,7 @@ async function testRejectState(t, expectedReason, makeNewState) {
 		)
 
 	t.ok(reject, 'has a RejectState')
+	console.log({ reject })
 	if (reject) {
 		t.equal(
 			reject.stateRoot,
@@ -270,7 +271,7 @@ async function testRejectState(t, expectedReason, makeNewState) {
 tape('RejectState: wrong signature (InvalidSignature)', async function(t) {
 	await testRejectState(t, 'InvalidSignature', function(newState) {
 		// increase the balance, so we effectively end up with a new state
-		const balances = { ...newState.balances, someoneElse: '1' }
+		const balances = { ...newState.balances, '0x033ed90e0fec3f3ea1c9b005c724d704501e0196': '1' }
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
@@ -286,7 +287,7 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 	await testRejectState(t, 'InvalidRootHash', function(newState) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
-		const fakeBalances = { publisher: '33333' }
+		const fakeBalances = { '0x033ed90e0fec3f3ea1c9b005c724d704501e0196': '33333' }
 		const deceptiveStateRoot = getStateRootHash(
 			dummyAdapter,
 			dummyVals.channel,
@@ -337,7 +338,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 tape('cannot exceed channel deposit', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'exceedDepositTest',
+		id: '0xbdb68bd636dcdbf8034ce9bcb68ec0bc3d5a34d54f648df3813b8f190e281981',
 		validUntil,
 		spec: {
 			...dummyVals.channel.spec,
@@ -371,7 +372,7 @@ tape('cannot exceed channel deposit', async function(t) {
 tape('health works correctly', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'healthTest',
+		id: '0x85ff12fc648e33d52ee5ee075c5cf89c268467be9c640e86ebcd37b0fc7ba8c9',
 		validUntil,
 		spec: {
 			...dummyVals.channel.spec,
@@ -419,7 +420,7 @@ tape('health works correctly', async function(t) {
 tape('should close channel', async function(t) {
 	const channel = {
 		...dummyVals.channel,
-		id: 'closeTest',
+		id: '0xd3631176bebfddfb6404b7b7dea4d2433fddd54b323b60bbd7e16c04dd301288',
 		validUntil,
 		spec: {
 			...dummyVals.channel.spec,
