@@ -2,7 +2,15 @@
 
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
-const { postEvents, fetchPost, wait, genEvents, withdrawPeriodStart, validUntil } = require('./lib')
+const {
+	postEvents,
+	fetchPost,
+	wait,
+	genEvents,
+	withdrawPeriodStart,
+	validUntil,
+	getValidEthChannel
+} = require('./lib')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -276,9 +284,10 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 tape(
 	'POST /channel: should not create channel if it does not pass adapter validation',
 	async function(t) {
+		const { id } = await getValidEthChannel()
 		const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, {
 			...dummyVals.channel,
-			id: '0x3d69a4d75d871e662e007e3b71bfeacb2d3f12186968df94382452e83c517599',
+			id,
 			depositAmount: '0',
 			validUntil,
 			spec: {
@@ -326,9 +335,10 @@ tape('POST /channel/{id}/events: rate limits', async function(t) {
 })
 
 tape('should prevent submitting events for expired channel', async function(t) {
+	const { id } = await getValidEthChannel()
 	const channel = {
 		...dummyVals.channel,
-		id: '0x93d068a2157a063f7749d4e98921a955618f04bae86d099cb8577f364077a0fb',
+		id,
 		validUntil: Math.ceil(Date.now() / 1000) + 1,
 		spec: {
 			...dummyVals.channel.spec,
@@ -351,9 +361,10 @@ tape('should prevent submitting events for expired channel', async function(t) {
 })
 
 tape('should prevent submitting events for a channel in withdraw period', async function(t) {
+	const { id } = await getValidEthChannel()
 	const channel = {
 		...dummyVals.channel,
-		id: '0xe49831d1b9e1a83f6ba6b672c6ddaf045a975d7c3175fe1399c83dca5174c71c',
+		id,
 		validUntil: Math.floor(Date.now() / 1000) + 20,
 		spec: {
 			...dummyVals.channel.spec,

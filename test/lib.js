@@ -66,17 +66,6 @@ function forceTick() {
 	return Promise.all([exec(leaderTick), exec(followerTick)])
 }
 
-function nonce() {
-	const chars = '0123456789'
-	const stringLength = 15
-	let randomstring = ''
-	for (let i = 0; i < stringLength; i += 1) {
-		const rnum = Math.floor(Math.random() * chars.length)
-		randomstring += chars.substring(rnum, rnum + 1)
-	}
-	return randomstring
-}
-
 function randomAddress() {
 	return ethers.Wallet.createRandom().address
 }
@@ -90,7 +79,7 @@ async function getValidEthChannel() {
 		spec: {
 			...dummyVals.channel.spec,
 			withdrawPeriodStart,
-			nonce: nonce()
+			nonce: Date.now().toString()
 		}
 	}
 
@@ -117,7 +106,6 @@ module.exports = {
 	exec,
 	validUntil,
 	withdrawPeriodStart,
-	nonce,
 	getValidEthChannel,
 	randomAddress
 }
