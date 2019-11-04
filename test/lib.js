@@ -1,6 +1,8 @@
 const fetch = require('node-fetch')
 const childproc = require('child_process')
 const dummyVals = require('./prep-db/mongo')
+const { ethereum } = require('../adapters')
+const { deployContracts } = require('./ethereum')
 
 const defaultPubName = dummyVals.ids.publisher
 
@@ -63,6 +65,35 @@ function forceTick() {
 	return Promise.all([exec(leaderTick), exec(followerTick)])
 }
 
+function nonce() {
+	const chars = '0123456789'
+	const stringLength = 15
+	let randomstring = ''
+	for (let i = 0; i < stringLength; i += 1) {
+		const rnum = Math.floor(Math.random() * chars.length)
+		randomstring += chars.substring(rnum, rnum + 1)
+	}
+	return randomstring
+}
+
+async function getValidEthChannel() {
+	const { core } = await deployContracts()
+	const channel = {
+		...dummyVals.channel,
+		id: null,
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart,
+			nonce: nonce()
+		}
+	}
+
+	const ethChannel = ethereum.toEthereumChannel(channel)
+	channel.id = ethChannel.hashHex(core.address)
+	return channel
+}
+
 let validUntil = new Date()
 validUntil.setFullYear(validUntil.getFullYear() + 1)
 validUntil = Math.floor(validUntil.getTime() / 1000)
@@ -80,5 +111,7 @@ module.exports = {
 	fetchPost,
 	exec,
 	validUntil,
-	withdrawPeriodStart
+	withdrawPeriodStart,
+	nonce,
+	getValidEthChannel
 }

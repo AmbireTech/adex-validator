@@ -11,8 +11,7 @@ const {
 	genEvents,
 	getDummySig,
 	fetchPost,
-	withdrawPeriodStart,
-	validUntil
+	getValidEthChannel
 } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -141,16 +140,8 @@ tape('new states are not produced when there are no new aggregates', async funct
 })
 
 tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
-	const id = '0xf7cb2d80ed33480ea985833642dab086bcda70e9912d4d6dc0b137d73ec15274'
-	const channel = {
-		...dummyVals.channel,
-		id,
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
+	const channel = await getValidEthChannel()
+	const { id } = channel
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
@@ -335,16 +326,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 })
 
 tape('cannot exceed channel deposit', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: '0xbdb68bd636dcdbf8034ce9bcb68ec0bc3d5a34d54f648df3813b8f190e281981',
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
-
+	const channel = await getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -369,15 +351,7 @@ tape('cannot exceed channel deposit', async function(t) {
 })
 
 tape('health works correctly', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: '0x85ff12fc648e33d52ee5ee075c5cf89c268467be9c640e86ebcd37b0fc7ba8c9',
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
+	const channel = await getValidEthChannel()
 
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
@@ -417,16 +391,7 @@ tape('health works correctly', async function(t) {
 })
 
 tape('should close channel', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: '0xd3631176bebfddfb6404b7b7dea4d2433fddd54b323b60bbd7e16c04dd301288',
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
-
+	const channel = await getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
