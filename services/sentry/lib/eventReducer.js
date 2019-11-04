@@ -102,10 +102,11 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {}, eventStats: {
 	// if its a pay event which requires output key
 	// do not increase event count
 	// else increase the event count
-	if (!ev.output) {
-		const newEventCounts = new BN(map.eventCounts[eventCountKey], 10)
-		map.eventCounts[eventCountKey] = addAndToString(newEventCounts, new BN(1))
-	}
+	const newEventCounts = new BN(map.eventCounts[eventCountKey], 10)
+	map.eventCounts[eventCountKey] = addAndToString(
+		newEventCounts,
+		!ev.output ? new BN(1) : new BN(0)
+	)
 
 	// current publisher payout
 	const currentAmount = new BN(map.eventPayouts[ev.publisher], 10)
