@@ -11,8 +11,8 @@ const {
 	genEvents,
 	getDummySig,
 	fetchPost,
-	withdrawPeriodStart,
-	validUntil
+	getValidEthChannel,
+	randomAddress
 } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -37,7 +37,7 @@ function aggrAndTick() {
 }
 
 tape('submit events and ensure they are accounted for', async function(t) {
-	const evs = genEvents(3).concat(genEvents(2, 'anotherPublisher'))
+	const evs = genEvents(3).concat(genEvents(2, randomAddress()))
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
@@ -141,16 +141,8 @@ tape('new states are not produced when there are no new aggregates', async funct
 })
 
 tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
-	const id = 'eventAggregateCountTest'
-	const channel = {
-		...dummyVals.channel,
-		id,
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
+	const channel = await getValidEthChannel()
+	const { id } = channel
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
@@ -270,7 +262,7 @@ async function testRejectState(t, expectedReason, makeNewState) {
 tape('RejectState: wrong signature (InvalidSignature)', async function(t) {
 	await testRejectState(t, 'InvalidSignature', function(newState) {
 		// increase the balance, so we effectively end up with a new state
-		const balances = { ...newState.balances, someoneElse: '1' }
+		const balances = { ...newState.balances, [randomAddress()]: '1' }
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
@@ -286,7 +278,7 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 	await testRejectState(t, 'InvalidRootHash', function(newState) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
-		const fakeBalances = { publisher: '33333' }
+		const fakeBalances = { [randomAddress()]: '33333' }
 		const deceptiveStateRoot = getStateRootHash(
 			dummyAdapter,
 			dummyVals.channel,
@@ -335,16 +327,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 })
 
 tape('cannot exceed channel deposit', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: 'exceedDepositTest',
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
-
+	const channel = await getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -369,16 +352,7 @@ tape('cannot exceed channel deposit', async function(t) {
 })
 
 tape('health works correctly', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: 'healthTest',
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
-
+	const channel = await getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -417,16 +391,7 @@ tape('health works correctly', async function(t) {
 })
 
 tape('should close channel', async function(t) {
-	const channel = {
-		...dummyVals.channel,
-		id: 'closeTest',
-		validUntil,
-		spec: {
-			...dummyVals.channel.spec,
-			withdrawPeriodStart
-		}
-	}
-
+	const channel = await getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages

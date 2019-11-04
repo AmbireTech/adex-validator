@@ -150,7 +150,7 @@ async function getList(req, res, next) {
 		.skip(skip || 0)
 		.toArray()
 		.then(function(channels) {
-			res.send({ channels, total: totalPages, page })
+			res.send({ channels, total: totalPages, totalPages, page })
 		})
 		.catch(next)
 }

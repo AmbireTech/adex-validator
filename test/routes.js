@@ -2,7 +2,15 @@
 
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
-const { postEvents, fetchPost, wait, genEvents, withdrawPeriodStart, validUntil } = require('./lib')
+const {
+	postEvents,
+	fetchPost,
+	wait,
+	genEvents,
+	withdrawPeriodStart,
+	validUntil,
+	getValidEthChannel
+} = require('./lib')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -11,7 +19,7 @@ const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 // const defaultPubName = dummyVals.ids.publisher
 
-const dummyChannelId2 = 'awesomeTestChannel2'
+const dummyChannelId2 = '0x7698f4ca3d772949066c4f278566086a96342085870e557357d21f23d9bb0bab'
 
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
@@ -142,11 +150,7 @@ tape('POST /channel: should not work with invalid withdrawPeriodStart', async fu
 			...dummyVals.channel.spec,
 			withdrawPeriodStart: new Date('2200-01-01').getTime(),
 			minPerImpression: '1',
-			maxPerImpression: '1',
-			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
-			]
+			maxPerImpression: '1'
 		}
 	}
 	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(r =>
@@ -169,11 +173,7 @@ tape('POST /channel: should reject validUntil greater than one year', async func
 			...dummyVals.channel.spec,
 			withdrawPeriodStart: new Date('2200-01-01').getTime(),
 			minPerImpression: '1',
-			maxPerImpression: '1',
-			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
-			]
+			maxPerImpression: '1'
 		}
 	}
 	const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, channel).then(r =>
@@ -198,11 +198,7 @@ tape('POST /channel: create channel', async function(t) {
 			maxPerImpression: '1',
 			withdrawPeriodStart,
 			adUnits: [],
-			targeting: [{ tag: 'gender_female', score: 17 }],
-			validators: [
-				{ id: 'awesomeLeader', url: 'http://localhost:8005', fee: '100' },
-				{ id: 'awesomeFollower', url: 'http://localhost:8006', fee: '100' }
-			]
+			targeting: [{ tag: 'gender_female', score: 17 }]
 		}
 	}
 
@@ -288,9 +284,10 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 tape(
 	'POST /channel: should not create channel if it does not pass adapter validation',
 	async function(t) {
+		const { id } = await getValidEthChannel()
 		const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, {
 			...dummyVals.channel,
-			id: 'zeroDepositChannel',
+			id,
 			depositAmount: '0',
 			validUntil,
 			spec: {
@@ -338,9 +335,10 @@ tape('POST /channel/{id}/events: rate limits', async function(t) {
 })
 
 tape('should prevent submitting events for expired channel', async function(t) {
+	const { id } = await getValidEthChannel()
 	const channel = {
 		...dummyVals.channel,
-		id: 'expiredChannelTest',
+		id,
 		validUntil: Math.ceil(Date.now() / 1000) + 1,
 		spec: {
 			...dummyVals.channel.spec,
@@ -363,9 +361,10 @@ tape('should prevent submitting events for expired channel', async function(t) {
 })
 
 tape('should prevent submitting events for a channel in withdraw period', async function(t) {
+	const { id } = await getValidEthChannel()
 	const channel = {
 		...dummyVals.channel,
-		id: 'withdrawPeriodTest',
+		id,
 		validUntil: Math.floor(Date.now() / 1000) + 20,
 		spec: {
 			...dummyVals.channel.spec,

@@ -1,6 +1,9 @@
 const fetch = require('node-fetch')
 const childproc = require('child_process')
+const ethers = require('ethers')
 const dummyVals = require('./prep-db/mongo')
+const { ethereum } = require('../adapters')
+const { deployContracts } = require('./ethereum')
 
 const defaultPubName = dummyVals.ids.publisher
 
@@ -48,14 +51,41 @@ function exec(cmd) {
 }
 
 function forceTick() {
-	return Promise.all([
-		exec(
-			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeLeader --sentryUrl=http://localhost:8005`
-		),
-		exec(
-			`./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=awesomeFollower --sentryUrl=http://localhost:8006`
-		)
-	])
+	let leaderTick = `./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=0xce07cbb7e054514d590a0262c93070d838bfba2e --sentryUrl=http://localhost:8005`
+	let followerTick = `./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3 --sentryUrl=http://localhost:8006`
+	// using rust validator worker
+	if (process.env.RUST_VALIDATOR_WORKER) {
+		leaderTick = `RUST_BACKTRACE=1 ${
+			process.env.RUST_VALIDATOR_WORKER
+		} -a dummy -i 0xce07cbb7e054514d590a0262c93070d838bfba2e -u http://localhost:8005 -t`
+		followerTick = `RUST_BACKTRACE=1 ${
+			process.env.RUST_VALIDATOR_WORKER
+		} -a dummy -i 0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3 -u http://localhost:8006 -t`
+	}
+
+	return Promise.all([exec(leaderTick), exec(followerTick)])
+}
+
+function randomAddress() {
+	return ethers.Wallet.createRandom().address
+}
+
+async function getValidEthChannel() {
+	const { core } = await deployContracts()
+	const channel = {
+		...dummyVals.channel,
+		id: null,
+		validUntil,
+		spec: {
+			...dummyVals.channel.spec,
+			withdrawPeriodStart,
+			nonce: Date.now().toString()
+		}
+	}
+
+	const ethChannel = ethereum.toEthereumChannel(channel)
+	channel.id = ethChannel.hashHex(core.address)
+	return channel
 }
 
 let validUntil = new Date()
@@ -75,5 +105,7 @@ module.exports = {
 	fetchPost,
 	exec,
 	validUntil,
-	withdrawPeriodStart
+	withdrawPeriodStart,
+	getValidEthChannel,
+	randomAddress
 }
