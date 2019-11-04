@@ -44,7 +44,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	const channel = dummyVals.channel
 	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, dummyVals.channel.id, evs).then(({ status }) => {
+			postEvents(url, channel.id, evs).then(({ status }) => {
 				if (status !== 200) throw new Error(`postEvents failed with ${status}`)
 			})
 		)

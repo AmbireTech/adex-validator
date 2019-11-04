@@ -41,9 +41,11 @@ elif [ "$SUBCOMMAND" == "benchmark" ]; then
 else 
 	# start ganache cli 
 	# Ethereum local testnet
+	echo "Starting Ethereum"
 	./test/scripts/ethereum.sh
 
 	# Run integration & prune tests
+	echo "Starting tests"
 	./test/routes.js  && ./test/ethereum_adapter.js && ./test/integration.js && ./test/access.js && DB_MONGO_NAME=$LEAD_MONGO ./test/prune.js
 
 fi
