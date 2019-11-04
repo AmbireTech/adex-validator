@@ -70,8 +70,21 @@ npm test
 
 Integration tests:
 
+Using JS validator worker
 ```
 npm run test-integration
+```
+
+Using Rust validator worker
+
+```sh
+RUST_VALIDATOR_WORKER=[path to validator_worker binary] npm run test-integration
+```
+
+e.g.
+
+```sh
+RUST_VALIDATOR_WORKER=./adex-validator-stack-rust/target/debug/validator_worker npm run test-integration
 ```
 
 Run both:
