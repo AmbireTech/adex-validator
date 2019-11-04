@@ -11,7 +11,8 @@ const {
 	genEvents,
 	getDummySig,
 	fetchPost,
-	getValidEthChannel
+	getValidEthChannel,
+	randomAddress
 } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -36,7 +37,7 @@ function aggrAndTick() {
 }
 
 tape('submit events and ensure they are accounted for', async function(t) {
-	const evs = genEvents(3).concat(genEvents(2, '0x48b6d5748885988cb657a06647c05fc2af1ffacf'))
+	const evs = genEvents(3).concat(genEvents(2, randomAddress()))
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
@@ -261,7 +262,7 @@ async function testRejectState(t, expectedReason, makeNewState) {
 tape('RejectState: wrong signature (InvalidSignature)', async function(t) {
 	await testRejectState(t, 'InvalidSignature', function(newState) {
 		// increase the balance, so we effectively end up with a new state
-		const balances = { ...newState.balances, '0x033ed90e0fec3f3ea1c9b005c724d704501e0196': '1' }
+		const balances = { ...newState.balances, [randomAddress()]: '1' }
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
@@ -277,7 +278,7 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 	await testRejectState(t, 'InvalidRootHash', function(newState) {
 		// This attack is: we give the follower a valid `balances`,
 		// but a `stateRoot` that represents a totally different tree; with a valid signature
-		const fakeBalances = { '0x033ed90e0fec3f3ea1c9b005c724d704501e0196': '33333' }
+		const fakeBalances = { [randomAddress()]: '33333' }
 		const deceptiveStateRoot = getStateRootHash(
 			dummyAdapter,
 			dummyVals.channel,
@@ -352,7 +353,6 @@ tape('cannot exceed channel deposit', async function(t) {
 
 tape('health works correctly', async function(t) {
 	const channel = await getValidEthChannel()
-
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages

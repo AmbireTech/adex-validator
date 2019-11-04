@@ -1,5 +1,6 @@
 const fetch = require('node-fetch')
 const childproc = require('child_process')
+const ethers = require('ethers')
 const dummyVals = require('./prep-db/mongo')
 const { ethereum } = require('../adapters')
 const { deployContracts } = require('./ethereum')
@@ -76,6 +77,10 @@ function nonce() {
 	return randomstring
 }
 
+function randomAddress() {
+	return ethers.Wallet.createRandom().address
+}
+
 async function getValidEthChannel() {
 	const { core } = await deployContracts()
 	const channel = {
@@ -113,5 +118,6 @@ module.exports = {
 	validUntil,
 	withdrawPeriodStart,
 	nonce,
-	getValidEthChannel
+	getValidEthChannel,
+	randomAddress
 }
