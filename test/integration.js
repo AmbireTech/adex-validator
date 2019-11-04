@@ -257,7 +257,6 @@ async function testRejectState(t, expectedReason, makeNewState) {
 		)
 
 	t.ok(reject, 'has a RejectState')
-	console.log({ reject })
 	if (reject) {
 		t.equal(
 			reject.stateRoot,
