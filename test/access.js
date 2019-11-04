@@ -7,6 +7,7 @@ const db = require('../db')
 
 tape('check access: session uid rateLimit', async function(t) {
 	const channel = {
+		id: `${Date.now()}`,
 		creator: 'creator',
 		spec: {
 			eventSubmission: {
@@ -29,6 +30,7 @@ tape('check access: session uid rateLimit', async function(t) {
 
 tape('check access: ip rateLimit', async function(t) {
 	const channel = {
+		id: `${Date.now()}`,
 		creator: 'creator',
 		spec: {
 			eventSubmission: {

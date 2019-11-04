@@ -17,9 +17,8 @@ const dummyVals = require('./prep-db/mongo')
 
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
-// const defaultPubName = dummyVals.ids.publisher
 
-const dummyChannelId2 = '0x7698f4ca3d772949066c4f278566086a96342085870e557357d21f23d9bb0bab'
+let dummyChannelId2
 
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
@@ -142,6 +141,7 @@ tape('POST /channel/validate: invalid schema', async function(t) {
 	t.end()
 })
 tape('POST /channel: should not work with invalid withdrawPeriodStart', async function(t) {
+	dummyChannelId2 = (await getValidEthChannel()).id
 	const channel = {
 		...dummyVals.channel,
 		id: dummyChannelId2,

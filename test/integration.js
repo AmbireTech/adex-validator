@@ -295,7 +295,7 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 
 tape('RejectState: invalid OUTPACE transition', async function(t) {
 	await testRejectState(t, 'InvalidTransition', function(newState) {
-		// Send a fully valid message, but violating the OUTPACe rules by reducing someone's balance
+		// Send a fully valid message, but violating the OUTPACE rules by reducing someone's balance
 		const balances = { ...newState.balances, [defaultPubName]: '0' }
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
