@@ -51,16 +51,20 @@ function exec(cmd) {
 }
 
 function forceTick() {
-	let leaderTick = `./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=0xce07cbb7e054514d590a0262c93070d838bfba2e --sentryUrl=http://localhost:8005`
-	let followerTick = `./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3 --sentryUrl=http://localhost:8006`
+	let leaderTick = `./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=${
+		dummyVals.ids.leader
+	} --sentryUrl=http://localhost:8005`
+	let followerTick = `./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=${
+		dummyVals.ids.follower
+	} --sentryUrl=http://localhost:8006`
 	// using rust validator worker
 	if (process.env.RUST_VALIDATOR_WORKER) {
-		leaderTick = `RUST_BACKTRACE=1 ${
-			process.env.RUST_VALIDATOR_WORKER
-		} -a dummy -i 0xce07cbb7e054514d590a0262c93070d838bfba2e -u http://localhost:8005 -t`
-		followerTick = `RUST_BACKTRACE=1 ${
-			process.env.RUST_VALIDATOR_WORKER
-		} -a dummy -i 0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3 -u http://localhost:8006 -t`
+		leaderTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
+			dummyVals.ids.leader
+		} -u http://localhost:8005 -t`
+		followerTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
+			dummyVals.ids.follower
+		} -u http://localhost:8006 -t`
 	}
 
 	return Promise.all([exec(leaderTick), exec(followerTick)])
