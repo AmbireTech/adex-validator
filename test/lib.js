@@ -3,7 +3,6 @@ const childproc = require('child_process')
 const ethers = require('ethers')
 const dummyVals = require('./prep-db/mongo')
 const { ethereum } = require('../adapters')
-const { deployContracts } = require('./ethereum')
 
 const defaultPubName = dummyVals.ids.publisher
 
@@ -74,8 +73,7 @@ function randomAddress() {
 	return ethers.Wallet.createRandom().address
 }
 
-async function getValidEthChannel() {
-	const { core } = await deployContracts()
+function getValidEthChannel() {
 	const channel = {
 		...dummyVals.channel,
 		id: null,
@@ -88,7 +86,9 @@ async function getValidEthChannel() {
 	}
 
 	const ethChannel = ethereum.toEthereumChannel(channel)
-	channel.id = ethChannel.hashHex(core.address)
+	// Just a hardcoded core addr is fine here; we don't need for more than the hash
+	const coreAddr = '0x333420fc6a897356e69b62417cd17ff012177d2b'
+	channel.id = ethChannel.hashHex(coreAddr)
 	return channel
 }
 

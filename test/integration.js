@@ -141,7 +141,7 @@ tape('new states are not produced when there are no new aggregates', async funct
 })
 
 tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
-	const channel = await getValidEthChannel()
+	const channel = getValidEthChannel()
 	const { id } = channel
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -327,7 +327,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 })
 
 tape('cannot exceed channel deposit', async function(t) {
-	const channel = await getValidEthChannel()
+	const channel = getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -352,7 +352,7 @@ tape('cannot exceed channel deposit', async function(t) {
 })
 
 tape('health works correctly', async function(t) {
-	const channel = await getValidEthChannel()
+	const channel = getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -391,7 +391,7 @@ tape('health works correctly', async function(t) {
 })
 
 tape('should close channel', async function(t) {
-	const channel = await getValidEthChannel()
+	const channel = getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages

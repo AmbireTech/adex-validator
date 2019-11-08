@@ -18,7 +18,7 @@ const dummyVals = require('./prep-db/mongo')
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 
-let dummyChannelId2
+const dummyChannelId2 = getValidEthChannel().id
 
 tape('/cfg', async function(t) {
 	const resp = await fetch(`${leaderUrl}/cfg`).then(res => res.json())
@@ -141,7 +141,6 @@ tape('POST /channel/validate: invalid schema', async function(t) {
 	t.end()
 })
 tape('POST /channel: should not work with invalid withdrawPeriodStart', async function(t) {
-	dummyChannelId2 = (await getValidEthChannel()).id
 	const channel = {
 		...dummyVals.channel,
 		id: dummyChannelId2,
@@ -284,7 +283,7 @@ tape('POST /channel: should not create channel if it is not valid', async functi
 tape(
 	'POST /channel: should not create channel if it does not pass adapter validation',
 	async function(t) {
-		const { id } = await getValidEthChannel()
+		const { id } = getValidEthChannel()
 		const resp = await fetchPost(`${followerUrl}/channel`, dummyVals.auth.leader, {
 			...dummyVals.channel,
 			id,
@@ -335,7 +334,7 @@ tape('POST /channel/{id}/events: rate limits', async function(t) {
 })
 
 tape('should prevent submitting events for expired channel', async function(t) {
-	const { id } = await getValidEthChannel()
+	const { id } = getValidEthChannel()
 	const channel = {
 		...dummyVals.channel,
 		id,
@@ -361,7 +360,7 @@ tape('should prevent submitting events for expired channel', async function(t) {
 })
 
 tape('should prevent submitting events for a channel in withdraw period', async function(t) {
-	const { id } = await getValidEthChannel()
+	const { id } = getValidEthChannel()
 	const channel = {
 		...dummyVals.channel,
 		id,
