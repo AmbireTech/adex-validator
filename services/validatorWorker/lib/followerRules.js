@@ -1,5 +1,4 @@
 const BN = require('bn.js')
-const cfg = require('../../../cfg')
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {
@@ -18,7 +17,7 @@ function isValidTransition(channel, prev, next) {
 	)
 }
 
-function getHealth(channel, our, approved) {
+function getHealthPromilles(channel, our, approved) {
 	const sumOur = sumMap(our)
 	const sumApprovedMins = sumMins(our, approved)
 	// division by zero can't happen here, because sumApproved >= sumOur
@@ -35,10 +34,6 @@ function getHealth(channel, our, approved) {
 	)
 }
 
-function isHealthy(channel, our, approved) {
-	return getHealth(channel, our, approved).gte(new BN(cfg.HEALTH_THRESHOLD_PROMILLES))
-}
-
 function sumBNs(bns) {
 	return bns.reduce((a, b) => a.add(b), new BN(0))
 }
@@ -53,4 +48,4 @@ function sumMins(our, approved) {
 	return sumBNs(Object.keys(our).map(k => BN.min(our[k], approved[k] || new BN(0))))
 }
 
-module.exports = { isValidTransition, getHealth, isHealthy }
+module.exports = { isValidTransition, getHealthPromilles }

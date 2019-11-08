@@ -1,7 +1,9 @@
+const BN = require('bn.js')
 const { getStateRootHash, onError, toBNMap } = require('./lib')
-const { isValidTransition, isHealthy } = require('./lib/followerRules')
+const { isValidTransition, getHealthPromilles } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
+const cfg = require('../../cfg')
 
 async function tick(adapter, iface, channel) {
 	// @TODO: there's a flaw if we use this in a more-than-two validator setup
@@ -46,12 +48,15 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		return onError(iface, { reason: 'InvalidTransition', newMsg })
 	}
 
+	const healthPromilles = getHealthPromilles(channel, balances, proposedBalances)
+	// if (healthPromilles.
+
 	const signature = await adapter.sign(stateRootRaw)
 	return iface.propagate([
 		{
 			type: 'ApproveState',
 			stateRoot,
-			isHealthy: isHealthy(channel, balances, proposedBalances),
+			isHealthy: healthPromilles.gte(new BN(cfg.HEALTH_THRESHOLD_PROMILLES)),
 			signature
 		}
 	])
