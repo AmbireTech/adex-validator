@@ -1,8 +1,6 @@
 const BN = require('bn.js')
 const cfg = require('../../../cfg')
 
-const HEALTH_THRESHOLD_NEG = new BN(1000 - cfg.HEALTH_THRESHOLD_PROMILLES)
-
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {
 	const sumPrev = sumMap(prev)
@@ -20,20 +18,25 @@ function isValidTransition(channel, prev, next) {
 	)
 }
 
-function isHealthy(channel, our, approved) {
+function getHealth(channel, our, approved) {
 	const sumOur = sumMap(our)
 	const sumApprovedMins = sumMins(our, approved)
 	// division by zero can't happen here, because sumApproved >= sumOur
 	// if sumOur is 0, it will always be true
 	if (sumApprovedMins.gte(sumOur)) {
-		return true
+		return new BN(1000)
 	}
 	const depositAmount = new BN(channel.depositAmount, 10)
-	const acceptableDifference = depositAmount.mul(HEALTH_THRESHOLD_NEG).div(new BN(1000))
-	if (sumOur.sub(sumApprovedMins).gte(acceptableDifference)) {
-		return false
-	}
-	return true
+	return new BN(1000).sub(
+		sumOur
+			.sub(sumApprovedMins)
+			.mul(new BN(1000))
+			.div(depositAmount)
+	)
+}
+
+function isHealthy(channel, our, approved) {
+	return getHealth(channel, our, approved).gte(new BN(cfg.HEALTH_THRESHOLD_PROMILLES))
 }
 
 function sumBNs(bns) {
@@ -50,4 +53,4 @@ function sumMins(our, approved) {
 	return sumBNs(Object.keys(our).map(k => BN.min(our[k], approved[k] || new BN(0))))
 }
 
-module.exports = { isValidTransition, isHealthy }
+module.exports = { isValidTransition, getHealth, isHealthy }
