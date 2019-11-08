@@ -49,7 +49,9 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 	}
 
 	const healthPromilles = getHealthPromilles(channel, balances, proposedBalances)
-	// if (healthPromilles.
+	if (healthPromilles.lt(new BN(cfg.HEALTH_UNSIGNABLE_PROMILLES))) {
+		return onError(iface, { reason: 'TooLowHealth', newMsg })
+	}
 
 	const signature = await adapter.sign(stateRootRaw)
 	return iface.propagate([
