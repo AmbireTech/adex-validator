@@ -390,6 +390,62 @@ tape('health works correctly', async function(t) {
 	t.end()
 })
 
+tape('health works correctly: should reject state if health is too different', async function(t) {
+	const channel = getValidEthChannel()
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+	const toFollower = 300
+	const toLeader = 3
+	const diff = toFollower - toLeader
+
+	await Promise.all(
+		[leaderUrl, followerUrl].map(url =>
+			postEvents(url, channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
+		)
+	)
+
+	// wait for the events to be aggregated and new states to be issued
+	await aggrAndTick()
+	await forceTick()
+
+	const [firstNewState, approve, reject] = await Promise.all([
+		channelIface.getLatestMsg(dummyVals.ids.leader, 'NewState'),
+		channelIface.getLatestMsg(dummyVals.ids.follower, 'ApproveState'),
+		channelIface.getLatestMsg(dummyVals.ids.follower, 'RejectState')
+	])
+	if (approve)
+		t.notEqual(
+			firstNewState.stateRoot,
+			approve.stateRoot,
+			'we are not approving the malicious NewState'
+		)
+	t.ok(reject, 'has a RejectState')
+	if (reject) {
+		t.equal(reject.stateRoot, firstNewState.stateRoot, 'we have rejected the malicious NewState')
+		t.equal(reject.reason, 'TooLowHealth', `reason for rejection is TooLowHealth`)
+	}
+
+	// send events to the leader so it catches up
+	await postEvents(leaderUrl, channel.id, genEvents(diff))
+	await aggrAndTick()
+	await forceTick()
+
+	// check if healthy
+	const lastApproveHealthy = await channelIface.getLatestMsg(dummyVals.ids.follower, 'ApproveState')
+	t.notEqual(
+		lastApproveHealthy.stateRoot,
+		firstNewState.stateRoot,
+		'we are not approving the malicious NewState'
+	)
+	t.equal(lastApproveHealthy.isHealthy, true, 'channel is registered as healthy')
+	t.end()
+})
+
 tape('should close channel', async function(t) {
 	const channel = getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })

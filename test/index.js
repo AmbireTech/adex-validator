@@ -3,7 +3,10 @@ const tape = require('tape')
 
 const BN = require('bn.js')
 const { Joi } = require('celebrate')
-const { isValidTransition, isHealthy } = require('../services/validatorWorker/lib/followerRules')
+const {
+	isValidTransition,
+	getHealthPromilles
+} = require('../services/validatorWorker/lib/followerRules')
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const eventReducer = require('../services/sentry/lib/eventReducer')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
@@ -89,47 +92,71 @@ tape('isValidTransition: transition to a state with a negative number', function
 })
 
 //
-// isHealthy
+// getHealthPromilles
 //
-tape('isHealthy: the approved balance tree >= our accounting: HEALTHY', function(t) {
-	t.equal(isHealthy({ depositAmount: 50 }, { a: new BN(50) }, { a: new BN(50) }), true)
-	t.equal(isHealthy({ depositAmount: 50 }, { a: new BN(50) }, { a: new BN(60) }), true)
-	t.end()
-})
-
-tape('isHealthy: the approved balance tree is positive, our accounting is 0: HEALTHY', function(t) {
-	t.equal(isHealthy({ depositAmount: 50 }, {}, { a: new BN(50) }), true)
-	t.end()
-})
-
-tape('isHealthy: the approved balance tree has less, but within margin: HEALTHY', function(t) {
-	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { a: new BN(79) }), true)
-	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(2) }, { a: new BN(1) }), true)
-	t.end()
-})
-
-tape('isHealthy: the approved balance tree has less: UNHEALTHY', function(t) {
-	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { a: new BN(70) }), false)
-	t.end()
-})
-
-tape('isHealthy: they have the same sum, but different entities are earning', function(t) {
-	t.equal(isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(80) }), false)
-	t.equal(
-		isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(40), a: new BN(40) }),
-		false
+tape('getHealthPromilles: the approved balance tree >= our accounting', function(t) {
+	t.ok(
+		getHealthPromilles({ depositAmount: 50 }, { a: new BN(50) }, { a: new BN(50) }).eq(new BN(1000))
 	)
-	t.equal(
-		isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(20), a: new BN(60) }),
-		false
+	t.ok(
+		getHealthPromilles({ depositAmount: 50 }, { a: new BN(50) }, { a: new BN(60) }).eq(new BN(1000))
 	)
-	t.equal(
-		isHealthy({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(2), a: new BN(78) }),
-		true
+	t.end()
+})
+
+tape('getHealthPromilles: the approved balance tree is positive, our accounting is 0', function(t) {
+	t.ok(getHealthPromilles({ depositAmount: 50 }, {}, { a: new BN(50) }).eq(new BN(1000)))
+	t.end()
+})
+
+tape('getHealthPromilles: the approved balance tree has less, but within margin', function(t) {
+	t.ok(
+		getHealthPromilles({ depositAmount: 80 }, { a: new BN(80) }, { a: new BN(79) }).eq(new BN(988))
 	)
-	t.equal(
-		isHealthy({ depositAmount: 80 }, { a: new BN(100), b: new BN(1) }, { a: new BN(100) }),
-		true
+	t.ok(
+		getHealthPromilles({ depositAmount: 80 }, { a: new BN(2) }, { a: new BN(1) }).eq(new BN(988))
+	)
+	t.end()
+})
+
+tape('getHealthPromilles: the approved balance tree has significantly less', function(t) {
+	t.ok(
+		getHealthPromilles({ depositAmount: 80 }, { a: new BN(80) }, { a: new BN(70) }).eq(new BN(875))
+	)
+	t.end()
+})
+
+tape('getHealthPromilles: they have the same sum, but different entities are earning', function(t) {
+	t.ok(
+		getHealthPromilles({ depositAmount: 80 }, { a: new BN(80) }, { b: new BN(80) }).eq(new BN(0))
+	)
+	t.ok(
+		getHealthPromilles(
+			{ depositAmount: 80 },
+			{ a: new BN(80) },
+			{ b: new BN(40), a: new BN(40) }
+		).eq(new BN(500))
+	)
+	t.ok(
+		getHealthPromilles(
+			{ depositAmount: 80 },
+			{ a: new BN(80) },
+			{ b: new BN(20), a: new BN(60) }
+		).eq(new BN(750))
+	)
+	t.ok(
+		getHealthPromilles(
+			{ depositAmount: 80 },
+			{ a: new BN(80) },
+			{ b: new BN(2), a: new BN(78) }
+		).eq(new BN(975))
+	)
+	t.ok(
+		getHealthPromilles(
+			{ depositAmount: 80 },
+			{ a: new BN(100), b: new BN(1) },
+			{ a: new BN(100) }
+		).eq(new BN(988))
 	)
 	t.end()
 })
