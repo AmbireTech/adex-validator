@@ -89,14 +89,12 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	)
 	t.equal(heartbeats.length, 2, 'has correct number of heartbeat messages')
 	// there should be one heartbeat from leader & follower
-	t.notEqual(
-		heartbeats[0].msg.signature.indexOf(channel.spec.validators[0].id),
-		-1,
+	t.ok(
+		heartbeats[0].msg.signature.includes(channel.spec.validators[0].id),
 		'should retrieve heartbeat from leader'
 	)
-	t.notEqual(
-		heartbeats[1].msg.signature.indexOf(channel.spec.validators[1].id),
-		-1,
+	t.ok(
+		heartbeats[1].msg.signature.includes(channel.spec.validators[1].id),
 		'should retrieve heartbeat from follower'
 	)
 
