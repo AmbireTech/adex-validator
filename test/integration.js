@@ -61,7 +61,7 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// who generated ApproveState and sent back to the leader
 	await aggrAndTick()
 
-	const lastApproved = await iface.getLastApproved()
+	const { lastApproved, heartbeats } = await iface.getLastMsgs()
 
 	t.ok(lastApproved, 'has lastApproved')
 	// ensure NewState is in order
@@ -86,6 +86,16 @@ tape('submit events and ensure they are accounted for', async function(t) {
 		lastNew.msg.balances,
 		balancesTree,
 		'NewState: balances is the same as the one in Accounting'
+	)
+	t.equal(heartbeats.length, 2, 'has correct number of heartbeat messages')
+	// there should be one heartbeat from leader & follower
+	t.ok(
+		heartbeats[0].msg.signature.includes(channel.spec.validators[0].id),
+		'should retrieve heartbeat from leader'
+	)
+	t.ok(
+		heartbeats[1].msg.signature.includes(channel.spec.validators[1].id),
+		'should retrieve heartbeat from follower'
 	)
 
 	// Ensure ApproveState is in order
