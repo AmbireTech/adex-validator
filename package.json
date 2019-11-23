@@ -15,8 +15,7 @@
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
-    "adex-validator-worker": "./bin/validatorWorker.js",
-    "adex-watcher": "./bin/watcher.js"
+    "adex-validator-worker": "./bin/validatorWorker.js"
   },
   "husky": {
     "hooks": {
