@@ -11,7 +11,7 @@ ENV KEYSTORE_FILE=
 ENV KEYSTORE_PASSWORD=
 
 RUN echo 'http://dl-3.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories && \
-    apk upgrade --update && \ 
+    apk upgrade --update
 
 RUN apk add --update alpine-sdk
 RUN apk add --update python
