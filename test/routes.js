@@ -15,6 +15,8 @@ const {
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
+const postEvsAsCreator = (url, id, events) => postEvents(url, id, events, dummyVals.auth.creator)
+
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 
@@ -63,7 +65,7 @@ tape('/channel/{id}/{status,validator-messages}: non existant channel', async fu
 })
 
 tape('POST /channel/{id}/events: non existant channel', async function(t) {
-	const resp = await postEvents(leaderUrl, 'xxxtentacion', [])
+	const resp = await postEvsAsCreator(leaderUrl, 'xxxtentacion', [])
 	t.equal(resp.status, 404, 'status should be 404')
 	t.end()
 })
@@ -354,7 +356,7 @@ tape('should prevent submitting events for expired channel', async function(t) {
 	// wait till channel expires
 	await wait(2100)
 
-	const resp = await postEvents(followerUrl, channel.id, genEvents(1)).then(r => r.json())
+	const resp = await postEvsAsCreator(followerUrl, channel.id, genEvents(1)).then(r => r.json())
 	t.equal(resp.message, 'channel is expired', 'should prevent events after validUntil')
 	t.end()
 })
@@ -380,7 +382,7 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 	// wait till withdrawPeriodStart
 	await wait(1100)
 
-	const resp = await postEvents(followerUrl, channel.id, genEvents(1)).then(r => r.json())
+	const resp = await postEvsAsCreator(followerUrl, channel.id, genEvents(1)).then(r => r.json())
 	t.equal(
 		resp.message,
 		'channel is past withdraw period',

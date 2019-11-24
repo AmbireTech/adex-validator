@@ -17,6 +17,8 @@ const {
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
+const postEvsAsCreator = (url, id, ev) => postEvents(url, id, ev, dummyVals.auth.creator)
+
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = dummyVals.ids.publisher
@@ -44,8 +46,8 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	const channel = dummyVals.channel
 	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, channel.id, evs).then(({ status }) => {
-				if (status !== 200) throw new Error(`postEvents failed with ${status}`)
+			postEvsAsCreator(url, channel.id, evs).then(({ status }) => {
+				if (status !== 200) throw new Error(`postEvsAsCreator failed with ${status}`)
 			})
 		)
 	)
@@ -161,16 +163,9 @@ tape('/channel/{id}/events-aggregates/{earner}', async function(t) {
 	])
 
 	// post events for that channel for multiple publishers
-	const publishers = [
-		[dummyVals.auth.creator, genEvents(3, dummyVals.ids.publisher)],
-		[dummyVals.auth.creator, genEvents(3, dummyVals.ids.publisher2)]
-	]
+	const publishers = [genEvents(3, dummyVals.ids.publisher), genEvents(3, dummyVals.ids.publisher2)]
 
-	await Promise.all(
-		publishers.map(async ([auth, event]) =>
-			postEvents(leaderUrl, id, event, auth).then(res => res.json())
-		)
-	)
+	await Promise.all(publishers.map(async ev => (await postEvsAsCreator(leaderUrl, id, ev)).json()))
 	await aggrAndTick()
 	const eventAggrFilterfixtures = [
 		// if we're a non superuser (validator) returns our event
@@ -349,7 +344,7 @@ tape('cannot exceed channel deposit', async function(t) {
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
 	const expectDeposit = parseInt(channel.depositAmount, 10)
 	const evCount = expectDeposit + 1
-	await postEvents(leaderUrl, channel.id, genEvents(evCount))
+	await postEvsAsCreator(leaderUrl, channel.id, genEvents(evCount))
 	await aggrAndTick()
 	await forceTick()
 
@@ -376,7 +371,7 @@ tape('health works correctly', async function(t) {
 
 	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
+			postEvsAsCreator(url, channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
 		)
 	)
 
@@ -390,7 +385,7 @@ tape('health works correctly', async function(t) {
 	t.equal(lastApprove.isHealthy, false, 'channel is registered as unhealthy')
 
 	// send events to the leader so it catches up
-	await postEvents(leaderUrl, channel.id, genEvents(diff))
+	await postEvsAsCreator(leaderUrl, channel.id, genEvents(diff))
 	await aggrAndTick()
 	await forceTick()
 
@@ -415,7 +410,7 @@ tape('health works correctly: should reject state if health is too different', a
 
 	await Promise.all(
 		[leaderUrl, followerUrl].map(url =>
-			postEvents(url, channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
+			postEvsAsCreator(url, channel.id, genEvents(url === followerUrl ? toFollower : toLeader))
 		)
 	)
 
@@ -441,7 +436,7 @@ tape('health works correctly: should reject state if health is too different', a
 	}
 
 	// send events to the leader so it catches up
-	await postEvents(leaderUrl, channel.id, genEvents(diff))
+	await postEvsAsCreator(leaderUrl, channel.id, genEvents(diff))
 	await aggrAndTick()
 	await forceTick()
 
@@ -468,7 +463,7 @@ tape('should close channel', async function(t) {
 
 	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
 	const expectDeposit = parseInt(channel.depositAmount, 10)
-	await postEvents(leaderUrl, channel.id, genEvents(10))
+	await postEvsAsCreator(leaderUrl, channel.id, genEvents(10))
 
 	// close channel event
 	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
