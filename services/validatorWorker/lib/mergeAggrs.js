@@ -25,6 +25,10 @@ function mergeAggrs(accounting, aggrs, channel) {
 		)
 		balancesBeforeFees = mergePayoutsIntoBalances(balancesBeforeFees, evAggr.events, depositAmount)
 	})
+	// Auto-close a campaign if it's in it's withdraw period
+	// @TODO
+
+	// Finalize balancesBeforeFees
 	newAccounting.balancesBeforeFees = toBNStringMap(balancesBeforeFees)
 
 	// apply fees
@@ -54,7 +58,7 @@ function mergePayoutsIntoBalances(balances, events, depositAmount) {
 	const allPayouts = Object.values(events)
 		.map(x => Object.entries(x.eventPayouts))
 		.reduce((a, b) => a.concat(b), [])
-	Object.values(allPayouts).forEach(function([acc, payout]) {
+	allPayouts.forEach(function([acc, payout]) {
 		if (!newBalances[acc]) newBalances[acc] = new BN(0, 10)
 
 		const toAdd = BN.min(remaining, new BN(payout, 10))
