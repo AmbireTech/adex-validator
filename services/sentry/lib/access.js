@@ -12,6 +12,10 @@ async function checkAccess(channel, session, events) {
 	const isInWithdrawPeriod =
 		channel.spec.withdrawPeriodStart && currentTime > channel.spec.withdrawPeriodStart
 
+	if (currentTime > channel.validUntil * 1000) {
+		return { success: false, statusCode: 400, message: 'channel is expired' }
+	}
+
 	// We're only sending a CLOSE
 	// That's allowed for the creator normally, and for everyone during the withdraw period
 	if (
@@ -24,9 +28,7 @@ async function checkAccess(channel, session, events) {
 	if (session.uid !== channel.creator && events.find(e => e.type === 'CLOSE')) {
 		return { success: false, statusCode: 403 }
 	}
-	if (currentTime > channel.validUntil * 1000) {
-		return { success: false, statusCode: 400, message: 'channel is expired' }
-	}
+
 	if (isInWithdrawPeriod) {
 		return { success: false, statusCode: 400, message: 'channel is in withdraw period' }
 	}
