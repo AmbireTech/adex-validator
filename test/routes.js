@@ -386,7 +386,10 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 		'channel is in withdraw period',
 		'should prevent events after withdraw period'
 	)
-	// @TODO we can still submit validator messages
+
+	// we can still submit an un-authenticated CLOSE while we're in the withdraw period
+	const closeHttpResp = await postEvents(followerUrl, channel.id, [{ type: 'CLOSE' }], null)
+	t.equal(closeHttpResp.status, 200, 'we can still CLOSE')
 
 	t.end()
 })
