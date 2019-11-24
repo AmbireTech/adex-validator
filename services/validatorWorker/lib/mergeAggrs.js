@@ -25,8 +25,6 @@ function mergeAggrs(accounting, aggrs, channel) {
 		)
 		balancesBeforeFees = mergePayoutsIntoBalances(balancesBeforeFees, evAggr.events, depositAmount)
 	})
-	// Auto-close a campaign if it's in it's withdraw period
-	// @TODO
 
 	// Finalize balancesBeforeFees
 	newAccounting.balancesBeforeFees = toBNStringMap(balancesBeforeFees)
