@@ -8,21 +8,27 @@ const redisExists = promisify(redisCli.exists).bind(redisCli)
 const redisSetex = promisify(redisCli.setex).bind(redisCli)
 
 async function checkAccess(channel, session, events) {
-	// Check basic access rules
-	// only the creator can send a CLOSE
+	const currentTime = Date.now()
+	const isInWithdrawPeriod =
+		channel.spec.withdrawPeriodStart && currentTime > channel.spec.withdrawPeriodStart
+
+	// We're only sending a CLOSE
+	// That's allowed for the creator normally, and for everyone during the withdraw period
+	if (
+		events.every(e => e.type === 'CLOSE') &&
+		(session.uid === channel.creator || isInWithdrawPeriod)
+	) {
+		return { success: true }
+	}
+	// Only the creator can send a CLOSE
 	if (session.uid !== channel.creator && events.find(e => e.type === 'CLOSE')) {
 		return { success: false, statusCode: 403 }
 	}
-	const currentTime = Date.now()
 	if (currentTime > channel.validUntil * 1000) {
 		return { success: false, statusCode: 400, message: 'channel is expired' }
 	}
-	if (
-		channel.spec.withdrawPeriodStart &&
-		currentTime > channel.spec.withdrawPeriodStart &&
-		!events.every(e => e.type === 'CLOSE')
-	) {
-		return { success: false, statusCode: 400, message: 'channel is past withdraw period' }
+	if (isInWithdrawPeriod) {
+		return { success: false, statusCode: 400, message: 'channel is in withdraw period' }
 	}
 
 	// Enforce access limits

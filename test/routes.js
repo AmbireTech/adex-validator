@@ -383,7 +383,7 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 	const resp = await postEvents(followerUrl, channel.id, genEvents(1)).then(r => r.json())
 	t.equal(
 		resp.message,
-		'channel is past withdraw period',
+		'channel is in withdraw period',
 		'should prevent events after withdraw period'
 	)
 	// @TODO we can still submit validator messages
