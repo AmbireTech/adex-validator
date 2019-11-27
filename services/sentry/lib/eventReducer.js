@@ -9,11 +9,11 @@ function reduce(channel, initialAggr, ev) {
 	const aggr = { ...initialAggr }
 	if (ev.type === 'IMPRESSION') {
 		// add the minimum price for the event to the current amount
-		aggr.events.IMPRESSION = mergeEv(
-			initialAggr.events.IMPRESSION,
-			ev,
-			new BN(channel.spec.minPerImpression || 1)
-		)
+		const payout = new BN(channel.spec.minPerImpression || 1)
+		aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, ev, payout)
+	} else if (ev.type === 'CLICK') {
+		const payout = new BN(channel.spec.minPerClick || 0)
+		aggr.events.CLICK = mergeEv(initialAggr.events.CLICK, ev, payout)
 	} else if (ev.type === 'CLOSE') {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
