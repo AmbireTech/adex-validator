@@ -36,8 +36,8 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, payout)
 	}
 	if (typeof ev.publisher !== 'string') return map
 	const earner = toBalancesKey(ev.publisher)
-	if (!map.eventCounts[earner]) map.eventCounts[earner] = new BN(0)
-	if (!map.eventPayouts[earner]) map.eventPayouts[earner] = new BN(0)
+	if (!map.eventCounts[earner]) map.eventCounts[earner] = '0'
+	if (!map.eventPayouts[earner]) map.eventPayouts[earner] = '0'
 
 	// increase the event count
 	const newEventCounts = new BN(map.eventCounts[earner], 10)
