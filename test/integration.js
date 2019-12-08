@@ -438,8 +438,8 @@ tape('should record clicks', async function(t) {
 
 	await postEvsAsCreator(leaderUrl, channel.id, evs)
 	// Technically we don't need to tick, since the events should be reflected immediately
-	const analytics = await fetch(`${leaderUrl}/analytics/${channel.id}?eventType=CLICK`).then(res =>
-		res.json()
+	const analytics = await fetch(`${leaderUrl}/analytics/${channel.id}?eventType=CLICK`).then(r =>
+		r.json()
 	)
 	t.equal(analytics.aggr[0].value, num.toString(), 'proper number of CLICK events')
 
