@@ -8,7 +8,12 @@ function newAggr(channelId) {
 function reduce(channel, initialAggr, ev) {
 	const aggr = { ...initialAggr }
 	if (ev.type === 'IMPRESSION') {
-		aggr.events.IMPRESSION = mergeImpressionEv(initialAggr.events.IMPRESSION, ev, channel)
+		// add the minimum price for the event to the current amount
+		const payout = new BN(channel.spec.minPerImpression || 1)
+		aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, ev, payout)
+	} else if (ev.type === 'CLICK') {
+		const payout = new BN((channel.spec.pricingBounds && channel.spec.pricingBounds.CLICK.min) || 0)
+		aggr.events.CLICK = mergeEv(initialAggr.events.CLICK, ev, payout)
 	} else if (ev.type === 'CLOSE') {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
@@ -24,7 +29,7 @@ function reduce(channel, initialAggr, ev) {
 	return aggr
 }
 
-function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, channel) {
+function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, payout) {
 	const map = {
 		eventCounts: { ...initialMap.eventCounts },
 		eventPayouts: { ...initialMap.eventPayouts }
@@ -39,13 +44,10 @@ function mergeImpressionEv(initialMap = { eventCounts: {}, eventPayouts: {} }, e
 	map.eventCounts[earner] = addAndToString(newEventCounts, new BN(1))
 
 	// current earner payout
-	const currentAmount = new BN(map.eventPayouts[earner], 10)
-	// add the minimum price per impression
-	// to the current amount
-	map.eventPayouts[earner] = addAndToString(
-		currentAmount,
-		new BN(channel.spec.minPerImpression || 1)
-	)
+	if (payout.gt(new BN(0))) {
+		const currentAmount = new BN(map.eventPayouts[earner], 10)
+		map.eventPayouts[earner] = addAndToString(currentAmount, payout)
+	}
 	return map
 }
 

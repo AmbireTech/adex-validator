@@ -105,6 +105,12 @@ module.exports = {
 				.optional(),
 			minPerImpression: numericString.default('1'),
 			maxPerImpression: numericString.default('1'),
+			pricingBounds: Joi.object()
+				.keys()
+				.pattern(
+					/^(IMPRESSION|CLICK)$/,
+					Joi.object({ min: numericString.default('0'), max: numericString.default('0') })
+				),
 			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
 			nonce: Joi.string(),
 			created: Joi.number(),
@@ -156,7 +162,7 @@ module.exports = {
 	},
 	eventTimeAggr: {
 		eventType: Joi.string()
-			.valid(['IMPRESSION'])
+			.valid(['IMPRESSION', 'CLICK'])
 			.default('IMPRESSION'),
 		metric: Joi.string()
 			.valid(['eventCounts', 'eventPayouts'])

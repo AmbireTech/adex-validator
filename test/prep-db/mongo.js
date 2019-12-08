@@ -28,6 +28,7 @@ const dummyVals = {
 		spec: {
 			minPerImpression: '1',
 			maxPerImpression: '10',
+			pricingBounds: { CLICK: { min: '0', max: '0' } },
 			withdrawPeriodStart: 4073414400000,
 			validators: [
 				{ id: '0xce07cbb7e054514d590a0262c93070d838bfba2e', url: 'http://localhost:8005', fee: '100' },

@@ -39,7 +39,12 @@ function aggrAndTick() {
 }
 
 tape('submit events and ensure they are accounted for', async function(t) {
-	const evs = genEvents(3).concat(genEvents(2, randomAddress()))
+	// the CLICK is not paid for by default
+	// the IMPRESSION, however, pays 1 by default
+	const evs = genEvents(3)
+		.concat(genEvents(2, randomAddress()))
+		.concat(genEvents(1, randomAddress(), 'CLICK'))
+
 	const expectedBal = '3'
 	const expectedBalAfterFees = '2'
 
@@ -417,6 +422,27 @@ tape('should close channel', async function(t) {
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
 	t.equal(sum, expectDeposit, 'balance does not exceed the deposit, but equals it')
+	t.end()
+})
+
+tape('should record clicks', async function(t) {
+	const channel = getValidEthChannel()
+	const num = 66
+	const evs = genEvents(num, randomAddress(), 'CLICK')
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	await postEvsAsCreator(leaderUrl, channel.id, evs)
+	// Technically we don't need to tick, since the events should be reflected immediately
+	const analytics = await fetch(`${leaderUrl}/analytics/${channel.id}?eventType=CLICK`).then(res =>
+		res.json()
+	)
+	t.equal(analytics.aggr[0].value, num.toString(), 'proper number of CLICK events')
+
 	t.end()
 })
 
