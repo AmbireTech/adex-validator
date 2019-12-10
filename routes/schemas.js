@@ -82,6 +82,10 @@ module.exports = {
 			.required(),
 		creator: Joi.string().required(),
 		spec: Joi.object({
+			title: Joi.string()
+				.min(3)
+				.max(120)
+				.allow(''),
 			adUnits: Joi.array().items(Joi.object()),
 			targeting: Joi.array().items(Joi.object()),
 			validators: Joi.array()
