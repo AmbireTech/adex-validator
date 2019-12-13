@@ -59,7 +59,6 @@ async function checkAccess(channel, session, events) {
 
 	const ifErr = await Promise.all(
 		rules.map(async rule => {
-			// Matching rule has no rateLimit, so we're good
 			if (!rule.rateLimit) return null
 
 			const type = rule.rateLimit.type
@@ -73,7 +72,8 @@ async function checkAccess(channel, session, events) {
 				if (events.length !== 1) {
 					return new Error('rateLimit: only allows 1 event')
 				}
-				key = `adexRateLimit:${channel.id}:${session.ip}`
+				const prefix = events[0].type === 'CLICK' ? 'adexRateLimitClick' : 'adexRateLimit'
+				key = `${prefix}:${channel.id}:${session.ip}`
 			} else {
 				// unsupported limit type
 				return null
