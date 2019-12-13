@@ -72,8 +72,7 @@ async function checkAccess(channel, session, events) {
 				if (events.length !== 1) {
 					return new Error('rateLimit: only allows 1 event')
 				}
-				const prefix = events[0].type === 'CLICK' ? 'adexRateLimitClick' : 'adexRateLimit'
-				key = `${prefix}:${channel.id}:${session.ip}`
+				key = `adexRateLimit:${channel.id}:${events[0].type}:${session.ip}`
 			} else {
 				// unsupported limit type
 				return null
