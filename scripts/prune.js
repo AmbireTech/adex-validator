@@ -122,9 +122,13 @@ async function pruneExpired() {
 		validUntil: { $lte: Math.ceil(new Date(timestamp).getTime() / 1000) }
 	})).toArray()
 
-	const result = await Promise.all(channels.map(async channel => pruneChannel(channel)))
+	// eslint-disable-next-line no-restricted-syntax
+	for (const channel of channels) {
+		// eslint-disable-next-line no-await-in-loop
+		await pruneChannel(channel)
+	}
 
-	logger.info(`Succesfully pruned all validator messages for ${result.length} expired channels`)
+	logger.info(`Succesfully pruned all validator messages for ${channels.length} expired channels`)
 }
 
 pruneAll().then(function() {})
