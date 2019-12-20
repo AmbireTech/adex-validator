@@ -112,7 +112,7 @@ async function pruneChannel(channel, timestamp) {
 		})
 	}
 
-	logger.info(`Pruned messages for channel`)
+	logger.info(`Pruned messages for ${channel.id}`)
 }
 
 async function pruneExpired() {
