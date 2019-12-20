@@ -18,7 +18,7 @@
 // --channelId (required) prunes heartbeat validator messages for an unexpired channel and all validator messages for expired channel
 // --timestamp ( default = current date ) should be used with `--channelId` to indicate when to prune validator messages from
 // --all (optional) prune all expired channels validator messages
-//
+// --sentryUrl (required)
 //
 //
 // Example
@@ -39,6 +39,7 @@
 
 const assert = require('assert')
 const yargs = require('yargs')
+const fetch = require('node-fetch')
 const db = require('../db')
 const logger = require('../services/logger')('prunning')
 
@@ -51,8 +52,11 @@ const { argv } = yargs
 	.default('timestamp', new Date().toISOString())
 	.boolean('all')
 	.describe('all', 'delete validator messages for all expired channels')
+	.option('sentryUrl')
+	.describe('sentryUrl', 'URL to the sentry')
 
 async function pruneAll() {
+	assert.ok(argv.sentryUrl, 'sentryUrl needed')
 	db.connect()
 		.then(async () => {
 			if (!argv.all) {
@@ -77,18 +81,34 @@ async function pruneChannel(channel, timestamp) {
 		return
 	}
 	const validatorCol = db.getMongo().collection('validatorMessages')
+
+	const excluded = await fetch(
+		`${argv.sentryUrl}/channel/${channel.id}/last-approved?withHeartbeat=true`
+	).then(r => r.json())
+	const excludeStateRoots = excluded.heartbeats
+		.map(hb => hb.msg.stateRoot)
+		.concat(
+			excluded.lastApproved
+				? [
+						excluded.lastApproved.newState.msg.stateRoot,
+						excluded.lastApproved.approveState.msg.stateRoot
+				  ]
+				: []
+		)
 	// if channel not expired prune heartbeat messages
 	if (channel.validUntil > new Date().getTime() / 1000) {
 		logger.info(`Deleting all validator hearbeat messages for channel ${channel.id}`)
 		await validatorCol.deleteMany({
 			channelId: channel.id,
+			'msg.stateRoot': { $nin: excludeStateRoots },
 			'msg.type': 'Heartbeat',
 			received: { $lte: new Date(timestamp) }
 		})
 	} else {
 		logger.info(`Deleting all validator messages for expired channel ${channel.id}`)
 		await validatorCol.deleteMany({
-			channelId: channel.id
+			channelId: channel.id,
+			'msg.stateRoot': { $nin: excludeStateRoots }
 		})
 	}
 
