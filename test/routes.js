@@ -140,7 +140,6 @@ tape('POST /channel/validate: invalid schema', async function(t) {
 	)
 	t.equal(resp.statusCode, 400)
 	t.ok(resp.validation)
-	console.log(resp)
 	t.end()
 })
 tape('POST /channel: should not work with invalid withdrawPeriodStart', async function(t) {
