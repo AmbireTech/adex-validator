@@ -193,6 +193,12 @@ docker build --tag=adex/adex-validator
 docker run --network=host --env-file .env.prod --mount type=bind,source=$(PWD)/keystore.json,target=/app/keystore.json adex/adex-validator
 ```
 
+### Pruning
+
+Run `./scripts/prune.js` to prune old validator messages.
+
+This script only prunes validator messages for select channels or all expired channels. It keeps `eventAggregates` for historical purposes.
+
 ### Benchmark
 
 #### Install Wrk2
