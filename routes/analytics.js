@@ -18,7 +18,7 @@ const validate = celebrate({ query: schemas.eventTimeAggr })
 // Global statistics
 router.get('/', validate, redisCached(300, analytics))
 router.get('/for-publisher', validate, authRequired, analyticsNotCached)
-router.get('/for-advertiser', validate, authRequired, getAdvertiserAnalyticsNotCached)
+router.get('/for-advertiser/:id?', validate, authRequired, getAdvertiserAnalyticsNotCached)
 
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
