@@ -21,6 +21,13 @@ The validator worker is the only component that actually needs to access the pri
 
 The validator worker connects to the Sentry to pull the latest event aggregates and submit the resulting validator messages.
 
+
+### Address convention
+
+All addresses in the `channel.spec` are serialized as checksummed.
+
+All addresses in the balance trees are lowercased.
+
 ## Sentry: API
 
 #### Do not require authentication, can be cached:
