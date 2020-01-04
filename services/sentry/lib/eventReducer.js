@@ -1,5 +1,5 @@
 const BN = require('bn.js')
-const toBalancesKey = require('./toBalancesKey')
+const toBalancesKey = require('../../toBalancesKey')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {} }
