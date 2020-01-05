@@ -94,6 +94,12 @@ e.g.
 RUST_VALIDATOR_WORKER=./adex-validator-stack-rust/target/debug/validator_worker npm run test-integration
 ```
 
+It is also recommended to run with `RUST_ONLY_RUN`, to test interoperability with the JS worker:
+```sh
+RUST_VALIDATOR_WORKER=./adex-validator-stack-rust/target/debug/validator_worker RUST_ONLY_RUN=leader npm run test-integration
+RUST_VALIDATOR_WORKER=./adex-validator-stack-rust/target/debug/validator_worker RUST_ONLY_RUN=follower npm run test-integration
+```
+
 Run both:
 
 ```
