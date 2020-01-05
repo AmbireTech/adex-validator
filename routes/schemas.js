@@ -130,7 +130,7 @@ module.exports = {
 			Joi.object({
 				type: Joi.string().required(),
 				publisher: Joi.string(),
-				ref: Joi.string(),
+				ref: Joi.string().allow(''),
 				adUnit: Joi.string()
 			})
 		)
