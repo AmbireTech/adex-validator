@@ -8,11 +8,11 @@ SUBCOMMAND=$1
 
 LEAD_PORT=8005
 LEAD_MONGO="testValStackLeader${TIMESTAMP}"
-LEAD_ARGS="--adapter=dummy --dummyIdentity=0xce07cbb7e054514d590a0262c93070d838bfba2e"
+LEAD_ARGS="--adapter=dummy --dummyIdentity=0xce07CbB7e054514D590a0262C93070D838bFBA2e"
 
 FOLLOW_PORT=8006
 FOLLOW_MONGO="testValStackFollower${TIMESTAMP}"
-FOLLOW_ARGS="--adapter=dummy --dummyIdentity=0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3"
+FOLLOW_ARGS="--adapter=dummy --dummyIdentity=0xC91763D7F14ac5c5dDfBCD012e0D2A61ab9bDED3"
 
 # Seeding the database
 echo "Using MongoDB database names: $LEAD_MONGO, $FOLLOW_MONGO"

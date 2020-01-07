@@ -1,7 +1,7 @@
 const express = require('express')
 const { promisify } = require('util')
 const { celebrate } = require('celebrate')
-const toBalancesKey = require('../services/sentry/lib/toBalancesKey')
+const toBalancesKey = require('../services/toBalancesKey')
 const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')

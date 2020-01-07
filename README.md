@@ -21,6 +21,13 @@ The validator worker is the only component that actually needs to access the pri
 
 The validator worker connects to the Sentry to pull the latest event aggregates and submit the resulting validator messages.
 
+
+### Address convention
+
+All addresses in the `channel.spec` are serialized as checksummed.
+
+All addresses in the balance trees are lowercased.
+
 ## Sentry: API
 
 #### Do not require authentication, can be cached:
@@ -85,6 +92,12 @@ e.g.
 
 ```sh
 RUST_VALIDATOR_WORKER=./adex-validator-stack-rust/target/debug/validator_worker npm run test-integration
+```
+
+It is also recommended to run with `RUST_ONLY_RUN`, to test interoperability with the JS worker:
+```sh
+RUST_VALIDATOR_WORKER=./adex-validator-stack-rust/target/debug/validator_worker RUST_ONLY_RUN=leader npm run test-integration
+RUST_VALIDATOR_WORKER=./adex-validator-stack-rust/target/debug/validator_worker RUST_ONLY_RUN=follower npm run test-integration
 ```
 
 Run both:

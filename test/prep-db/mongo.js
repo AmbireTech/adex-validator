@@ -3,8 +3,8 @@
 
 const dummyVals = {
 	ids: {
-		leader: '0xce07cbb7e054514d590a0262c93070d838bfba2e',
-		follower: '0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3',
+		leader: '0xce07CbB7e054514D590a0262C93070D838bFBA2e',
+		follower: '0xC91763D7F14ac5c5dDfBCD012e0D2A61ab9bDED3',
 		user: '0x20754168c00a6e58116ccfd0a5f7d1bb66c5de9d',
 		publisher: '0xb7d3f81e857692d13e9d63b232a90f4a1793189e',
 		publisher2: '0x2054b0c1339309597ad04ba47f4590f8cdb4e305',
@@ -31,8 +31,8 @@ const dummyVals = {
 			pricingBounds: { CLICK: { min: '0', max: '0' } },
 			withdrawPeriodStart: 4073414400000,
 			validators: [
-				{ id: '0xce07cbb7e054514d590a0262c93070d838bfba2e', url: 'http://localhost:8005', fee: '100' },
-				{ id: '0xc91763d7f14ac5c5ddfbcd012e0d2a61ab9bded3', url: 'http://localhost:8006', fee: '100' },
+				{ id: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', url: 'http://localhost:8005', fee: '100' },
+				{ id: '0xC91763D7F14ac5c5dDfBCD012e0D2A61ab9bDED3', url: 'http://localhost:8006', fee: '100' },
 			]
 		}
 	}

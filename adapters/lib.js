@@ -31,9 +31,8 @@ async function isChannelValid(cfg, channel, address) {
 		const depositAsset = channel.depositAsset
 
 		assert.ok(
-			cfg.TOKEN_ADDRESS_WHITELIST.every(
-				id =>
-					id === depositAsset || cfg.TOKEN_ADDRESS_WHITELIST.includes(depositAsset.toLowerCase())
+			cfg.TOKEN_ADDRESS_WHITELIST.some(
+				id => id === depositAsset || id.toLowerCase() === depositAsset.toLowerCase()
 			),
 			'channel.depositAsset is not whitelisted'
 		)

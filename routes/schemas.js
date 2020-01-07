@@ -92,6 +92,7 @@ module.exports = {
 				.items(
 					Joi.object({
 						id: Joi.string().required(),
+						feeAddr: Joi.string(),
 						url: Joi.string()
 							.uri({
 								scheme: ['http', 'https']
@@ -129,6 +130,7 @@ module.exports = {
 			Joi.object({
 				type: Joi.string().required(),
 				publisher: Joi.string(),
+				ref: Joi.string().allow(''),
 				adUnit: Joi.string()
 			})
 		)

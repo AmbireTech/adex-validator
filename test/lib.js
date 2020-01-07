@@ -58,14 +58,16 @@ function forceTick() {
 	} --sentryUrl=http://localhost:8006`
 	// using rust validator worker
 	if (process.env.RUST_VALIDATOR_WORKER) {
-		leaderTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
-			dummyVals.ids.leader
-		} -u http://localhost:8005 -t`
-		followerTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
-			dummyVals.ids.follower
-		} -u http://localhost:8006 -t`
+		const onlyRun = process.env.RUST_ONLY_RUN
+		if (!onlyRun || onlyRun === 'follower')
+			leaderTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
+				dummyVals.ids.leader
+			} -u http://localhost:8005 -t`
+		if (!onlyRun || onlyRun === 'leader')
+			followerTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
+				dummyVals.ids.follower
+			} -u http://localhost:8006 -t`
 	}
-
 	return Promise.all([exec(leaderTick), exec(followerTick)])
 }
 
