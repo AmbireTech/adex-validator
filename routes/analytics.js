@@ -114,9 +114,6 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 }
 
 async function advertiserAnalytics(req) {
-	if (req.params.id) {
-		return analytics(req, [req.params.id], true)
-	}
 	return analytics(req, await getAdvertiserChannels(req), true)
 }
 
