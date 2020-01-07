@@ -27,11 +27,13 @@ router.get('/for-publisher/:id', validate, authRequired, channelIfExists, analyt
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
+const YEAR = 365 * DAY
+const ROUGH_MONTH = Math.floor(YEAR / 12)
 function getTimeframe(timeframe) {
 	// every month in one year
-	if (timeframe === 'year') return { period: 365 * DAY, interval: 30 * DAY }
+	if (timeframe === 'year') return { period: YEAR, interval: ROUGH_MONTH }
 	// every day in one month
-	if (timeframe === 'month') return { period: 30 * DAY, interval: DAY }
+	if (timeframe === 'month') return { period: ROUGH_MONTH, interval: DAY }
 	// every 6 hours in a week
 	if (timeframe === 'week') return { period: 7 * DAY, interval: 6 * HOUR }
 	// every hour in one day
