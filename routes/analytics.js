@@ -57,15 +57,7 @@ function getProjAndMatch(session, channelMatch, period, eventType, metric, skipP
 	const match = channelMatch ? { ...filteredMatch, channelId: channelMatch } : filteredMatch
 	const projectValue = publisherId
 		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
-		: {
-				$sum: {
-					$map: {
-						input: { $objectToArray: `$events.${eventType}.${metric}` },
-						as: 'item',
-						in: { $toLong: '$$item.v' }
-					}
-				}
-		  }
+		: { $toLong: `$totals.${eventType}.${metric}` }
 	const project = {
 		created: 1,
 		value: projectValue
