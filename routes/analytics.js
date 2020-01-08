@@ -48,12 +48,7 @@ function getTimeframe(timeframe) {
 function getProjAndMatch(session, channelMatch, period, eventType, metric, skipPublisherFiltering) {
 	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
 	const publisherId = !skipPublisherFiltering && session ? toBalancesKey(session.uid) : null
-	const filteredMatch = publisherId
-		? {
-				...timeMatch,
-				[`events.${eventType}.${metric}.${publisherId}`]: { $exists: true }
-		  }
-		: timeMatch
+	const filteredMatch = publisherId ? { earners: publisherId, ...timeMatch } : timeMatch
 	const match = channelMatch ? { ...filteredMatch, channelId: channelMatch } : filteredMatch
 	const projectValue = publisherId
 		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
