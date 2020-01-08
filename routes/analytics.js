@@ -16,7 +16,7 @@ const getAdvertiserAnalyticsNotCached = (req, res) =>
 const validate = celebrate({ query: schemas.eventTimeAggr })
 
 // Global statistics
-router.get('/', validate, redisCached(300, analytics))
+router.get('/', validate, redisCached(400, analytics))
 router.get('/for-publisher', validate, authRequired, analyticsNotCached)
 router.get('/for-advertiser', validate, authRequired, getAdvertiserAnalyticsNotCached)
 
