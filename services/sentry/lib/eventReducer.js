@@ -54,12 +54,15 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, payout)
 }
 
 function mergeToGlobalAcc(aggr, ev, payout) {
-	const totals = aggr.totals[ev.type] || {
-		eventCounts: '0',
-		eventPayouts: '0'
-	}
-	totals.eventCounts = addAndToString(new BN(totals.eventCounts, 10), new BN(1))
-	totals.eventPayouts = addAndToString(new BN(totals.eventPayouts, 10), payout)
+	const totals = aggr.totals
+	if (!totals[ev.type])
+		totals[ev.type] = {
+			eventCounts: '0',
+			eventPayouts: '0'
+		}
+	const totalsRecord = totals[ev.type]
+	totalsRecord.eventCounts = addAndToString(new BN(totalsRecord.eventCounts, 10), new BN(1))
+	totalsRecord.eventPayouts = addAndToString(new BN(totalsRecord.eventPayouts, 10), payout)
 
 	const earner = toBalancesKey(ev.publisher)
 	const earners = aggr.earners
