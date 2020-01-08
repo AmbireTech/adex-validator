@@ -1,19 +1,23 @@
 const BN = require('bn.js')
+// WARNING: this is a temporary measure - at some point we'll have to change toBalanceKey to do the same as getAddress, see AIP 22
+const { getAddress } = require('ethers').utils
 const toBalancesKey = require('../../toBalancesKey')
 
 function newAggr(channelId) {
-	return { channelId, created: new Date(), events: {} }
+	return { channelId, created: new Date(), events: {}, totals: {}, earners: [] }
 }
 
 function reduce(channel, initialAggr, ev) {
-	const aggr = { ...initialAggr }
+	let aggr = { ...initialAggr }
 	if (ev.type === 'IMPRESSION') {
 		// add the minimum price for the event to the current amount
 		const payout = new BN(channel.spec.minPerImpression || 1)
 		aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, ev, payout)
+		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, ev, payout) }
 	} else if (ev.type === 'CLICK') {
 		const payout = new BN((channel.spec.pricingBounds && channel.spec.pricingBounds.CLICK.min) || 0)
 		aggr.events.CLICK = mergeEv(initialAggr.events.CLICK, ev, payout)
+		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, ev, payout) }
 	} else if (ev.type === 'CLOSE') {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
@@ -49,6 +53,20 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, payout)
 		map.eventPayouts[earner] = addAndToString(currentAmount, payout)
 	}
 	return map
+}
+
+function mergeToGlobalAcc(aggr, ev, payout) {
+	const totals = aggr.totals[ev.type] || {
+		eventCounts: '0',
+		eventPayouts: '0'
+	}
+	totals.eventCounts = addAndToString(new BN(totals.eventCounts, 10), new BN(1))
+	totals.eventPayouts = addAndToString(new BN(totals.eventPayouts, 10), payout)
+
+	const earner = getAddress(ev.publisher)
+	const earners = aggr.earners
+	if (!earners.includes(earner)) earners.push(earner)
+	return { totals, earners }
 }
 
 function addAndToString(first, second) {
