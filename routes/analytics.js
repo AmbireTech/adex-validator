@@ -49,7 +49,7 @@ function getProjAndMatch(session, channelMatch, period, eventType, metric, skipP
 	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
 	const publisherId = !skipPublisherFiltering && session ? toBalancesKey(session.uid) : null
 	const filteredMatch = publisherId ? { earners: publisherId, ...timeMatch } : timeMatch
-	const match = channelMatch ? { ...filteredMatch, channelId: channelMatch } : filteredMatch
+	const match = channelMatch ? { channelId: channelMatch, ...filteredMatch } : filteredMatch
 	const projectValue = publisherId
 		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
 		: { $toLong: `$totals.${eventType}.${metric}` }
