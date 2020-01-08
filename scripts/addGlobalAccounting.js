@@ -1,6 +1,6 @@
-const { getAddress } = require('ethers').utils
 const BN = require('bn.js')
 const db = require('../db')
+const toBalancesKey = require('../services/toBalancesKey')
 
 // eslint-disable-next-line no-console
 const logError = console.error
@@ -21,8 +21,8 @@ async function init() {
 	// eslint-disable-next-line no-cond-assign, no-await-in-loop
 	while ((o = await cur.next())) {
 		const earners = Object.keys(o.events.IMPRESSION ? o.events.IMPRESSION.eventCounts : {})
-			.map(getAddress)
-			.concat(Object.keys(o.events.CLICK ? o.events.CLICK.eventCounts : {}).map(getAddress))
+			.map(toBalancesKey)
+			.concat(Object.keys(o.events.CLICK ? o.events.CLICK.eventCounts : {}).map(toBalancesKey))
 			.filter((x, i, a) => a.indexOf(x) === i)
 		const totals = {}
 		if (o.events.IMPRESSION) totals.IMPRESSION = toTotals(o.events.IMPRESSION)

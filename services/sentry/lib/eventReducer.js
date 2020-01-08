@@ -1,6 +1,4 @@
 const BN = require('bn.js')
-// WARNING: this is a temporary measure - at some point we'll have to change toBalanceKey to do the same as getAddress, see AIP 22
-const { getAddress } = require('ethers').utils
 const toBalancesKey = require('../../toBalancesKey')
 
 function newAggr(channelId) {
@@ -63,7 +61,7 @@ function mergeToGlobalAcc(aggr, ev, payout) {
 	totals.eventCounts = addAndToString(new BN(totals.eventCounts, 10), new BN(1))
 	totals.eventPayouts = addAndToString(new BN(totals.eventPayouts, 10), payout)
 
-	const earner = getAddress(ev.publisher)
+	const earner = toBalancesKey(ev.publisher)
 	const earners = aggr.earners
 	if (!earners.includes(earner)) earners.push(earner)
 	return { totals, earners }
