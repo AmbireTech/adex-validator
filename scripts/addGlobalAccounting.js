@@ -11,7 +11,7 @@ async function init() {
 
 	const cur = aggrs.find(
 		{
-			// earners: { $exists: false },
+			earners: { $exists: false },
 			events: { $exists: true }
 		},
 		{ _id: 1, 'events.IMPRESSION.eventCounts': 1, 'events.CLICK.eventCounts': 1 }
