@@ -32,7 +32,8 @@ async function init() {
 		// eslint-disable-next-line no-plusplus, no-console
 		if (++count % 10000 === 0) console.log(count)
 	}
-	process.exit(0)
+	// waiting 10 seconds as a hack to wait for all updateOne's to finish
+	setTimeout(() => process.exit(0), 10000)
 }
 
 function toTotals(map) {
