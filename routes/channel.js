@@ -217,6 +217,18 @@ function postEvents(req, res, next) {
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
+
+	if (process.env.ANALYTICS_RECORDER) {
+		const referrerHeader = req.headers.referrer
+		const redisCli = db.getRedis()
+		events.forEach(ev => {
+			if (ev.type === 'IMPRESSION' && ev.publisher) {
+				const ref = ev.ref || referrerHeader
+				if (ref) redisCli.zincrby(`pubRefHosts:${ev.publisher}`, 1, ref.split('/')[2], () => {})
+			}
+		})
+	}
+
 	eventAggrService
 		.record(req.params.id, { ...req.session, ip }, events)
 		.then(function(resp) {
