@@ -34,6 +34,13 @@ function record(channel, session, events) {
 						]
 				  ]
 				: []
+			// @TODO the country report needs to be time segmented otherwise it won't really be accurate
+			const countryRep = session.country
+				? [
+						['zincrby', `reportPublisherToCountry:${ev.type}:${ev.publisher}`, 1, session.country]
+						// @TODO collect payouts when we roll out mutable payments info
+				  ]
+				: []
 			const ref = ev.ref || session.referrerHeader
 			const hostname = ref ? ref.split('/')[2] : null
 			const refRep = hostname
@@ -45,7 +52,10 @@ function record(channel, session, events) {
 						['zincrby', `reportChannelToHostnamePay:${ev.type}:${channel.id}`, payAmount, hostname]
 				  ]
 				: []
-			return adUnitRep.concat(adSlotRep).concat(refRep)
+			return adUnitRep
+				.concat(adSlotRep)
+				.concat(countryRep)
+				.concat(refRep)
 		})
 		.reduce((a, b) => a.concat(b), [])
 	if (batch.length)
