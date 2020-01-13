@@ -217,6 +217,7 @@ function postEvents(req, res, next) {
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
+	const channelId = req.params.id
 
 	if (process.env.ANALYTICS_RECORDER) {
 		// @TODO: split in a separate file
@@ -225,37 +226,35 @@ function postEvents(req, res, next) {
 		const referrerHeader = req.headers.referrer
 		const redisCli = db.getRedis()
 		const batch = events
+			.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
 			.map(ev => {
-				if (ev.type === 'IMPRESSION' && ev.publisher) {
-					// @TODO: if adUnit
-					const adUnitRep = ev.adUnit
-						? [
-								// publisher -> ad unit -> impressions; answers which ad units are shown the most
-								['zincrby', `reportPublisherToAdUnit:${ev.publisher}`, 1, ev.adUnit],
-								// campaignId -> ad unit -> impressions, clicks (will calculate %, CTR); answers which of the units performed best
-								['zincrby', `reportCampaignToAdUnit:${req.params.id}`, 1, ev.adUnit]
-						  ]
-						: []
-					const ref = ev.ref || referrerHeader
-					const hostname = ref ? ref.split('/')[2] : null
-					const refRep = hostname
-						? [
-								// publisher -> hostname -> impressions; answers which websites (properties) perform best
-								['zincrby', `reportPublisherToHostname:${ev.publisher}`, 1, hostname],
-								// campaignId -> hostname -> impressions, clicks (will calculate %, CTR); answers on which websites did I spend my money on
-								['zincrby', `reportCampaignToHostname:${req.params.id}`, 1, hostname]
-						  ]
-						: []
-					return adUnitRep.concat(refRep)
-				}
-				return []
+				// @TODO: if adUnit
+				const adUnitRep = ev.adUnit
+					? [
+							// publisher -> ad unit -> impressions; answers which ad units are shown the most
+							['zincrby', `reportPublisherToAdUnit:${ev.type}:${ev.publisher}`, 1, ev.adUnit],
+							// campaignId -> ad unit -> impressions, clicks (will calculate %, CTR); answers which of the units performed best
+							['zincrby', `reportChannelToAdUnit:${ev.type}:${channelId}`, 1, ev.adUnit]
+					  ]
+					: []
+				const ref = ev.ref || referrerHeader
+				const hostname = ref ? ref.split('/')[2] : null
+				const refRep = hostname
+					? [
+							// publisher -> hostname -> impressions; answers which websites (properties) perform best
+							['zincrby', `reportPublisherToHostname:${ev.type}:${ev.publisher}`, 1, hostname],
+							// campaignId -> hostname -> impressions, clicks (will calculate %, CTR); answers on which websites did I spend my money on
+							['zincrby', `reportChannelToHostname:${ev.type}:${channelId}`, 1, hostname]
+					  ]
+					: []
+				return adUnitRep.concat(refRep)
 			})
 			.reduce((a, b) => a.concat(b), [])
 		if (batch.length) redisCli.batch(batch, () => {})
 	}
 
 	eventAggrService
-		.record(req.params.id, { ...req.session, ip }, events)
+		.record(channelId, { ...req.session, ip }, events)
 		.then(function(resp) {
 			res.status(resp.statusCode || 200).send(resp)
 		})
