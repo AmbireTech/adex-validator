@@ -219,14 +219,34 @@ function postEvents(req, res, next) {
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
 
 	if (process.env.ANALYTICS_RECORDER) {
+		// @TODO: split in a separate file
+		// analyticsRecorderService.record(req.params.id, session, events)
+
 		const referrerHeader = req.headers.referrer
 		const redisCli = db.getRedis()
 		const batch = events
 			.map(ev => {
 				if (ev.type === 'IMPRESSION' && ev.publisher) {
+					// @TODO: if adUnit
+					const adUnitRep = ev.adUnit
+						? [
+								// publisher -> ad unit -> impressions; answers which ad units are shown the most
+								['zincrby', `reportPublisherToAdUnit:${ev.publisher}`, 1, ev.adUnit],
+								// campaignId -> ad unit -> impressions, clicks (will calculate %, CTR); answers which of the units performed best
+								['zincrby', `reportCampaignToAdUnit:${req.params.id}`, 1, ev.adUnit]
+						  ]
+						: []
 					const ref = ev.ref || referrerHeader
-					if (ref)
-						return [['zincrby', `reportPublisherToHostname:${ev.publisher}`, 1, ref.split('/')[2]]]
+					const hostname = ref ? ref.split('/')[2] : null
+					const refRep = hostname
+						? [
+								// publisher -> hostname -> impressions; answers which websites (properties) perform best
+								['zincrby', `reportPublisherToHostname:${ev.publisher}`, 1, hostname],
+								// campaignId -> hostname -> impressions, clicks (will calculate %, CTR); answers on which websites did I spend my money on
+								['zincrby', `reportCampaignToHostname:${req.params.id}`, 1, hostname]
+						  ]
+						: []
+					return adUnitRep.concat(refRep)
 				}
 				return []
 			})
