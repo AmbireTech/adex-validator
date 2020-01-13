@@ -221,12 +221,17 @@ function postEvents(req, res, next) {
 	if (process.env.ANALYTICS_RECORDER) {
 		const referrerHeader = req.headers.referrer
 		const redisCli = db.getRedis()
-		events.forEach(ev => {
-			if (ev.type === 'IMPRESSION' && ev.publisher) {
-				const ref = ev.ref || referrerHeader
-				if (ref) redisCli.zincrby(`pubRefHosts:${ev.publisher}`, 1, ref.split('/')[2], () => {})
-			}
-		})
+		const batch = events
+			.map(ev => {
+				if (ev.type === 'IMPRESSION' && ev.publisher) {
+					const ref = ev.ref || referrerHeader
+					if (ref)
+						return [['zincrby', `reportPublisherToHostname:${ev.publisher}`, 1, ref.split('/')[2]]]
+				}
+				return []
+			})
+			.reduce((a, b) => a.concat(b), [])
+		if (batch.length) redisCli.batch(batch, () => {})
 	}
 
 	eventAggrService
