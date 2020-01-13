@@ -5,6 +5,7 @@ const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
+// const getPayout = require('../services/sentry/lib/getPayout')
 
 const router = express.Router()
 
@@ -228,13 +229,25 @@ function postEvents(req, res, next) {
 		const batch = events
 			.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
 			.map(ev => {
-				// @TODO: if adUnit
+				// @TODO no channel...
+				// const payout = getPayout(channel, ev)
+				// This should never happen, as the conditions we are checking for in the .filter are the same as getPayout's
+				// if (!payout) return []
+				// @TODO is there a way to get rid of this ugly hardcode (10**18)?
+				// const payoutAmount = payout[1].toNumber() / 10**18
 				const adUnitRep = ev.adUnit
 					? [
 							// publisher -> ad unit -> impressions; answers which ad units are shown the most
 							['zincrby', `reportPublisherToAdUnit:${ev.type}:${ev.publisher}`, 1, ev.adUnit],
 							// campaignId -> ad unit -> impressions, clicks (will calculate %, CTR); answers which of the units performed best
 							['zincrby', `reportChannelToAdUnit:${ev.type}:${channelId}`, 1, ev.adUnit]
+					  ]
+					: []
+				const adSlotRep = ev.adSlot
+					? [
+							// publisher -> ad slot -> impressions, clicks (will calculate %, CTR); answers which of my slots perform best
+							['zincrby', `reportPublisherToAdSlot:${ev.type}:${ev.publisher}`, 1, ev.adSlot]
+							// ['zincrby', `reportPublisherToAdSlotPay:${ev.type}:${ev.publisher}`, payoutAmount, ev.adSlot],
 					  ]
 					: []
 				const ref = ev.ref || referrerHeader
@@ -245,9 +258,10 @@ function postEvents(req, res, next) {
 							['zincrby', `reportPublisherToHostname:${ev.type}:${ev.publisher}`, 1, hostname],
 							// campaignId -> hostname -> impressions, clicks (will calculate %, CTR); answers on which websites did I spend my money on
 							['zincrby', `reportChannelToHostname:${ev.type}:${channelId}`, 1, hostname]
+							// ['zincrby', `reportChannelToHostnamePay:${ev.type}:${channelId}`, payoutAmount, hostname],
 					  ]
 					: []
-				return adUnitRep.concat(refRep)
+				return adUnitRep.concat(adSlotRep).concat(refRep)
 			})
 			.reduce((a, b) => a.concat(b), [])
 		if (batch.length) redisCli.batch(batch, () => {})
