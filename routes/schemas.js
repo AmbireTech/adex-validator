@@ -131,7 +131,8 @@ module.exports = {
 				type: Joi.string().required(),
 				publisher: Joi.string(),
 				ref: Joi.string().allow(''),
-				adUnit: Joi.string()
+				adUnit: Joi.string(),
+				adSlot: Joi.string()
 			})
 		)
 	},

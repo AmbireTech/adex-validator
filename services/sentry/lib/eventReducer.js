@@ -1,5 +1,6 @@
 const BN = require('bn.js')
 const toBalancesKey = require('../../toBalancesKey')
+const getPayout = require('./getPayout')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {}, totals: {}, earners: [] }
@@ -7,16 +8,18 @@ function newAggr(channelId) {
 
 function reduce(channel, initialAggr, ev) {
 	let aggr = { ...initialAggr }
-	if (ev.type === 'IMPRESSION') {
-		// add the minimum price for the event to the current amount
-		const payout = new BN(channel.spec.minPerImpression || 1)
-		aggr.events.IMPRESSION = mergeEv(initialAggr.events.IMPRESSION, ev, payout)
-		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, ev, payout) }
-	} else if (ev.type === 'CLICK') {
-		const payout = new BN((channel.spec.pricingBounds && channel.spec.pricingBounds.CLICK.min) || 0)
-		aggr.events.CLICK = mergeEv(initialAggr.events.CLICK, ev, payout)
-		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, ev, payout) }
-	} else if (ev.type === 'CLOSE') {
+
+	const payout = getPayout(channel, ev)
+	if (payout) {
+		aggr.events[ev.type] = mergeEv(initialAggr.events[ev.type], payout)
+		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, ev.type, payout) }
+	}
+
+	// Closing is a special case: we don't add it to the global accounting,
+	// we simply pay the deposit back to the advertiser and count the event
+	// When the Validator merges aggrs into the balance tree, it ensures it doesn't overflow the total deposit,
+	// therefore only the remaining funds will be distributed back to the channel creator
+	if (ev.type === 'CLOSE') {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
 			eventCounts: {
@@ -31,13 +34,11 @@ function reduce(channel, initialAggr, ev) {
 	return aggr
 }
 
-function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, payout) {
+function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, [earner, amount]) {
 	const map = {
 		eventCounts: { ...initialMap.eventCounts },
 		eventPayouts: { ...initialMap.eventPayouts }
 	}
-	if (typeof ev.publisher !== 'string') return map
-	const earner = toBalancesKey(ev.publisher)
 	if (!map.eventCounts[earner]) map.eventCounts[earner] = '0'
 	if (!map.eventPayouts[earner]) map.eventPayouts[earner] = '0'
 
@@ -46,25 +47,24 @@ function mergeEv(initialMap = { eventCounts: {}, eventPayouts: {} }, ev, payout)
 	map.eventCounts[earner] = addAndToString(newEventCounts, new BN(1))
 
 	// current earner payout
-	if (payout.gt(new BN(0))) {
+	if (amount.gt(new BN(0))) {
 		const currentAmount = new BN(map.eventPayouts[earner], 10)
-		map.eventPayouts[earner] = addAndToString(currentAmount, payout)
+		map.eventPayouts[earner] = addAndToString(currentAmount, amount)
 	}
 	return map
 }
 
-function mergeToGlobalAcc(aggr, ev, payout) {
+function mergeToGlobalAcc(aggr, evType, [earner, amount]) {
 	const totals = aggr.totals
-	if (!totals[ev.type])
-		totals[ev.type] = {
+	if (!totals[evType])
+		totals[evType] = {
 			eventCounts: '0',
 			eventPayouts: '0'
 		}
-	const totalsRecord = totals[ev.type]
+	const totalsRecord = totals[evType]
 	totalsRecord.eventCounts = addAndToString(new BN(totalsRecord.eventCounts, 10), new BN(1))
-	totalsRecord.eventPayouts = addAndToString(new BN(totalsRecord.eventPayouts, 10), payout)
+	totalsRecord.eventPayouts = addAndToString(new BN(totalsRecord.eventPayouts, 10), amount)
 
-	const earner = toBalancesKey(ev.publisher)
 	const earners = aggr.earners
 	if (!earners.includes(earner)) earners.push(earner)
 	return { totals, earners }

@@ -214,11 +214,13 @@ function postValidatorMessages(req, res, next) {
 
 function postEvents(req, res, next) {
 	const { events } = req.body
+	const referrerHeader = req.headers.referrer
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
+	const country = req.headers['cf-ipcountry']
 	eventAggrService
-		.record(req.params.id, { ...req.session, ip }, events)
+		.record(req.params.id, { ...req.session, ip, country, referrerHeader }, events)
 		.then(function(resp) {
 			res.status(resp.statusCode || 200).send(resp)
 		})

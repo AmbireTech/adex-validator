@@ -9,6 +9,7 @@ const {
 } = require('../services/validatorWorker/lib/followerRules')
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const eventReducer = require('../services/sentry/lib/eventReducer')
+const getPayout = require('../services/sentry/lib/getPayout')
 const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
 const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
 
@@ -362,6 +363,15 @@ tape('eventReducer: newAggr', function(t) {
 	t.deepEqual(aggr.events, {}, 'should have empty events')
 	t.ok(aggr.created, 'should have created at date')
 
+	t.end()
+})
+
+tape('getPayout: get event payouts', function(t) {
+	const pricingBounds = { CLICK: { min: new BN(23) } }
+	const channel = { depositAmount: '100', spec: { minPerImpression: '8', pricingBounds } }
+	t.deepEqual(getPayout(channel, { publisher: 'test1', type: 'IMPRESSION' }), ['test1', new BN(8)])
+	t.deepEqual(getPayout(channel, { publisher: 'test2', type: 'CLICK' }), ['test2', new BN(23)])
+	t.deepEqual(getPayout(channel, { type: 'CLOSE' }), null)
 	t.end()
 })
 
