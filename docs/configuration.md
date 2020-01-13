@@ -10,7 +10,12 @@
 | EVENTS_FIND_LIMIT | Limit on number of events to return | 100 |
 | MSGS_FIND_LIMIT | Limit on number of validator messages to return | 10 |
 | HEALTH_THRESHOLD_PROMILLES | Threshold of correctness allowed before a channel is marked unhealthy | 950 |
+| HEALTH_UNSIGNABLE_PROMILLES | Threshold of correctness before a state is rejected | 750/770 |
 | PROPAGATION_TIMEOUT | HTTP request propagation timeout | 3000 |
+| FETCH_TIMEOUT | Validator stack request timeout | 3000 |
+| LIST_TIMEOUT | Validator stack channel request timeout | 3000 |
+| IP_RATE_LIMIT | Rate limit based on IP addresses | { type: 'ip', timeframe: 60000 } |
+| MINIMAL_FEE | Least fee amount a validator requires to process a channel | 0 |
 | CREATORS_WHITELIST | List of accepted channel creators; leave empty for all | [] |
 | MINIMAL_DEPOSIT | Least amount a channel is required to have to be accepted | 0 |
 | TOKEN_ADDRESS_WHITELIST | List of valid payment tokens address; leave empty for all | [] |

@@ -65,7 +65,6 @@ Get channel status, and the validator sig(s); should each node maintain all sigs
             depositAsset: 'DAI',
             depositAmount: '1000',
             creator: 'awesomeCreator',
-            // UNIX timestamp for 2100-01-01
             validUntil: 4102444800,
             spec: {
                 minPerImpression: '1',
@@ -382,9 +381,9 @@ Get a specific channel analytics
         ]
         ```
 
-#### Publisher Analytics
+#### Global Publisher Analytics
 
-Get a publisher analytics
+Get global publisher analytics
 
 - URL
 
@@ -393,6 +392,38 @@ Get a publisher analytics
 - METHOD
 
 `GET`
+
+- HEADERS
+    
+    `authorization [ eg. 'Bearer xxx']`
+
+- Reponse 
+
+    * Success
+        ```js
+        [ 
+            {
+                time: 4102444800
+                value: "10"
+            }
+        ]
+        ```
+
+#### Publisher Analytics
+
+Get publisher analytics
+
+- URL
+
+/analytics/for-publisher/:id
+
+- METHOD
+
+`GET`
+
+- URL Params
+
+`id=[string] ChannelId (optional)`
 
 - HEADERS
     
