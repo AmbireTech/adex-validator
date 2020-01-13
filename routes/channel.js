@@ -5,7 +5,6 @@ const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
-// const getPayout = require('../services/sentry/lib/getPayout')
 
 const router = express.Router()
 

@@ -120,6 +120,8 @@ npm test && npm run test-integration
 
 ``NODE_ENV`` - if set to `production`, we will load the production configuration (see `cfg/`)
 
+``ANALYTICS_RECORDER`` - if set to anything, we'll collect analytical reports as per [AIP 23](https://github.com/AdExNetwork/aips/issues/23)
+
 ## Command line arguments
 
 Those affect the fundamental mode of operation: e.g. whether we run with the dummy adapter (for testing/development purposes) or with the Ethereum adapter.
