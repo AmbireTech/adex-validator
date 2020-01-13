@@ -1,6 +1,7 @@
 const throttle = require('lodash.throttle')
 const db = require('../../db')
 const cfg = require('../../cfg')
+const analyticsRecorder = require('./analyticsRecorder')
 const eventReducer = require('./lib/eventReducer')
 const checkAccess = require('./lib/access')
 const logger = require('../logger')('sentry')
@@ -61,6 +62,11 @@ function makeRecorder(channelId) {
 		const hasAccess = await checkAccess(channel, session, events)
 		if (!hasAccess.success) {
 			return hasAccess
+		}
+
+		// No need to wait for this, it's simply a stats recorder
+		if (process.env.ANALYTICS_RECORDER) {
+			analyticsRecorder.record(channel, session, events)
 		}
 
 		// Keep in mind that at one point validator messages will be able to change payment/bidding information

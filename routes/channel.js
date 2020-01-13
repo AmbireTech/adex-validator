@@ -215,60 +215,13 @@ function postValidatorMessages(req, res, next) {
 
 function postEvents(req, res, next) {
 	const { events } = req.body
+	const referrerHeader = req.headers.referrer
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
-	const channelId = req.params.id
-
-	if (process.env.ANALYTICS_RECORDER) {
-		// @TODO: split in a separate file
-		// analyticsRecorderService.record(req.params.id, session, events)
-
-		const referrerHeader = req.headers.referrer
-		const redisCli = db.getRedis()
-		const batch = events
-			.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
-			.map(ev => {
-				// @TODO no channel...
-				// const payout = getPayout(channel, ev)
-				// This should never happen, as the conditions we are checking for in the .filter are the same as getPayout's
-				// if (!payout) return []
-				// @TODO is there a way to get rid of this ugly hardcode (10**18)?
-				// const payoutAmount = payout[1].toNumber() / 10**18
-				const adUnitRep = ev.adUnit
-					? [
-							// publisher -> ad unit -> impressions; answers which ad units are shown the most
-							['zincrby', `reportPublisherToAdUnit:${ev.type}:${ev.publisher}`, 1, ev.adUnit],
-							// campaignId -> ad unit -> impressions, clicks (will calculate %, CTR); answers which of the units performed best
-							['zincrby', `reportChannelToAdUnit:${ev.type}:${channelId}`, 1, ev.adUnit]
-					  ]
-					: []
-				const adSlotRep = ev.adSlot
-					? [
-							// publisher -> ad slot -> impressions, clicks (will calculate %, CTR); answers which of my slots perform best
-							['zincrby', `reportPublisherToAdSlot:${ev.type}:${ev.publisher}`, 1, ev.adSlot]
-							// ['zincrby', `reportPublisherToAdSlotPay:${ev.type}:${ev.publisher}`, payoutAmount, ev.adSlot],
-					  ]
-					: []
-				const ref = ev.ref || referrerHeader
-				const hostname = ref ? ref.split('/')[2] : null
-				const refRep = hostname
-					? [
-							// publisher -> hostname -> impressions; answers which websites (properties) perform best
-							['zincrby', `reportPublisherToHostname:${ev.type}:${ev.publisher}`, 1, hostname],
-							// campaignId -> hostname -> impressions, clicks (will calculate %, CTR); answers on which websites did I spend my money on
-							['zincrby', `reportChannelToHostname:${ev.type}:${channelId}`, 1, hostname]
-							// ['zincrby', `reportChannelToHostnamePay:${ev.type}:${channelId}`, payoutAmount, hostname],
-					  ]
-					: []
-				return adUnitRep.concat(adSlotRep).concat(refRep)
-			})
-			.reduce((a, b) => a.concat(b), [])
-		if (batch.length) redisCli.batch(batch, () => {})
-	}
-
+	const country = req.headers['cf-ipcountry']
 	eventAggrService
-		.record(channelId, { ...req.session, ip }, events)
+		.record(req.params.id, { ...req.session, ip, country, referrerHeader }, events)
 		.then(function(resp) {
 			res.status(resp.statusCode || 200).send(resp)
 		})
