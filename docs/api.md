@@ -16,8 +16,6 @@
 
 `page=[integer]` (optional) default: 0
 
-`creator=[string]` (optional)
-
 `validUntil=[timestamp]` (optional) filters per `channel.validUntil` > `validUntil`
 
 - Response
@@ -31,7 +29,6 @@
                     depositAsset: 'DAI',
                     depositAmount: '1000',
                     creator: 'awesomeCreator',
-                    // UNIX timestamp for 2100-01-01
                     validUntil: 4102444800,
                     spec: {
                         minPerImpression: '1',
@@ -68,7 +65,6 @@ Get channel status, and the validator sig(s); should each node maintain all sigs
             depositAsset: 'DAI',
             depositAmount: '1000',
             creator: 'awesomeCreator',
-            // UNIX timestamp for 2100-01-01
             validUntil: 4102444800,
             spec: {
                 minPerImpression: '1',
@@ -79,50 +75,6 @@ Get channel status, and the validator sig(s); should each node maintain all sigs
             }
         }
     ```
-
-#### Close channel
-
-Event to close a channel. Only a channel creator is allowed to close a channel
-
-- URL
-
-/channel/:id/events/close
-
-- HEADERS
-
-    `authorization [ eg. Bearer xxx]`
-
-    `content-type [application/json]`
-
-- METHOD
-
-`POST`
-
-- Data Params
-
-`events=[array] [Required] 
-    Example: [
-        {
-            'type': 'CLOSE'
-        }
-    ]
-`
-
-- Response
-
-    * Success
-
-        ```js
-        {
-            success: true
-        }
-        ```
-
-    * Error
-        * Code: 401
-            Message: Unauthorized
-        * Code: 400
-            Message: Error occurred
 
 ---
 
@@ -376,3 +328,143 @@ Submit channel events to a validator sentry
     * Error
         * Code: 401
         Message: Unauthorized
+
+--
+
+## Analytics
+
+#### Global Analytics
+
+Get global analytics for validator
+
+- URL
+
+/analytics
+
+- METHOD
+
+`GET`
+
+- Response
+
+    * Success
+        ```js
+        [ 
+            {
+                time: 4102444800
+                value: "10"
+            }
+        ]
+        ```
+
+#### Channel Analytics
+
+Get a specific channel analytics
+
+- URL
+
+/analytics/:id
+
+- METHOD
+
+`GET`
+
+- Response
+
+    * Success
+        ```js
+        [ 
+            {
+                time: 4102444800
+                value: "10"
+            }
+        ]
+        ```
+
+#### Global Publisher Analytics
+
+Get global publisher analytics
+
+- URL
+
+/analytics/for-publisher
+
+- METHOD
+
+`GET`
+
+- HEADERS
+    
+    `authorization [ eg. 'Bearer xxx']`
+
+- Reponse 
+
+    * Success
+        ```js
+        [ 
+            {
+                time: 4102444800
+                value: "10"
+            }
+        ]
+        ```
+
+#### Publisher Analytics
+
+Get publisher analytics
+
+- URL
+
+/analytics/for-publisher/:id
+
+- METHOD
+
+`GET`
+
+- URL Params
+
+`id=[string] ChannelId (optional)`
+
+- HEADERS
+    
+    `authorization [ eg. 'Bearer xxx']`
+
+- Reponse 
+
+    * Success
+        ```js
+        [ 
+            {
+                time: 4102444800
+                value: "10"
+            }
+        ]
+        ```
+
+#### Advertiser Analytics
+
+Get a specific advertiser analytics
+
+- URL
+
+/analytics/for-advertiser
+
+- METHOD
+
+`GET`
+
+- HEADERS
+    
+    `authorization [ eg. 'Bearer xxx']`
+
+- Reponse 
+
+    * Success
+        ```js
+        [ 
+            {
+                time: 4102444800
+                value: "10"
+            }
+        ]
+        ```
