@@ -1,8 +1,8 @@
 const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
 const { Wallet, Contract, utils, getDefaultProvider } = require('ethers')
 const coreABI = require('adex-protocol-eth/abi/AdExCore')
-const identityABI = require('adex-protocol-eth/abi/Identity')
 const formatAddress = require('ethers').utils.getAddress
+const fetch = require('node-fetch')
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
@@ -98,9 +98,13 @@ function Adapter(opts, cfg, ethProvider) {
 		// @TODO: validate era here too
 		let sess = { era: payload.era }
 		if (typeof payload.identity === 'string' && payload.identity.length === 42) {
-			const id = new Contract(payload.identity, identityABI, provider)
-			const privLevel = await id.privileges(from)
-			if (privLevel === 0) return Promise.reject(new Error('insufficient privilege'))
+			const identitiesOwned = await fetch(
+				`${cfg.ETHEREUM_ADAPTER_RELAYER}/identity/by-owner/${from}`
+			).then(r => r.json())
+			const privEntry = Object.entries(identitiesOwned || {}).find(
+				([k, v]) => k.toLowerCase() === payload.identity.toLowerCase() && v
+			)
+			if (!privEntry) return Promise.reject(new Error('insufficient privilege'))
 			sess = { uid: payload.identity, ...sess }
 		} else {
 			sess = { uid: from, ...sess }

@@ -19,5 +19,6 @@ module.exports = {
 	MINIMAL_FEE: 0,
 	ETHEREUM_CORE_ADDR: '0x333420fc6a897356e69b62417cd17ff012177d2b',
 	ETHEREUM_NETWORK: 'goerli',
+	ETHEREUM_ADAPTER_RELAYER: 'https://goerli-relayer.adex.network',
 	VALIDATORS_WHITELIST: []
 }
