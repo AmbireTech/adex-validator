@@ -98,10 +98,9 @@ function Adapter(opts, cfg, ethProvider) {
 		// @TODO: validate era here too
 		let sess = { era: payload.era }
 		if (typeof payload.identity === 'string' && payload.identity.length === 42) {
-			const identitiesOwned = await fetch(
-				`${cfg.ETHEREUM_ADAPTER_RELAYER}/identity/by-owner/${from}`
-			).then(r => r.json())
-			const privEntry = Object.entries(identitiesOwned || {}).find(
+			const relayerUrl = `${cfg.ETHEREUM_ADAPTER_RELAYER}/identity/by-owner/${from}`
+			const identitiesOwned = await fetch(relayerUrl).then(r => r.json())
+			const privEntry = Object.entries(identitiesOwned).find(
 				([k, v]) => k.toLowerCase() === payload.identity.toLowerCase() && v
 			)
 			if (!privEntry) return Promise.reject(new Error('insufficient privilege'))
