@@ -87,13 +87,11 @@ function Adapter(opts, cfg, ethProvider) {
 		const tokenId = token.slice(0, -16)
 		if (tokensVerified.has(tokenId)) {
 			// @TODO: validate era
-			return Promise.resolve(tokensVerified.get(tokenId))
+			return tokensVerified.get(tokenId)
 		}
 		const { from, payload } = await ewt.verify(token)
 		if (payload.id !== this.whoami()) {
-			return Promise.reject(
-				new Error('token payload.id !== whoami(): token was not intended for us')
-			)
+			throw new Error('token payload.id !== whoami(): token was not intended for us')
 		}
 		// @TODO: validate era here too
 		let sess = { era: payload.era }
@@ -103,7 +101,7 @@ function Adapter(opts, cfg, ethProvider) {
 			const privEntry = Object.entries(identitiesOwned).find(
 				([k, v]) => k.toLowerCase() === payload.identity.toLowerCase() && v
 			)
-			if (!privEntry) return Promise.reject(new Error('insufficient privilege'))
+			if (!privEntry) throw new Error('insufficient privilege')
 			sess = { uid: payload.identity, ...sess }
 		} else {
 			sess = { uid: from, ...sess }

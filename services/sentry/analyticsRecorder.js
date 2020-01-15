@@ -4,6 +4,10 @@ const logger = require('../logger')('sentry')
 
 const redisCli = db.getRedis()
 
+function getEpoch() {
+	return Math.floor(Date.now() / 2628000000)
+}
+
 function record(channel, session, events) {
 	const batch = events
 		.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
@@ -37,7 +41,12 @@ function record(channel, session, events) {
 			// @TODO the country report needs to be time segmented otherwise it won't really be accurate
 			const countryRep = session.country
 				? [
-						['zincrby', `reportPublisherToCountry:${ev.type}:${ev.publisher}`, 1, session.country]
+						[
+							'zincrby',
+							`reportPublisherToCountry:${getEpoch()}:${ev.type}:${ev.publisher}`,
+							1,
+							session.country
+						]
 						// @TODO collect payouts when we roll out mutable payments info
 				  ]
 				: []
