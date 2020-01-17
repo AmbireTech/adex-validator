@@ -108,7 +108,5 @@ async function getAdvancedReports({ evType, publisher, channels = [] }) {
 
 	return { publisherStats, byChannelStats }
 }
-// getAdvancedReports({ evType: 'IMPRESSION', publisher: '0xd5860d6196a4900bf46617cef088ee6e6b61c9d6', channels: ['0xb29f1517eb63cfde3af5c6c01bee724b81fef22d9a1267b748a07d315ee19651'] })
-//	.then(x => console.log(JSON.stringify(x)))
 
 module.exports = { record, getAdvancedReports }

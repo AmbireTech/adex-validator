@@ -2,6 +2,7 @@ const express = require('express')
 const { promisify } = require('util')
 const { celebrate } = require('celebrate')
 const toBalancesKey = require('../services/toBalancesKey')
+const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
@@ -19,6 +20,9 @@ const validate = celebrate({ query: schemas.eventTimeAggr })
 router.get('/', validate, redisCached(400, analytics))
 router.get('/for-publisher', validate, authRequired, analyticsNotCached)
 router.get('/for-advertiser', validate, authRequired, getAdvertiserAnalyticsNotCached)
+
+// Advanced statistics
+router.get('/advanced', validate, authRequired, advancedAnalytics)
 
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
@@ -104,6 +108,13 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 
 async function advertiserAnalytics(req) {
 	return analytics(req, await getAdvertiserChannels(req), true)
+}
+
+async function advancedAnalytics(req) {
+	const evType = req.query.eventType
+	const publisher = toBalancesKey(req.session.uid)
+	const channels = await getAdvertiserChannels(req)
+	return getAdvancedReports({ evType, publisher, channels })
 }
 
 function getAdvertiserChannels(req) {
