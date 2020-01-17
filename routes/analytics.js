@@ -11,7 +11,10 @@ const router = express.Router()
 const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
 const authRequired = (req, res, next) => (req.session ? next() : res.sendStatus(401))
-const notCached = fn => (req, res) => fn(req).then(res.json.bind(res))
+const notCached = fn => (req, res, next) =>
+	fn(req)
+		.then(res.json.bind(res))
+		.catch(next)
 const validate = celebrate({ query: schemas.eventTimeAggr })
 
 // Global statistics
