@@ -12,14 +12,12 @@ const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
 const authRequired = (req, res, next) => (req.session ? next() : res.sendStatus(401))
 const notCached = fn => (req, res) => fn(req).then(res.json.bind(res))
-const getAdvertiserAnalyticsNotCached = (req, res) =>
-	advertiserAnalytics(req).then(res.json.bind(res))
 const validate = celebrate({ query: schemas.eventTimeAggr })
 
 // Global statistics
 router.get('/', validate, redisCached(400, analytics))
 router.get('/for-publisher', validate, authRequired, notCached(analytics))
-router.get('/for-advertiser', validate, authRequired, getAdvertiserAnalyticsNotCached)
+router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalytics))
 
 // Advanced statistics
 router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
