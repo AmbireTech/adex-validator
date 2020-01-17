@@ -1,6 +1,7 @@
 const { promisify } = require('util')
 const db = require('../../db')
 const getPayout = require('./lib/getPayout')
+const toBalancesKey = require('../toBalancesKey')
 const logger = require('../logger')('sentry')
 
 const redisCli = db.getRedis()
@@ -14,6 +15,7 @@ function record(channel, session, events) {
 		.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
 		.map(ev => {
 			const payout = getPayout(channel, ev)
+			const publisher = toBalancesKey(ev.publisher)
 			// This should never happen, as the conditions we are checking for in the .filter are the same as getPayout's
 			if (!payout) return []
 			// @TODO is there a way to get rid of this ugly hardcode (10**18)?
@@ -22,7 +24,7 @@ function record(channel, session, events) {
 			const adUnitRep = ev.adUnit
 				? [
 						// publisher -> ad unit -> impressions; answers which ad units are shown the most
-						['zincrby', `reportPublisherToAdUnit:${ev.type}:${ev.publisher}`, 1, ev.adUnit],
+						['zincrby', `reportPublisherToAdUnit:${ev.type}:${publisher}`, 1, ev.adUnit],
 						// campaignId -> ad unit -> impressions, clicks (will calculate %, CTR); answers which of the units performed best
 						['zincrby', `reportChannelToAdUnit:${ev.type}:${channel.id}`, 1, ev.adUnit]
 				  ]
@@ -30,13 +32,8 @@ function record(channel, session, events) {
 			const adSlotRep = ev.adSlot
 				? [
 						// publisher -> ad slot -> impressions, clicks (will calculate %, CTR); answers which of my slots perform best
-						['zincrby', `reportPublisherToAdSlot:${ev.type}:${ev.publisher}`, 1, ev.adSlot],
-						[
-							'zincrby',
-							`reportPublisherToAdSlotPay:${ev.type}:${ev.publisher}`,
-							payAmount,
-							ev.adSlot
-						]
+						['zincrby', `reportPublisherToAdSlot:${ev.type}:${publisher}`, 1, ev.adSlot],
+						['zincrby', `reportPublisherToAdSlotPay:${ev.type}:${publisher}`, payAmount, ev.adSlot]
 				  ]
 				: []
 			// @TODO the country report needs to be time segmented otherwise it won't really be accurate
@@ -44,7 +41,7 @@ function record(channel, session, events) {
 				? [
 						[
 							'zincrby',
-							`reportPublisherToCountry:${getEpoch()}:${ev.type}:${ev.publisher}`,
+							`reportPublisherToCountry:${getEpoch()}:${ev.type}:${publisher}`,
 							1,
 							session.country
 						]
@@ -56,7 +53,7 @@ function record(channel, session, events) {
 			const refRep = hostname
 				? [
 						// publisher -> hostname -> impressions; answers which websites (properties) perform best
-						['zincrby', `reportPublisherToHostname:${ev.type}:${ev.publisher}`, 1, hostname],
+						['zincrby', `reportPublisherToHostname:${ev.type}:${publisher}`, 1, hostname],
 						// campaignId -> hostname -> impressions, clicks (will calculate %, CTR); answers on which websites did I spend my money on
 						['zincrby', `reportChannelToHostname:${ev.type}:${channel.id}`, 1, hostname],
 						['zincrby', `reportChannelToHostnamePay:${ev.type}:${channel.id}`, payAmount, hostname]
