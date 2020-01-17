@@ -11,22 +11,22 @@ const router = express.Router()
 const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
 const authRequired = (req, res, next) => (req.session ? next() : res.sendStatus(401))
-const analyticsNotCached = (req, res) => analytics(req).then(res.json.bind(res))
+const notCached = fn => (req, res) => fn(req).then(res.json.bind(res))
 const getAdvertiserAnalyticsNotCached = (req, res) =>
 	advertiserAnalytics(req).then(res.json.bind(res))
 const validate = celebrate({ query: schemas.eventTimeAggr })
 
 // Global statistics
 router.get('/', validate, redisCached(400, analytics))
-router.get('/for-publisher', validate, authRequired, analyticsNotCached)
+router.get('/for-publisher', validate, authRequired, notCached(analytics))
 router.get('/for-advertiser', validate, authRequired, getAdvertiserAnalyticsNotCached)
 
 // Advanced statistics
-router.get('/advanced', validate, authRequired, advancedAnalytics)
+router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
-router.get('/for-publisher/:id', validate, authRequired, channelIfExists, analyticsNotCached)
+router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
