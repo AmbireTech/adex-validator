@@ -1,3 +1,4 @@
+const { promisify } = require('util')
 const db = require('../../db')
 const getPayout = require('./lib/getPayout')
 const logger = require('../logger')('sentry')
@@ -73,4 +74,41 @@ function record(channel, session, events) {
 		})
 }
 
-module.exports = { record }
+async function getAdvancedReports({ evType, publisher, channels = [] }) {
+	const zrange = promisify(redisCli.zrange.bind(redisCli))
+	const getStatsPair = async key => {
+		const statsRaw = await zrange(key, 0, -1, 'withscores')
+		const stats = Object.fromEntries(
+			statsRaw.map((x, i, all) => (i % 2 === 0 ? [x, parseFloat(all[i + 1])] : null)).filter(x => x)
+		)
+		return [key.split(':')[0], stats]
+	}
+	const publisherKeys = publisher
+		? [
+				`reportPublisherToAdUnit:${evType}:${publisher}`,
+				`reportPublisherToAdSlot:${evType}:${publisher}`,
+				`reportPublisherToAdSlotPay:${evType}:${publisher}`,
+				`reportPublisherToCountry:${getEpoch()}:${evType}:${publisher}`,
+				`reportPublisherToHostname:${evType}:${publisher}`
+		  ]
+		: []
+	const publisherStats = Object.fromEntries(await Promise.all(publisherKeys.map(getStatsPair)))
+	const byChannelStats = Object.fromEntries(
+		await Promise.all(
+			channels.map(async channelId => {
+				const keys = [
+					`reportChannelToAdUnit:${evType}:${channelId}`,
+					`reportChannelToHostname:${evType}:${channelId}`,
+					`reportChannelToHostnamePay:${evType}:${channelId}`
+				]
+				return [channelId, Object.fromEntries(await Promise.all(keys.map(getStatsPair)))]
+			})
+		)
+	)
+
+	return { publisherStats, byChannelStats }
+}
+// getAdvancedReports({ evType: 'IMPRESSION', publisher: '0xd5860d6196a4900bf46617cef088ee6e6b61c9d6', channels: ['0xb29f1517eb63cfde3af5c6c01bee724b81fef22d9a1267b748a07d315ee19651'] })
+//	.then(x => console.log(JSON.stringify(x)))
+
+module.exports = { record, getAdvancedReports }
