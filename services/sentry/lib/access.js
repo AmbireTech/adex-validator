@@ -18,14 +18,13 @@ async function checkAccess(channel, session, events) {
 
 	// We're only sending a CLOSE
 	// That's allowed for the creator normally, and for everyone during the withdraw period
-	if (
-		events.every(e => e.type === 'CLOSE') &&
-		(session.uid === channel.creator || isInWithdrawPeriod)
-	) {
+	// @TODO: revert toLowerCase after AIP #22 is implemented
+	const isCreator = session.uid && session.uid.toLowerCase() === channel.creator.toLowerCase()
+	if (events.every(e => e.type === 'CLOSE') && (isCreator || isInWithdrawPeriod)) {
 		return { success: true }
 	}
 	// Only the creator can send a CLOSE
-	if (session.uid !== channel.creator && events.find(e => e.type === 'CLOSE')) {
+	if (!isCreator && events.find(e => e.type === 'CLOSE')) {
 		return { success: false, statusCode: 403 }
 	}
 
