@@ -31,14 +31,11 @@ tape('/cfg', async function(t) {
 
 tape('/channel/list - with filters', async function(t) {
 	const id = dummyVals.channel.spec.validators[0].id
-	const creator = dummyVals.channel.creator
 	// test channel list filters if there are any
 	const channelFilterFixtures = [
 		['', 1],
 		[`?validator=${id}`, 1],
 		[`?validator=${id}1`, 0],
-		[`?creator=${creator}`, 1],
-		[`?creator=${creator}1`, 0],
 		// 2200-01-01
 		[`?validUntil=7258118400`, 0]
 	]
