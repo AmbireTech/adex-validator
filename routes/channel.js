@@ -70,7 +70,13 @@ async function getList(req, res, next) {
 	let query = {
 		validUntil: { $gt: parseInt(validUntil, 10) || Math.floor(Date.now() / 1000) }
 	}
-	query = creator ? { ...query, creator } : query
+	query = creator
+		? {
+				...query,
+				// workaround for some channels in prod using a lowercase addr
+				creator: { $in: [creator, creator.toLowerCase()] }
+		  }
+		: query
 	if (typeof req.query.validator === 'string') {
 		// This is MongoDB behavior: since validators is an array,
 		// this query will find anything where the array contains an object with this ID
