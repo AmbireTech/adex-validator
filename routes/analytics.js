@@ -119,11 +119,10 @@ async function advancedAnalytics(req) {
 }
 
 function getAdvertiserChannels(req) {
-	const uid = toBalancesKey(req.session.uid)
 	const channelsCol = db.getMongo().collection('channels')
-
+	const uid = req.session.uid
 	const advChannels = channelsCol
-		.find({ creator: uid }, { projection: { _id: 1 } })
+		.find({ creator: { $in: [uid, toBalancesKey(uid)] } }, { projection: { _id: 1 } })
 		.toArray()
 		// eslint-disable-next-line no-underscore-dangle
 		.then(res => res.map(x => x._id))
