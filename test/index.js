@@ -272,12 +272,7 @@ tape('should merge event aggrs and apply fees', function(t) {
 		depositAmount: '10000'
 	}
 	const balancesBeforeFees = { a: '100', b: '200' }
-	const { balances, newAccounting } = mergeAggrs(
-		{ balancesBeforeFees },
-		[genEvAggr(5, 'a')],
-		channel
-	)
-	t.deepEqual(toBNStringMap(balances), newAccounting.balances, 'balances is the same')
+	const newAccounting = mergeAggrs({ balancesBeforeFees }, [genEvAggr(5, 'a')], channel)
 	t.equal(newAccounting.balancesBeforeFees.a, '150', 'balance of recepient incremented accordingly')
 	t.equal(newAccounting.balances.a, '148', 'balanceAfterFees is ok')
 	t.end()
@@ -290,12 +285,7 @@ tape('should never allow exceeding the deposit', function(t) {
 	}
 	const depositAmount = new BN(channel.depositAmount, 10)
 	const balancesBeforeFees = { a: '100', b: '200' }
-	const { balances, newAccounting } = mergeAggrs(
-		{ balancesBeforeFees },
-		[genEvAggr(1001, 'a')],
-		channel
-	)
-	t.deepEqual(toBNStringMap(balances), newAccounting.balances, 'balances is the same')
+	const newAccounting = mergeAggrs({ balancesBeforeFees }, [genEvAggr(1001, 'a')], channel)
 	t.equal(
 		newAccounting.balancesBeforeFees.a,
 		'9800',
