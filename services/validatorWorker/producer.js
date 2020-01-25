@@ -1,5 +1,4 @@
 const { mergeAggrs } = require('./lib/mergeAggrs')
-const { toBNMap } = require('./lib')
 const logger = require('../logger')('validatorWorker(producer)')
 
 async function tick(iface, channel) {
@@ -16,11 +15,11 @@ async function tick(iface, channel) {
 	// and produce a new accounting message
 	if (aggrs.length) {
 		logMerge(aggrs, channel)
-		const { balances, newAccounting } = mergeAggrs(accounting, aggrs, channel)
+		const newAccounting = mergeAggrs(accounting, aggrs, channel)
 		await iface.propagate([newAccounting])
-		return { balances, newAccounting }
+		return { accounting, newAccounting }
 	}
-	return { balances: toBNMap(accounting.balances) }
+	return { accounting }
 }
 
 function logMerge(aggrs, channel) {

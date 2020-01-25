@@ -15,15 +15,16 @@ async function tick(adapter, iface, channel) {
 	const latestIsRespondedTo = newMsg && responseMsg && newMsg.stateRoot === responseMsg.stateRoot
 
 	// there are no unapproved NewState messages, only merge all eventAggrs
-	const { balances } = await producer.tick(iface, channel)
+	const { accounting, newAccounting } = await producer.tick(iface, channel)
 	if (newMsg && !latestIsRespondedTo) {
-		await onNewState(adapter, iface, channel, balances, newMsg)
+		await onNewState(adapter, iface, channel, newAccounting || accounting, newMsg)
 	}
 
 	await heartbeat(adapter, iface, channel)
 }
 
-async function onNewState(adapter, iface, channel, balances, newMsg) {
+async function onNewState(adapter, iface, channel, ourLatestAccounting, newMsg) {
+	const ourLatestBalances = toBNMap(ourLatestAccounting.balances)
 	const proposedBalances = toBNMap(newMsg.balances)
 	const stateRoot = newMsg.stateRoot
 	const stateRootRaw = Buffer.from(stateRoot, 'hex')
@@ -48,7 +49,7 @@ async function onNewState(adapter, iface, channel, balances, newMsg) {
 		return onError(iface, { reason: 'InvalidTransition', newMsg })
 	}
 
-	const healthPromilles = getHealthPromilles(channel, balances, proposedBalances)
+	const healthPromilles = getHealthPromilles(channel, ourLatestBalances, proposedBalances)
 	if (healthPromilles.lt(new BN(cfg.HEALTH_UNSIGNABLE_PROMILLES))) {
 		return onError(iface, { reason: 'TooLowHealth', newMsg })
 	}

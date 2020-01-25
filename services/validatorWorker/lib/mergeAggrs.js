@@ -4,8 +4,7 @@ const { toBNStringMap, toBNMap } = require('./')
 const { getBalancesAfterFeesTree } = require('./fees')
 
 // Pure, should not mutate inputs
-// mergeAggrs(accounting, aggrs, channel) -> { balances, newAccounting }
-// `balances` is the same as newAccounting.balances, but a BN map
+// mergeAggrs(accounting, aggrs, channel) -> newAccounting
 function mergeAggrs(accounting, aggrs, channel) {
 	const depositAmount = new BN(channel.depositAmount, 10)
 	const newAccounting = {
@@ -33,7 +32,7 @@ function mergeAggrs(accounting, aggrs, channel) {
 	const balances = getBalancesAfterFeesTree(balancesBeforeFees, channel)
 	newAccounting.balances = toBNStringMap(balances)
 
-	return { balances, newAccounting }
+	return newAccounting
 }
 
 // mergePayoutsIntoBalances: pure, (balances, events, depositAmount) -> newBalances
