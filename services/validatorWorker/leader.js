@@ -10,8 +10,8 @@ async function tick(adapter, iface, channel) {
 	await heartbeat(adapter, iface, channel)
 }
 
-async function onNewAccounting(adapter, iface, channel, { newAccounting, balances }) {
-	const stateRootRaw = getStateRootHash(adapter, channel, balances)
+async function onNewAccounting(adapter, iface, channel, { newAccounting }) {
+	const stateRootRaw = getStateRootHash(adapter, channel, newAccounting.balances)
 	const signature = await adapter.sign(stateRootRaw)
 	const stateRoot = stateRootRaw.toString('hex')
 	return iface.propagate([
