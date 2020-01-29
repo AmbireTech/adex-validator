@@ -164,7 +164,7 @@ module.exports = {
 						})
 					)
 					.required()
-			})
+			}).required()
 		)
 	},
 	eventTimeAggr: {
