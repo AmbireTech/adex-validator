@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const tape = require('tape-catch')
 const fetch = require('node-fetch')
+const { getAddress } = require('ethers').utils
 const { Channel, MerkleTree } = require('adex-protocol-eth/js')
 const { getStateRootHash } = require('../services/validatorWorker/lib')
 const SentryInterface = require('../services/validatorWorker/lib/sentryInterface')
@@ -21,7 +22,7 @@ const postEvsAsCreator = (url, id, ev) => postEvents(url, id, ev, dummyVals.auth
 
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
-const defaultPubName = dummyVals.ids.publisher
+const defaultPubName = getAddress(dummyVals.ids.publisher)
 
 let dummyAdapter = require('../adapters/dummy')
 
@@ -414,7 +415,7 @@ tape('should close channel', async function(t) {
 	// check the creator is awarded the remaining token balance
 	const { balances } = await channelIface.getOurLatestMsg('Accounting')
 	t.equal(
-		balances[dummyVals.auth.creator],
+		balances[getAddress(dummyVals.auth.creator)],
 		'792',
 		'creator balance should be remaining channel deposit minus fees'
 	)

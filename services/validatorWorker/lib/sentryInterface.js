@@ -43,7 +43,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 			if (validatorMessages.length) {
 				const { err } = sentry.message.validate(validatorMessages)
 				if (err) throw new Error(err)
-				return validatorMessages[0].msg
+				return mapValidatorMsg(adapter, validatorMessages[0].msg)
 			}
 			return null
 		})
@@ -58,7 +58,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 		return fetchJson(lastApprovedUrl).then(({ lastApproved }) => {
 			const { err } = sentry.lastApproved.validate(lastApproved)
 			if (err) throw new Error(err)
-			return lastApproved
+			return mapLastApproved(adapter, lastApproved)
 		})
 	}
 
@@ -67,7 +67,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 		return fetchJson(lastApprovedUrl).then(response => {
 			const { err } = sentry.lastApproved.validate(response.lastApproved)
 			if (err) throw new Error(err)
-			return response
+			return { ...response, lastApproved: mapLastApproved(adapter, response.lastApproved) }
 		})
 	}
 
@@ -83,7 +83,7 @@ function SentryInterface(adapter, channel, opts = { logging: true }) {
 		}).then(({ events }) => {
 			const { err } = sentry.events.validate(events)
 			if (err) throw new Error(err)
-			return events
+			return events.map(mapEventAggr.bind(null, adapter))
 		})
 	}
 
@@ -96,6 +96,61 @@ async function fetchJson(url, opts) {
 		return Promise.reject(new Error(`request to ${url} failed with status code ${resp.status}`))
 	}
 	return resp.json()
+}
+
+function mapLastApproved(adapter, lastApproved) {
+	if (!lastApproved) return lastApproved
+	if (lastApproved.newState) {
+		// eslint-disable-next-line no-param-reassign
+		lastApproved.newState.msg = mapValidatorMsg(adapter, lastApproved.newState.msg)
+	}
+	return lastApproved
+}
+
+function mapValidatorMsg(adapter, msg) {
+	// eslint-disable-next-line no-param-reassign
+	if (msg.balances) msg.balances = toAddressMap(adapter, msg.balances)
+	return msg
+}
+
+function mapKey(adapter, k) {
+	try {
+		const newK = adapter.getAddress(k)
+		return newK
+	} catch (e) {
+		logger.info(`Warning: invalid key detected: ${k}, error: ${e.message || e}`)
+		return null
+	}
+}
+
+function mapEventAggr(adapter, ev) {
+	if (ev.events) {
+		// eslint-disable-next-line no-param-reassign
+		ev.events = Object.fromEntries(
+			Object.entries(ev.events).map(([evType, v]) => [
+				evType,
+				{
+					eventCounts: toAddressMap(adapter, v.eventCounts),
+					eventPayouts: toAddressMap(adapter, v.eventPayouts)
+				}
+			])
+		)
+	}
+	// eslint-disable-next-line no-param-reassign
+	if (ev.earners) ev.earners = ev.earners.map(mapKey.bind(null, adapter)).filter(x => x)
+	return ev
+}
+
+function toAddressMap(adapter, map) {
+	if (!map) return map
+	return Object.fromEntries(
+		Object.entries(map)
+			.map(([k, v]) => {
+				const newK = mapKey(adapter, k)
+				return newK ? [newK, v] : null
+			})
+			.filter(x => x)
+	)
 }
 
 function onPropagationError(adapter, recv, msgs, e) {
