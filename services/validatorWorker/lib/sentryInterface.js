@@ -110,6 +110,8 @@ function mapLastApproved(adapter, lastApproved) {
 function mapValidatorMsg(adapter, msg) {
 	// eslint-disable-next-line no-param-reassign
 	if (msg.balances) msg.balances = toAddressMap(adapter, msg.balances)
+	// eslint-disable-next-line no-param-reassign
+	if (msg.balancesBeforeFees) msg.balancesBeforeFees = toAddressMap(adapter, msg.balancesBeforeFees)
 	return msg
 }
 
