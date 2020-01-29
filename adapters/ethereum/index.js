@@ -68,6 +68,7 @@ function Adapter(opts, cfg, ethProvider) {
 		const ethChannel = toEthereumChannel(channel)
 
 		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
+		assert.equal(channel.creator, formatAddress(channel.creator), 'channel.creator is checksummed')
 		assert.ok(
 			channel.spec.validators.every(({ id }) => id === formatAddress(id)),
 			'channel.validators: all addresses are checksummed'
