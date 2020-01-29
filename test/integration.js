@@ -42,7 +42,9 @@ function aggrAndTick() {
 tape('submit events and ensure they are accounted for', async function(t) {
 	// the CLICK is not paid for by default
 	// the IMPRESSION, however, pays 1 by default
-	const evs = genEvents(3)
+	// We use .toLowerCase() to also test if the balance tree contains properly checksummed addrs
+	const evs = genEvents(2, defaultPubName.toLowerCase())
+		.concat(genEvents(1, defaultPubName))
 		.concat(genEvents(2, randomAddress()))
 		.concat(genEvents(1, randomAddress(), 'CLICK'))
 
