@@ -1,4 +1,5 @@
 const { MerkleTree, Channel } = require('adex-protocol-eth/js')
+const { getAddress } = require('ethers').utils
 const assert = require('assert')
 const dummyVals = require('../../test/prep-db/mongo')
 const lib = require('../lib')
@@ -55,6 +56,10 @@ function Adapter(opts, cfg) {
 		if (who) return Promise.resolve(dummyVals.auth[who[0]])
 		return Promise.reject(new Error(`no auth token for this identity: ${identity}`))
 	}
+}
+
+Adapter.prototype.getAddress = function(addr) {
+	return getAddress(addr)
 }
 
 Adapter.prototype.getBalanceLeaf = function(acc, bal) {

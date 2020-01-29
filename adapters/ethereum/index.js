@@ -129,6 +129,10 @@ function Adapter(opts, cfg, ethProvider) {
 	}
 }
 
+Adapter.prototype.getAddress = function(addr) {
+	return formatAddress(addr)
+}
+
 Adapter.prototype.getBalanceLeaf = function(acc, bal) {
 	return Channel.getBalanceLeaf(acc, bal)
 }
