@@ -393,13 +393,19 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 	t.end()
 })
 
-tape('should test analytics: auth', async function(t) {
+tape('should test analytic auth required routes', async function(t) {
 	const channel = getValidEthChannel()
 	const urls = ['/for-publisher', '/for-advertiser', `for-publisher/${channel.id}`, '/advanced']
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
 	await Promise.all(
 		urls.map(url =>
 			fetch(`${leaderUrl}/analytics/${url}`).then(function(resp) {
-				t.equal(resp.status, 401, 'status is Unauthorized')
+				t.equal(resp.status, 401, `${url} status is Unauthorized`)
 			})
 		)
 	)

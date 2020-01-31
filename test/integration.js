@@ -18,7 +18,8 @@ const {
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
 
-const postEvsAsCreator = (url, id, ev) => postEvents(url, id, ev, dummyVals.auth.creator)
+const postEvsAsCreator = (url, id, ev, headers = {}) =>
+	postEvents(url, id, ev, dummyVals.auth.creator, headers)
 
 const leaderUrl = dummyVals.channel.spec.validators[0].url
 const followerUrl = dummyVals.channel.spec.validators[1].url
@@ -446,6 +447,52 @@ tape('should record clicks', async function(t) {
 	)
 	t.equal(analytics.aggr[0].value, num.toString(), 'proper number of CLICK events')
 
+	t.end()
+})
+
+tape('should test analytics routes', async function(t) {
+	const channel = getValidEthChannel()
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+	// publisher = defaultPublisher
+	const evs = genEvents(10).concat(genEvents(10, randomAddress()))
+
+	// post events
+	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+	await postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+
+	const urls = [
+		['', null, resp => parseInt(resp.aggr[0].value, 10) > 20],
+		[`/${channel.id}`, null, resp => resp.aggr[0].value === '20'],
+		['/for-publisher', dummyVals.auth.publisher, resp => parseInt(resp.aggr[0].value, 10) > 10],
+		['/for-advertiser', dummyVals.auth.creator, resp => parseInt(resp.aggr[0].value, 10) > 20],
+		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => resp.aggr[0].value === '10'],
+		[
+			'/advanced',
+			dummyVals.auth.creator,
+			resp => Object.keys(resp.byChannelStats).includes(channel.id)
+		]
+	]
+
+	await Promise.all(
+		urls.map(([url, auth, testFn]) =>
+			fetch(`${leaderUrl}/analytics${url}`, {
+				method: 'GET',
+				headers: {
+					authorization: `Bearer ${auth}`,
+					'content-type': 'application/json'
+				}
+			})
+				.then(res => res.json())
+				.then(function(resp) {
+					t.equal(testFn(resp), true, `/analytics${url}`)
+				})
+		)
+	)
 	t.end()
 })
 
