@@ -392,3 +392,16 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 
 	t.end()
 })
+
+tape('should test analytics: auth', async function(t) {
+	const channel = getValidEthChannel()
+	const urls = ['/for-publisher', '/for-advertiser', `for-publisher/${channel.id}`, '/advanced']
+	await Promise.all(
+		urls.map(url =>
+			fetch(`${leaderUrl}/analytics/${url}`).then(function(resp) {
+				t.equal(resp.status, 401, 'status is Unauthorized')
+			})
+		)
+	)
+	t.end()
+})
