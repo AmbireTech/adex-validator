@@ -1,5 +1,5 @@
 const BN = require('bn.js')
-const toBalancesKey = require('../../toBalancesKey')
+const toBalancesKey = require('../toBalancesKey')
 const getPayout = require('./getPayout')
 
 function newAggr(channelId) {

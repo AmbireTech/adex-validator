@@ -1,5 +1,5 @@
 const BN = require('bn.js')
-const toBalancesKey = require('../../toBalancesKey')
+const toBalancesKey = require('../toBalancesKey')
 
 function getPayout(channel, ev) {
 	if (ev.type === 'IMPRESSION' && ev.publisher) {

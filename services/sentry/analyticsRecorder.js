@@ -1,7 +1,7 @@
 const { promisify } = require('util')
 const db = require('../../db')
 const getPayout = require('./lib/getPayout')
-const toBalancesKey = require('../toBalancesKey')
+const toBalancesKey = require('./toBalancesKey')
 const logger = require('../logger')('sentry')
 
 const redisCli = db.getRedis()
