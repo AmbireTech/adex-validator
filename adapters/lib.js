@@ -12,6 +12,10 @@ async function isChannelValid(cfg, channel, address) {
 		channel.validUntil * 1000 <= inOneYear.getTime(),
 		'channel.validUntil should not be greater than one year'
 	)
+	assert.ok(
+		channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
+		'channel withdrawPeriodStart is invalid'
+	)
 
 	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
 		assert.ok(
@@ -37,18 +41,20 @@ async function isChannelValid(cfg, channel, address) {
 			'channel.depositAsset is not whitelisted'
 		)
 	}
+
+	const depositAmount = new BN(channel.depositAmount)
 	assert.ok(
-		new BN(channel.depositAmount).gte(new BN(cfg.MINIMAL_DEPOSIT || 0)),
+		depositAmount.gte(new BN(cfg.MINIMAL_DEPOSIT || 0)),
 		'channel.depositAmount is less than MINIMAL_DEPOSIT'
 	)
 	assert.ok(
 		new BN(ourValidator.fee).gte(new BN(cfg.MINIMAL_FEE || 0)),
 		'channel validator fee is less than MINIMAL_FEE'
 	)
-	assert.ok(
-		channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
-		'channel withdrawPeriodStart is invalid'
-	)
+	const totalValidatorFee = channel.spec.validators
+		.map(v => new BN(v.fee, 10))
+		.reduce((a, b) => a.add(b), new BN(0))
+	assert.ok(totalValidatorFee.lte(depositAmount), 'total fees <= deposit: fee constraint violated')
 }
 
 module.exports = {
