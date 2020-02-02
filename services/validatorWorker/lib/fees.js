@@ -1,6 +1,5 @@
 const assert = require('assert')
 const BN = require('bn.js')
-const toBalancesKey = require('../../toBalancesKey')
 
 function getBalancesAfterFeesTree(balances, channel) {
 	const depositAmount = new BN(channel.depositAmount, 10)
@@ -44,7 +43,7 @@ function getBalancesAfterFeesTree(balances, channel) {
 		// however, it might be lower, so we will fix this rounding error by assigning the rest to the first validator
 		const feeWithRounding = idx === 0 ? fee.add(roundingErr) : fee
 		if (feeWithRounding.gt(new BN(0))) {
-			const addr = toBalancesKey(v.feeAddr || v.id)
+			const addr = v.feeAddr || v.id
 			balancesAfterFees[addr] = (balancesAfterFees[addr] || new BN(0)).add(feeWithRounding)
 		}
 	})
