@@ -70,7 +70,10 @@ function Adapter(opts, cfg, ethProvider) {
 		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
 		assert.equal(channel.creator, formatAddress(channel.creator), 'channel.creator is checksummed')
 		assert.ok(
-			channel.spec.validators.every(({ id }) => id === formatAddress(id)),
+			channel.spec.validators.every(
+				({ id, feeAddr }) =>
+					id === formatAddress(id) && (!feeAddr || feeAddr === formatAddress(feeAddr))
+			),
 			'channel.validators: all addresses are checksummed'
 		)
 
