@@ -1,6 +1,6 @@
 const BN = require('bn.js')
 const db = require('../db')
-const toBalancesKey = require('../services/toBalancesKey')
+const toBalancesKey = require('../services/sentry/toBalancesKey')
 
 // eslint-disable-next-line no-console
 const logError = console.error
