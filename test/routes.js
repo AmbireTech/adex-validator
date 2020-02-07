@@ -394,13 +394,12 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 })
 
 tape('should test analytic auth required routes', async function(t) {
-	const channel = getValidEthChannel()
-	const urls = ['/for-publisher', '/for-advertiser', `for-publisher/${channel.id}`, '/advanced']
-	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
-	await Promise.all([
-		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
-		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
-	])
+	const urls = [
+		'/for-publisher',
+		'/for-advertiser',
+		`for-publisher/${dummyVals.channel.id}`,
+		'/advanced'
+	]
 
 	await Promise.all(
 		urls.map(url =>
