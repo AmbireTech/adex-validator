@@ -295,7 +295,7 @@ tape(
 		})
 		t.equal(resp.status, 400, 'status must be BadRequest')
 		const err = await resp.json()
-		t.equal(err.message, 'adapter validation not successful')
+		t.equal(err.message, 'total fees <= deposit: fee constraint violated')
 		t.end()
 	}
 )
