@@ -392,3 +392,21 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 
 	t.end()
 })
+
+tape('should test analytic auth required routes', async function(t) {
+	const urls = [
+		'/for-publisher',
+		'/for-advertiser',
+		`for-publisher/${dummyVals.channel.id}`,
+		'/advanced'
+	]
+
+	await Promise.all(
+		urls.map(url =>
+			fetch(`${leaderUrl}/analytics/${url}`).then(function(resp) {
+				t.equal(resp.status, 401, `${url} status is Unauthorized`)
+			})
+		)
+	)
+	t.end()
+})
