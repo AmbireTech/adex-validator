@@ -157,8 +157,6 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		{ $project: { value: '$value', time: '$_id', _id: 0 } }
 	]
 
-	console.log(JSON.stringify(pipeline))
-
 	return eventsCol
 		.aggregate(pipeline, { maxTimeMS: 10000 })
 		.toArray()
