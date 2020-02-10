@@ -468,12 +468,13 @@ tape('analytics routes return correct values', async function(t) {
 	])
 	await wait(500)
 
+	const sumValues = vals => vals.map(x => parseInt(x.value, 10)).reduce((a, b) => a + b, 0)
 	const urls = [
-		['', null, resp => parseInt(resp.aggr[0].value, 10) >= 20],
-		[`/${channel.id}`, null, resp => resp.aggr[0].value === '20'],
-		['/for-publisher', dummyVals.auth.publisher, resp => parseInt(resp.aggr[0].value, 10) >= 10],
-		['/for-advertiser', dummyVals.auth.creator, resp => parseInt(resp.aggr[0].value, 10) >= 20],
-		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => resp.aggr[0].value === '10'],
+		['', null, resp => sumValues(resp.aggr) >= 20],
+		[`/${channel.id}`, null, resp => sumValues(resp.aggr) === 20],
+		['/for-publisher', dummyVals.auth.publisher, resp => sumValues(resp.aggr) >= 10],
+		['/for-advertiser', dummyVals.auth.creator, resp => sumValues(resp.aggr) >= 20],
+		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => sumValues(resp.aggr) === 10],
 		[
 			'/advanced',
 			dummyVals.auth.creator,
