@@ -450,7 +450,7 @@ tape('should record clicks', async function(t) {
 	t.end()
 })
 
-tape('should test analytics routes', async function(t) {
+tape('analytics routes return correct values', async function(t) {
 	const channel = getValidEthChannel()
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -492,6 +492,7 @@ tape('should test analytics routes', async function(t) {
 			})
 				.then(res => res.json())
 				.then(function(resp) {
+					console.log(resp)
 					t.equal(testFn(resp), true, `/analytics${url}`)
 				})
 		)
