@@ -88,9 +88,62 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		skipPublisherFiltering
 	)
 	const appliedLimit = Math.min(200, limit)
+	const isPublisherRoute = req.originalUrl.split('/')[2] === 'for-publisher'
+
+	let publisherAccounting = []
+	if (isPublisherRoute) {
+		// adds channelId to  projection
+		project.channelId = 1
+
+		publisherAccounting = [
+			{
+				$lookup: {
+					from: 'channels',
+					localField: 'channelId',
+					foreignField: 'id',
+					as: 'channel'
+				}
+			},
+			{
+				$addFields: {
+					channel: { $arrayElemAt: ['$channel', 0] }
+				}
+			},
+			{
+				$addFields: {
+					leader: { $arrayElemAt: ['$channel.spec.validators', 0] },
+					follower: { $arrayElemAt: ['$channel.spec.validators', 1] }
+				}
+			},
+			{
+				$addFields: {
+					value: {
+						$subtract: [
+							`$value`,
+							{
+								$multiply: [
+									`$value`,
+									{
+										$divide: [
+											{
+												$add: [{ $toLong: '$leader.fee' }, { $toLong: '$follower.fee' }]
+											},
+											{ $toLong: '$channel.depositAmount' }
+										]
+									}
+								]
+							}
+						]
+					}
+				}
+			}
+		]
+	}
+
 	const pipeline = [
 		{ $match: match },
 		{ $project: project },
+		...publisherAccounting,
 		{
 			$group: {
 				_id: {
@@ -103,6 +156,8 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		{ $limit: appliedLimit },
 		{ $project: { value: '$value', time: '$_id', _id: 0 } }
 	]
+
+	console.log(JSON.stringify(pipeline))
 
 	return eventsCol
 		.aggregate(pipeline, { maxTimeMS: 10000 })
