@@ -50,8 +50,16 @@ function getTimeframe(timeframe) {
 	return { period: DAY, span: HOUR }
 }
 
-function getProjAndMatch(session, channelMatch, period, eventType, metric, skipPublisherFiltering) {
-	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
+function getProjAndMatch(
+	session,
+	channelMatch,
+	start,
+	end,
+	eventType,
+	metric,
+	skipPublisherFiltering
+) {
+	const timeMatch = end ? { created: { $lte: end, $gt: start } } : { created: { $gt: start } }
 	const publisherId = !skipPublisherFiltering && session ? toBalancesKey(session.uid) : null
 	const filteredMatch = publisherId ? { earners: publisherId, ...timeMatch } : timeMatch
 	const match = channelMatch ? { channelId: channelMatch, ...filteredMatch } : filteredMatch
@@ -67,13 +75,14 @@ function getProjAndMatch(session, channelMatch, period, eventType, metric, skipP
 
 function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const { limit, timeframe, eventType, metric } = req.query
+	const { limit, timeframe, eventType, metric, start, end } = req.query
 	const { period, span } = getTimeframe(timeframe)
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
 		req.session,
 		channelMatch,
-		period,
+		start && !Number.isNaN(new Date(start)) ? new Date(start) : new Date(Date.now() - period),
+		end && !Number.isNaN(new Date(end)) ? new Date(end) : null,
 		eventType,
 		metric,
 		skipPublisherFiltering

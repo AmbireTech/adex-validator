@@ -462,8 +462,11 @@ tape('should test analytics routes', async function(t) {
 	const evs = genEvents(10).concat(genEvents(10, randomAddress()))
 
 	// post events
-	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
-	await postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+	await Promise.all([
+		postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' }),
+		postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+	])
+	await wait(100)
 
 	const urls = [
 		['', null, resp => parseInt(resp.aggr[0].value, 10) > 20],
