@@ -32,6 +32,11 @@ async function checkAccess(channel, session, events) {
 		return { success: false, statusCode: 400, message: 'channel is in withdraw period' }
 	}
 
+	// Extra rules for normal (non-CLOSE) events
+	if (session.country === 'XX' || isForbiddenReferrer(session.referrerHeader)) {
+		return { success: false, statusCode: 403, message: 'event submission restricted' }
+	}
+
 	// Enforce access limits
 	const eventSubmission = channel.spec.eventSubmission
 	// The default rules are to allow the creator to submit whatever they like, but rate limit anyone else
@@ -91,6 +96,14 @@ async function checkAccess(channel, session, events) {
 	}
 
 	return { success: true }
+}
+
+function isForbiddenReferrer(ref) {
+	if (typeof ref !== 'string') return false
+	const hostname = ref ? ref.split('/')[2] : null
+	if (hostname === 'localhost' || hostname === '127.0.0.1') return true
+	if (hostname.startsWith('localhost:') || hostname.startsWith('127.0.0.1:')) return true
+	return false
 }
 
 module.exports = checkAccess

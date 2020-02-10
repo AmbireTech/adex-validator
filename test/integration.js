@@ -450,7 +450,7 @@ tape('should record clicks', async function(t) {
 	t.end()
 })
 
-tape('should test analytics routes', async function(t) {
+tape('analytics routes return correct values', async function(t) {
 	const channel = getValidEthChannel()
 
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
@@ -466,13 +466,13 @@ tape('should test analytics routes', async function(t) {
 		postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' }),
 		postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
 	])
-	await wait(100)
+	await wait(500)
 
 	const urls = [
-		['', null, resp => parseInt(resp.aggr[0].value, 10) > 20],
+		['', null, resp => parseInt(resp.aggr[0].value, 10) >= 20],
 		[`/${channel.id}`, null, resp => resp.aggr[0].value === '20'],
-		['/for-publisher', dummyVals.auth.publisher, resp => parseInt(resp.aggr[0].value, 10) > 10],
-		['/for-advertiser', dummyVals.auth.creator, resp => parseInt(resp.aggr[0].value, 10) > 20],
+		['/for-publisher', dummyVals.auth.publisher, resp => parseInt(resp.aggr[0].value, 10) >= 10],
+		['/for-advertiser', dummyVals.auth.creator, resp => parseInt(resp.aggr[0].value, 10) >= 20],
 		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => resp.aggr[0].value === '10'],
 		[
 			'/advanced',
