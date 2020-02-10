@@ -492,7 +492,6 @@ tape('analytics routes return correct values', async function(t) {
 			})
 				.then(res => res.json())
 				.then(function(resp) {
-					console.log(resp)
 					t.equal(testFn(resp), true, `/analytics${url}`)
 				})
 		)
