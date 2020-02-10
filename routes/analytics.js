@@ -36,18 +36,18 @@ const YEAR = 365 * DAY
 const ROUGH_MONTH = Math.floor(YEAR / 12)
 function getTimeframe(timeframe) {
 	// every month in one year
-	if (timeframe === 'year') return { period: YEAR, interval: ROUGH_MONTH }
+	if (timeframe === 'year') return { period: YEAR, span: ROUGH_MONTH }
 	// every day in one month
-	if (timeframe === 'month') return { period: ROUGH_MONTH, interval: DAY }
+	if (timeframe === 'month') return { period: ROUGH_MONTH, span: DAY }
 	// every 6 hours in a week
-	if (timeframe === 'week') return { period: 7 * DAY, interval: 6 * HOUR }
+	if (timeframe === 'week') return { period: 7 * DAY, span: 6 * HOUR }
 	// every hour in one day
-	if (timeframe === 'day') return { period: DAY, interval: HOUR }
+	if (timeframe === 'day') return { period: DAY, span: HOUR }
 	// every minute in an hour
-	if (timeframe === 'hour') return { period: HOUR, interval: MINUTE }
+	if (timeframe === 'hour') return { period: HOUR, span: MINUTE }
 
 	// default is day
-	return { period: DAY, interval: HOUR }
+	return { period: DAY, span: HOUR }
 }
 
 function getProjAndMatch(session, channelMatch, period, eventType, metric, skipPublisherFiltering) {
@@ -68,7 +68,7 @@ function getProjAndMatch(session, channelMatch, period, eventType, metric, skipP
 function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
 	const { limit, timeframe, eventType, metric } = req.query
-	const { period, interval } = getTimeframe(timeframe)
+	const { period, span } = getTimeframe(timeframe)
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
 		req.session,
@@ -85,7 +85,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		{
 			$group: {
 				_id: {
-					$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, interval] }]
+					$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
 				},
 				value: { $sum: '$value' }
 			}
