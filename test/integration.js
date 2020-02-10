@@ -466,7 +466,7 @@ tape('should test analytics routes', async function(t) {
 		postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' }),
 		postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
 	])
-	await wait(100)
+	await wait(500)
 
 	const urls = [
 		['', null, resp => parseInt(resp.aggr[0].value, 10) > 20],
