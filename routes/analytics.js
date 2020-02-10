@@ -75,14 +75,14 @@ function getProjAndMatch(
 
 function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const { limit, timeframe, eventType, metric } = req.query
+	const { limit, timeframe, eventType, metric, start, end } = req.query
 	const { period, span } = getTimeframe(timeframe)
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
 		req.session,
 		channelMatch,
-		new Date(Date.now() - period),
-		null,
+		start && !Number.isNaN(new Date(start)) ? new Date(start) : new Date(Date.now() - period),
+		end && !Number.isNaN(new Date(end)) ? new Date(end) : null,
 		eventType,
 		metric,
 		skipPublisherFiltering
