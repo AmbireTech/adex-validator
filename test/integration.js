@@ -469,10 +469,10 @@ tape('should test analytics routes', async function(t) {
 	await wait(500)
 
 	const urls = [
-		['', null, resp => parseInt(resp.aggr[0].value, 10) > 20],
+		['', null, resp => parseInt(resp.aggr[0].value, 10) >= 20],
 		[`/${channel.id}`, null, resp => resp.aggr[0].value === '20'],
-		['/for-publisher', dummyVals.auth.publisher, resp => parseInt(resp.aggr[0].value, 10) > 10],
-		['/for-advertiser', dummyVals.auth.creator, resp => parseInt(resp.aggr[0].value, 10) > 20],
+		['/for-publisher', dummyVals.auth.publisher, resp => parseInt(resp.aggr[0].value, 10) >= 10],
+		['/for-advertiser', dummyVals.auth.creator, resp => parseInt(resp.aggr[0].value, 10) >= 20],
 		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => resp.aggr[0].value === '10'],
 		[
 			'/advanced',
