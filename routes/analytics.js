@@ -50,8 +50,16 @@ function getTimeframe(timeframe) {
 	return { period: DAY, span: HOUR }
 }
 
-function getProjAndMatch(session, channelMatch, period, eventType, metric, skipPublisherFiltering) {
-	const timeMatch = { created: { $gt: new Date(Date.now() - period) } }
+function getProjAndMatch(
+	session,
+	channelMatch,
+	start,
+	end,
+	eventType,
+	metric,
+	skipPublisherFiltering
+) {
+	const timeMatch = end ? { created: { $lte: end, $gt: start } } : { created: { $gt: start } }
 	const publisherId = !skipPublisherFiltering && session ? toBalancesKey(session.uid) : null
 	const filteredMatch = publisherId ? { earners: publisherId, ...timeMatch } : timeMatch
 	const match = channelMatch ? { channelId: channelMatch, ...filteredMatch } : filteredMatch
@@ -73,7 +81,8 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const { project, match } = getProjAndMatch(
 		req.session,
 		channelMatch,
-		period,
+		new Date(Date.now() - period),
+		null,
 		eventType,
 		metric,
 		skipPublisherFiltering
