@@ -1,6 +1,6 @@
 const express = require('express')
 const { promisify } = require('util')
-const { celebrate } = require('celebrate')
+const { celebrate, Joi } = require('celebrate')
 const toBalancesKey = require('../services/sentry/toBalancesKey')
 const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 const schemas = require('./schemas')
@@ -15,7 +15,7 @@ const notCached = fn => (req, res, next) =>
 	fn(req)
 		.then(res.json.bind(res))
 		.catch(next)
-const validate = celebrate({ query: schemas.eventTimeAggr })
+const validate = celebrate({ query: { ...schemas.eventTimeAggr, segmentByChannel: Joi.string() } })
 
 // Global statistics
 router.get('/', validate, redisCached(400, analytics))
@@ -68,6 +68,7 @@ function getProjAndMatch(
 		: { $toLong: `$totals.${eventType}.${metric}` }
 	const project = {
 		created: 1,
+		channelId: 1,
 		value: projectValue
 	}
 	return { match, project }
@@ -88,20 +89,36 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		skipPublisherFiltering
 	)
 	const appliedLimit = Math.min(200, limit)
+
+	const group = {
+		_id: {
+			$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
+		},
+		value: { $sum: '$value' }
+	}
+	const resultProjection = { value: '$value', time: '$_id', _id: 0 }
+	// checks if publisher requests result to be segmented
+	// by channel
+	if (req.query.segmentByChannel && !skipPublisherFiltering) {
+		// eslint-disable-next-line no-underscore-dangle
+		group._id = {
+			// eslint-disable-next-line no-underscore-dangle
+			time: { ...group._id },
+			channelId: '$channelId'
+		}
+		resultProjection.time = '$_id.time'
+		resultProjection.channelId = '$_id.channelId'
+	}
+
 	const pipeline = [
 		{ $match: match },
 		{ $project: project },
 		{
-			$group: {
-				_id: {
-					$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
-				},
-				value: { $sum: '$value' }
-			}
+			$group: { ...group }
 		},
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
 		{ $limit: appliedLimit },
-		{ $project: { value: '$value', time: '$_id', _id: 0 } }
+		{ $project: resultProjection }
 	]
 
 	return eventsCol
