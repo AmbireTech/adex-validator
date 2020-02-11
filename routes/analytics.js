@@ -88,69 +88,24 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		skipPublisherFiltering
 	)
 	const appliedLimit = Math.min(200, limit)
-	const isPublisherRoute = req.originalUrl.split('/')[2] === 'for-publisher'
 
-	let publisherAccounting = []
-	if (isPublisherRoute) {
-		// adds channelId to  projection
-		project.channelId = 1
+	const group = {
+		_id: {
+			$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
+		},
+		value: { $sum: '$value' }
+	}
 
-		publisherAccounting = [
-			{
-				$lookup: {
-					from: 'channels',
-					localField: 'channelId',
-					foreignField: 'id',
-					as: 'channel'
-				}
-			},
-			{
-				$addFields: {
-					channel: { $arrayElemAt: ['$channel', 0] }
-				}
-			},
-			{
-				$addFields: {
-					leader: { $arrayElemAt: ['$channel.spec.validators', 0] },
-					follower: { $arrayElemAt: ['$channel.spec.validators', 1] }
-				}
-			},
-			{
-				$addFields: {
-					value: {
-						$subtract: [
-							`$value`,
-							{
-								$multiply: [
-									`$value`,
-									{
-										$divide: [
-											{
-												$add: [{ $toLong: '$leader.fee' }, { $toLong: '$follower.fee' }]
-											},
-											{ $toLong: '$channel.depositAmount' }
-										]
-									}
-								]
-							}
-						]
-					}
-				}
-			}
-		]
+	if (req.query.segmentByChannel && !skipPublisherFiltering) {
+		// adds channelId to group
+		group.channelId = '$channelId'
 	}
 
 	const pipeline = [
 		{ $match: match },
 		{ $project: project },
-		...publisherAccounting,
 		{
-			$group: {
-				_id: {
-					$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
-				},
-				value: { $sum: '$value' }
-			}
+			$group: { ...group }
 		},
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
 		{ $limit: appliedLimit },

@@ -503,17 +503,3 @@ tape('analytics routes return correct values', async function(t) {
 // @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
-
-// [
-// 	{"$match":{"channelId":"0x9b76fc129da9c44ac798ca218182f22aec75e0e561167d3871aad7dfd625503f","earners":"0xb7d3f81e857692d13e9d63b232a90f4a1793189e",}},
-// 	{"$project":{"created":1, "channelId": 1, "value":{"$toLong":"$events.IMPRESSION.eventCounts.0xb7d3f81e857692d13e9d63b232a90f4a1793189e"}}},
-// 	{"$lookup":{"from":"channels","localField":"channelId","foreignField":"_id","as":"channel"}},
-// 	{"$addFields":{"channel":{"$arrayElemAt":["$channel",0]}}},
-// 	{"$addFields":{"leader":{"$arrayElemAt":["$channel.spec.validators",0]},"follower":{"$arrayElemAt":["$channel.spec.validators",1]}}},
-// 	{"$addFields":{"rate":{"$divide":[{"$add":[{"$toLong":"$leader.fee"},{"$toLong":"$follower.fee"}]},{"$toLong":"$channel.depositAmount"}]}}},
-// 	{"$addFields":{"value":{"$subtract":["$value",{"$multiply":["$value","$rate"]}]}}},
-// 	{"$group":{"_id":{"$subtract":[{"$toLong":"$created"},{"$mod":[{"$toLong":"$created"},60000]}]},"value":{"$sum":"$value"}}}
-// 	{"$sort":{"_id":1,"channelId":1,"created":1}},
-// 	{"$limit":100},
-// 	{"$project":{"value":"$value","time":"$_id","_id":0}}
-// ]
