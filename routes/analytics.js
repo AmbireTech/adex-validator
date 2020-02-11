@@ -110,6 +110,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		{ $project: project },
 		{ $group: group },
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
+		{ $match: { value: { $gt: 0 } } },
 		{ $limit: appliedLimit },
 		{ $project: resultProjection }
 	]
