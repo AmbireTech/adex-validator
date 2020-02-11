@@ -76,7 +76,7 @@ function getProjAndMatch(
 
 function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const { limit, timeframe, eventType, metric, start, end } = req.query
+	const { limit, timeframe, eventType, metric, start, end, segmentByChannel } = req.query
 	const { period, span } = getTimeframe(timeframe)
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
@@ -89,23 +89,16 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		skipPublisherFiltering
 	)
 	const appliedLimit = Math.min(200, limit)
-
+	const timeGroup = {
+		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
+	}
 	const group = {
-		_id: {
-			$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
-		},
+		_id: segmentByChannel ? { time: timeGroup, channelId: '$channelId' } : timeGroup,
 		value: { $sum: '$value' }
 	}
 	const resultProjection = { value: '$value', time: '$_id', _id: 0 }
-	// checks if publisher requests result to be segmented
-	// by channel
-	if (req.query.segmentByChannel && !skipPublisherFiltering) {
+	if (segmentByChannel) {
 		// eslint-disable-next-line no-underscore-dangle
-		group._id = {
-			// eslint-disable-next-line no-underscore-dangle
-			time: { ...group._id },
-			channelId: '$channelId'
-		}
 		resultProjection.time = '$_id.time'
 		resultProjection.channelId = '$_id.channelId'
 	}
@@ -113,9 +106,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const pipeline = [
 		{ $match: match },
 		{ $project: project },
-		{
-			$group: { ...group }
-		},
+		{ $group: group },
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
 		{ $limit: appliedLimit },
 		{ $project: resultProjection }
