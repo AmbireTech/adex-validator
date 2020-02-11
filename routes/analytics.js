@@ -29,6 +29,8 @@ router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
+const MAX_LIMIT = 300
+
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
@@ -88,7 +90,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		metric,
 		skipPublisherFiltering
 	)
-	const appliedLimit = Math.min(200, limit)
+	const appliedLimit = Math.min(MAX_LIMIT, limit)
 	const timeGroup = {
 		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
 	}
