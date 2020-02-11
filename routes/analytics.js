@@ -29,7 +29,7 @@ router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
-const MAX_LIMIT = 300
+const MAX_LIMIT = 500
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
