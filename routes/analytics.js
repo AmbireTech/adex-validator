@@ -29,6 +29,8 @@ router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
+const MAX_LIMIT = 500
+
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
@@ -76,7 +78,7 @@ function getProjAndMatch(
 
 function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const eventsCol = db.getMongo().collection('eventAggregates')
-	const { limit, timeframe, eventType, metric, start, end } = req.query
+	const { limit, timeframe, eventType, metric, start, end, segmentByChannel } = req.query
 	const { period, span } = getTimeframe(timeframe)
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
@@ -88,35 +90,27 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		metric,
 		skipPublisherFiltering
 	)
-	const appliedLimit = Math.min(200, limit)
-
+	const appliedLimit = Math.min(MAX_LIMIT, limit)
+	const timeGroup = {
+		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
+	}
 	const group = {
-		_id: {
-			$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
-		},
+		_id: segmentByChannel ? { time: timeGroup, channelId: '$channelId' } : { time: timeGroup },
 		value: { $sum: '$value' }
 	}
-	const resultProjection = { value: '$value', time: '$_id', _id: 0 }
-	// checks if publisher requests result to be segmented
-	// by channel
-	if (req.query.segmentByChannel && !skipPublisherFiltering) {
-		// eslint-disable-next-line no-underscore-dangle
-		group._id = {
-			// eslint-disable-next-line no-underscore-dangle
-			time: { ...group._id },
-			channelId: '$channelId'
-		}
-		resultProjection.time = '$_id.time'
-		resultProjection.channelId = '$_id.channelId'
+	const resultProjection = {
+		value: '$value',
+		time: '$_id.time',
+		channelId: '$_id.channelId',
+		_id: 0
 	}
 
 	const pipeline = [
 		{ $match: match },
 		{ $project: project },
-		{
-			$group: { ...group }
-		},
+		{ $group: group },
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
+		{ $match: { value: { $gt: 0 } } },
 		{ $limit: appliedLimit },
 		{ $project: resultProjection }
 	]

@@ -333,7 +333,7 @@ Submit channel events to a validator sentry
 
 ## Analytics
 
-All routes take `period` (string, can be "month", "week", "day"), `start`/`end` (optional ISO string dates)
+All routes take `timeframe` (string, can be "month", "week", "day"), `start`/`end` (optional ISO string dates)
 
 #### Global Analytics
 
