@@ -68,6 +68,7 @@ function getProjAndMatch(
 		: { $toLong: `$totals.${eventType}.${metric}` }
 	const project = {
 		created: 1,
+		channelId: 1,
 		value: projectValue
 	}
 	return { match, project }
@@ -99,9 +100,14 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	// checks if publisher requests result to be segmented
 	// by channel
 	if (req.query.segmentByChannel && !skipPublisherFiltering) {
-		project.channelId = 1
-		group.channelId = { $first: '$channelId' }
-		resultProjection.channelId = '$channelId'
+		// eslint-disable-next-line no-underscore-dangle
+		group._id = {
+			// eslint-disable-next-line no-underscore-dangle
+			time: { ...group._id },
+			channelId: '$channelId'
+		}
+		resultProjection.time = '$_id.time'
+		resultProjection.channelId = '$_id.channelId'
 	}
 
 	const pipeline = [
@@ -112,7 +118,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		},
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
 		{ $limit: appliedLimit },
-		{ $project: { ...resultProjection } }
+		{ $project: resultProjection }
 	]
 
 	return eventsCol
