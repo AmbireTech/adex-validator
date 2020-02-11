@@ -1,6 +1,6 @@
 const express = require('express')
 const { promisify } = require('util')
-const { celebrate } = require('celebrate')
+const { celebrate, Joi } = require('celebrate')
 const toBalancesKey = require('../services/sentry/toBalancesKey')
 const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 const schemas = require('./schemas')
@@ -15,7 +15,7 @@ const notCached = fn => (req, res, next) =>
 	fn(req)
 		.then(res.json.bind(res))
 		.catch(next)
-const validate = celebrate({ query: schemas.eventTimeAggr })
+const validate = celebrate({ query: { ...schemas.eventTimeAggr, segmentByChannel: Joi.string() } })
 
 // Global statistics
 router.get('/', validate, redisCached(400, analytics))
@@ -95,10 +95,13 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		},
 		value: { $sum: '$value' }
 	}
-
+	const resultProjection = { value: '$value', time: '$_id', _id: 0 }
+	// checks if publisher requests result to be segmented
+	// by channel
 	if (req.query.segmentByChannel && !skipPublisherFiltering) {
-		// adds channelId to group
-		group.channelId = '$channelId'
+		project.channelId = 1
+		group.channelId = { $first: '$channelId' }
+		resultProjection.channelId = '$channelId'
 	}
 
 	const pipeline = [
@@ -109,7 +112,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		},
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
 		{ $limit: appliedLimit },
-		{ $project: { value: '$value', time: '$_id', _id: 0 } }
+		{ $project: { ...resultProjection } }
 	]
 
 	return eventsCol

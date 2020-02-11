@@ -476,6 +476,11 @@ tape('analytics routes return correct values', async function(t) {
 		['/for-advertiser', dummyVals.auth.creator, resp => sumValues(resp.aggr) >= 20],
 		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => sumValues(resp.aggr) === 10],
 		[
+			`/for-publisher/${channel.id}?segmentByChannel=true`,
+			dummyVals.auth.publisher,
+			resp => sumValues(resp.aggr) === 10 && Object.keys(resp.aggr[0]).includes('channelId')
+		],
+		[
 			'/advanced',
 			dummyVals.auth.creator,
 			resp => Object.keys(resp.byChannelStats).includes(channel.id)
