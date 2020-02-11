@@ -93,14 +93,14 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
 	}
 	const group = {
-		_id: segmentByChannel ? { time: timeGroup, channelId: '$channelId' } : timeGroup,
+		_id: segmentByChannel ? { time: timeGroup, channelId: '$channelId' } : { time: timeGroup },
 		value: { $sum: '$value' }
 	}
-	const resultProjection = { value: '$value', time: '$_id', _id: 0 }
-	if (segmentByChannel) {
-		// eslint-disable-next-line no-underscore-dangle
-		resultProjection.time = '$_id.time'
-		resultProjection.channelId = '$_id.channelId'
+	const resultProjection = {
+		value: '$value',
+		time: '$_id.time',
+		channelId: '$_id.channelId',
+		_id: 0
 	}
 
 	const pipeline = [
