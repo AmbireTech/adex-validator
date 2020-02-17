@@ -177,6 +177,8 @@ module.exports = {
 		timeframe: Joi.string()
 			.valid(['year', 'month', 'week', 'day', 'hour'])
 			.default('hour'),
+		start: Joi.date(),
+		end: Joi.date(),
 		limit: Joi.number().default(100)
 	}
 }
