@@ -214,6 +214,7 @@ tape('RejectState: wrong signature (InvalidSignature)', async function(t) {
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
+			type: 'NewState',
 			balances,
 			stateRoot,
 			signature: getDummySig(stateRoot, 'awesomeLeader12')
@@ -234,6 +235,7 @@ tape('RejectState: deceptive stateRoot (InvalidRootHash)', async function(t) {
 		).toString('hex')
 		return {
 			...newState,
+			type: 'NewState',
 			stateRoot: deceptiveStateRoot,
 			signature: getDummySig(deceptiveStateRoot, dummyVals.ids.leader)
 		}
@@ -248,6 +250,7 @@ tape('RejectState: invalid OUTPACE transition', async function(t) {
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
+			type: 'NewState',
 			balances,
 			stateRoot,
 			signature: getDummySig(stateRoot, dummyVals.ids.leader)
@@ -266,6 +269,7 @@ tape('RejectState: invalid OUTPACE transition: exceed deposit', async function(t
 		const stateRoot = getStateRootHash(dummyAdapter, dummyVals.channel, balances).toString('hex')
 		return {
 			...newState,
+			type: 'NewState',
 			balances,
 			stateRoot,
 			signature: getDummySig(stateRoot, dummyVals.ids.leader)
