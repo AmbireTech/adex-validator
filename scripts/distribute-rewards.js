@@ -2,6 +2,7 @@
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
+const { keccak256, defaultAbiCoder } = ethers.utils
 const BN = require('bn.js')
 const fetch = require('node-fetch')
 const STAKING_ABI = require('adex-protocol-eth/abi/Staking')
@@ -31,37 +32,34 @@ const Staking = new Contract(ADDR_STAKING, STAKING_ABI, provider)
 // cfg relayer would also be useful
 console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
 
-console.log(Staking)
-
-getIntervalsWithRewards(STAKING_START_MONTH).then(console.log)
-
-function getIntervals(startDate) {
+function getPeriods(startDate) {
 	let start = new Date(startDate)
-	// Produce all intervals: monthly
+	// Produce all periods: monthly
 	const getNextMonth = n =>
 		n.getMonth() === 11
 			? new Date(n.getFullYear() + 1, 0, 1)
 			: new Date(n.getFullYear(), n.getMonth() + 1, 1)
 	const now = new Date()
-	const intervals = []
+	const periods = []
 	while (true) {
 		// Current month is not over, so it's not included
 		if (start.getFullYear() === now.getFullYear() && start.getMonth() === now.getMonth()) break
 		const next = getNextMonth(start)
-		intervals.push({ start, end: next })
+		periods.push({ start, end: next })
 		start = next
 	}
 
-	return intervals
+	return periods
 }
 
-async function getIntervalsWithRewards(startDate) {
-	const intervals = getIntervals(startDate)
+async function getPeriodsToDistributeFor(startDate) {
+	const periods = getPeriods(startDate)
+	// @TODO: filter by the ones we don't have an open channel for
 	return Promise.all(
-		intervals.map(async ({ start, end }) => {
-			const url = `${POOL_VALIDATOR_URL}/analytics?timeframe=day&metric=eventPayouts&start=${start}&end=${end}`
+		periods.map(async ({ start, end }) => {
+			// @TODO: truncate those to the proper month start if needed
+			const url = `${POOL_VALIDATOR_URL}/analytics?timeframe=month&metric=eventPayouts&start=${start}&end=${end}`
 			const resp = await fetch(url).then(r => r.json())
-			console.log(resp)
 			const toDistribute = resp.aggr.map(({ value, time }) => ({
 				time,
 				value: new BN(value).mul(REWARD_NUM).div(REWARD_DEN)
@@ -70,3 +68,61 @@ async function getIntervalsWithRewards(startDate) {
 		})
 	)
 }
+
+function getBondId({ owner, amount, poolId, nonce }) {
+	return keccak256(
+		defaultAbiCoder.encode(
+			['address', 'address', 'uint', 'bytes32', 'uint'],
+			[ADDR_STAKING, owner, amount, poolId, nonce]
+		)
+	)
+}
+
+async function getBonds() {
+	// @TODO: ensure this has no limits
+	// @TODO remind yourself of how slashing work, see if relevant; I think not cause the whole pool will be slashed, so only the amount matters
+	// @TODO only this pool ID
+	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
+	return logs.reduce((bonds, log) => {
+		const topic = log.topics[0]
+		const evs = Staking.interface.events
+		if (topic === evs.LogBond.topic) {
+			const vals = Staking.interface.parseLog(log).values
+			// @TODO there's also slashedAtStart, do we use it?
+			const { owner, amount, poolId, nonce } = vals
+			const bond = { owner, amount, poolId, nonce }
+			bonds.push({
+				id: getBondId(bond),
+				status: 'Active',
+				...bond
+			})
+		} else if (topic === evs.LogUnbondRequested.topic) {
+			// NOTE: assuming that .find() will return something is safe, as long as the logs are properly ordered
+			const { bondId, willUnlock } = Staking.interface.parseLog(log).values
+			const bond = bonds.find(({ id }) => id === bondId)
+			bond.status = 'UnbondRequested'
+			bond.willUnlock = new Date(willUnlock * 1000)
+		} else if (topic === evs.LogUnbonded.topic) {
+			// @TODO add Unbonded date (block number?)
+			const { bondId } = Staking.interface.parseLog(log).values
+			// eslint-disable-next-line no-param-reassign
+			bonds.find(({ id }) => id === bondId).status = 'Unbonded'
+		}
+		return bonds
+	}, [])
+}
+
+async function main() {
+	// @TODO parallel
+	const bonds = await getBonds()
+	console.log(bonds)
+	const periods = await getPeriodsToDistributeFor(STAKING_START_MONTH)
+	console.log(
+		periods[0].toDistribute
+			.map(x => x.value)
+			.reduce((a, b) => a.add(b))
+			.toString(10)
+	)
+}
+
+main().catch(console.error)
