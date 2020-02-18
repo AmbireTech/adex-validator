@@ -79,9 +79,10 @@ function getBondId({ owner, amount, poolId, nonce }) {
 }
 
 async function getBonds() {
+	// @TODO: optimize by getting LogBond with this poolId and then getting the rest??? does not sound efficient actually
+	//   ... get LogBond for the pool, then get LogUnbondRequested/LogUnbonded for everything
 	// @TODO: ensure this has no limits
 	// @TODO remind yourself of how slashing work, see if relevant; I think not cause the whole pool will be slashed, so only the amount matters
-	// @TODO: optimize by getting LogBond with this poolId and then getting the rest??? does not sound efficient actually
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
 	const allBonds = logs.reduce((bonds, log) => {
 		const topic = log.topics[0]
@@ -105,8 +106,8 @@ async function getBonds() {
 			bond.willUnlock = new Date(willUnlock * 1000)
 		} else if (topic === evs.LogUnbonded.topic) {
 			const { bondId } = Staking.interface.parseLog(log).values
-			// eslint-disable-next-line no-param-reassign
-			bonds.find(x => x.id === bondId).status = 'Unbonded'
+			const bond = bonds.find(x => x.id === bondId)
+			bond.status = 'Unbonded'
 		}
 		return bonds
 	}, [])
