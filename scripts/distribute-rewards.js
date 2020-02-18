@@ -2,7 +2,7 @@
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
-const { keccak256, defaultAbiCoder } = ethers.utils
+const { keccak256, defaultAbiCoder, id } = ethers.utils
 const BN = require('bn.js')
 const fetch = require('node-fetch')
 const STAKING_ABI = require('adex-protocol-eth/abi/Staking')
@@ -12,7 +12,7 @@ const cfg = require('../cfg')
 const STAKING_START_MONTH = new Date('01-01-2020')
 const ADDR_STAKING = '0x46ad2d37ceaee1e82b70b867e674b903a4b4ca32'
 
-// const POOL_ID = '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
+const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 const POOL_VALIDATOR_URL = 'https://tom.adex.network'
 
 const REWARD_NUM = new BN(5)
@@ -81,9 +81,9 @@ function getBondId({ owner, amount, poolId, nonce }) {
 async function getBonds() {
 	// @TODO: ensure this has no limits
 	// @TODO remind yourself of how slashing work, see if relevant; I think not cause the whole pool will be slashed, so only the amount matters
-	// @TODO only this pool ID
+	// @TODO: optimize by getting LogBond with this poolId and then getting the rest??? does not sound efficient actually
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
-	return logs.reduce((bonds, log) => {
+	const allBonds = logs.reduce((bonds, log) => {
 		const topic = log.topics[0]
 		const evs = Staking.interface.events
 		if (topic === evs.LogBond.topic) {
@@ -97,25 +97,27 @@ async function getBonds() {
 				...bond
 			})
 		} else if (topic === evs.LogUnbondRequested.topic) {
+			// @TODO the time when the unbond was requested is willUnlock - TIME_TO_UNBOND
 			// NOTE: assuming that .find() will return something is safe, as long as the logs are properly ordered
 			const { bondId, willUnlock } = Staking.interface.parseLog(log).values
-			const bond = bonds.find(({ id }) => id === bondId)
+			const bond = bonds.find(x => x.id === bondId)
 			bond.status = 'UnbondRequested'
 			bond.willUnlock = new Date(willUnlock * 1000)
 		} else if (topic === evs.LogUnbonded.topic) {
-			// @TODO add Unbonded date (block number?)
 			const { bondId } = Staking.interface.parseLog(log).values
 			// eslint-disable-next-line no-param-reassign
-			bonds.find(({ id }) => id === bondId).status = 'Unbonded'
+			bonds.find(x => x.id === bondId).status = 'Unbonded'
 		}
 		return bonds
 	}, [])
+
+	return allBonds.filter(x => x.poolId === POOL_ID)
 }
 
 async function main() {
 	// @TODO parallel
 	const bonds = await getBonds()
-	console.log(bonds)
+	console.log(bonds.filter(x => x.status !== 'Active'))
 	const periods = await getPeriodsToDistributeFor(STAKING_START_MONTH)
 	console.log(
 		periods[0].toDistribute
