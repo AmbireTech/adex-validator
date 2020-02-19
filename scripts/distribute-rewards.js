@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const assert = require('assert')
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
@@ -127,22 +128,10 @@ async function getBonds() {
 	)
 }
 
-async function main() {
-	const [bonds, periods] = await Promise.all([
-		getBonds(),
-		getPeriodsToDistributeFor(STAKING_START_MONTH)
-	])
+function calculateDistributionForPeriod(period, bonds) {
+	const sum = (a, b) => a.add(b)
+	const totalInPeriod = period.toDistribute.map(x => x.value).reduce(sum)
 
-	console.log(bonds.filter(x => x.status !== 'Active'))
-
-	// @TODO remove this sample code
-	console.log(
-		periods[0].toDistribute
-			.map(x => x.value)
-			.reduce((a, b) => a.add(b))
-			.toString(10)
-	)
-	const period = periods[0]
 	const all = {}
 	period.toDistribute.forEach(datapoint => {
 		const activeBonds = bonds.filter(
@@ -156,6 +145,22 @@ async function main() {
 			all[bond.owner] = all[bond.owner].add(datapoint.value.mul(bond.amount).div(total))
 		})
 	})
+
+	const totalDistributed = Object.values(all).reduce(sum)
+	assert.ok(totalDistributed.lte(totalInPeriod), 'total distributed <= total in the period')
+
+	return all
+}
+
+async function main() {
+	const [bonds, periods] = await Promise.all([
+		getBonds(),
+		getPeriodsToDistributeFor(STAKING_START_MONTH)
+	])
+
+	console.log(bonds.filter(x => x.status !== 'Active'))
+
+	const all = calculateDistributionForPeriod(periods[0], bonds)
 	console.log(all)
 }
 
