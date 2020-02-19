@@ -2,8 +2,7 @@
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
-const { keccak256, defaultAbiCoder, id } = ethers.utils
-const BN = require('bn.js')
+const { keccak256, defaultAbiCoder, id, bigNumberify } = ethers.utils
 const fetch = require('node-fetch')
 const STAKING_ABI = require('adex-protocol-eth/abi/Staking')
 const cfg = require('../cfg')
@@ -17,8 +16,8 @@ const TIME_TO_UNLOCK_SECS = 30 * 24 * 60 * 60
 const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 const POOL_VALIDATOR_URL = 'https://tom.adex.network'
 
-const REWARD_NUM = new BN(5)
-const REWARD_DEN = new BN(100)
+const REWARD_NUM = bigNumberify(5)
+const REWARD_DEN = bigNumberify(100)
 
 const provider = getDefaultProvider('homestead')
 const Staking = new Contract(ADDR_STAKING, STAKING_ABI, provider)
@@ -63,8 +62,10 @@ async function getPeriodsToDistributeFor(startDate) {
 			const url = `${POOL_VALIDATOR_URL}/analytics?timeframe=month&metric=eventPayouts&start=${start}&end=${end}`
 			const resp = await fetch(url).then(r => r.json())
 			const toDistribute = resp.aggr.map(({ value, time }) => ({
-				time,
-				value: new BN(value).mul(REWARD_NUM).div(REWARD_DEN)
+				time: new Date(time),
+				value: bigNumberify(value)
+					.mul(REWARD_NUM)
+					.div(REWARD_DEN)
 			}))
 			return { start, end, toDistribute }
 		})
@@ -127,16 +128,35 @@ async function getBonds() {
 }
 
 async function main() {
-	// @TODO parallel
-	const bonds = await getBonds()
+	const [bonds, periods] = await Promise.all([
+		getBonds(),
+		getPeriodsToDistributeFor(STAKING_START_MONTH)
+	])
+
 	console.log(bonds.filter(x => x.status !== 'Active'))
-	const periods = await getPeriodsToDistributeFor(STAKING_START_MONTH)
+
+	// @TODO remove this sample code
 	console.log(
 		periods[0].toDistribute
 			.map(x => x.value)
 			.reduce((a, b) => a.add(b))
 			.toString(10)
 	)
+	const period = periods[0]
+	const all = {}
+	period.toDistribute.forEach(datapoint => {
+		const activeBonds = bonds.filter(
+			bond => bond.start < datapoint.time && (!bond.end || bond.end > datapoint.time)
+		)
+		if (!activeBonds.length) return
+
+		const total = activeBonds.map(bond => bond.amount).reduce((a, b) => a.add(b), bigNumberify(0))
+		activeBonds.forEach(bond => {
+			if (!all[bond.owner]) all[bond.owner] = bigNumberify(0)
+			all[bond.owner] = all[bond.owner].add(datapoint.value.mul(bond.amount).div(total))
+		})
+	})
+	console.log(all)
 }
 
 main().catch(console.error)
