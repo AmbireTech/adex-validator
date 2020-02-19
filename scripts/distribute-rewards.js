@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 const assert = require('assert')
 const ethers = require('ethers')
 
@@ -89,6 +90,7 @@ function getPeriods(startDate) {
 	// Produce all periods: monthly
 	const now = new Date()
 	const periods = []
+	// eslint-disable-next-line no-constant-condition
 	while (true) {
 		// Current month is not over, so it's not included
 		if (start.getFullYear() === now.getFullYear() && start.getMonth() === now.getMonth()) break
