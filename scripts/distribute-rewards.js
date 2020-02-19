@@ -15,8 +15,8 @@ const ADDR_STAKING = '0x46ad2d37ceaee1e82b70b867e674b903a4b4ca32'
 // This is set in the staking contract
 const TIME_TO_UNLOCK_SECS = 30 * 24 * 60 * 60
 
-// const FEE_DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
-// const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+const FEE_DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
+const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 
 const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 const POOL_VALIDATOR_URL = 'https://tom.adex.network'
@@ -26,17 +26,26 @@ const REWARD_DEN = bigNumberify(100)
 
 const provider = getDefaultProvider('homestead')
 const Staking = new Contract(ADDR_STAKING, STAKING_ABI, provider)
-
-// Not needed if we simply get the revenue of feeAddr
-// maybe just the whole fee + minimum "base"
+const Token = new Contract(
+	FEE_TOKEN,
+	['function balanceOf(address owner) view returns (uint)'],
+	provider
+)
 
 // consider using the adapter for opening the keystore
 // we just need to sign technically, so it should be good!
 
-// also we'll use the sentryUrl to get stats
-
 // cfg relayer would also be useful
 console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
+
+function humanReadableToken(amnt) {
+	return `⬙ ${(
+		amnt
+			// 10 ** 18
+			.div(bigNumberify('0x2386f26fc10000'))
+			.toNumber() / 100
+	).toFixed(2)}`
+}
 
 function getNextMonth(n) {
 	return n.getMonth() === 11
@@ -173,10 +182,21 @@ async function main() {
 		...period,
 		...calculateDistributionForPeriod(period, bonds)
 	}))
+
+	// Safety check: whether our funds are sufficient
 	const totalAmount = periodsWithDistribution
 		.map(x => x.totalDistributed)
 		.reduce((a, b) => a.add(b), bigNumberify(0))
-	console.log(totalAmount)
+	const available = await Token.balanceOf(FEE_DISTRIBUTION_IDENTITY)
+	// @TODO: factor in the channel open fee
+	if (totalAmount.gt(available)) {
+		console.log(
+			`Insufficient amount: ${humanReadableToken(available)} (${humanReadableToken(
+				totalAmount
+			)} needed)`
+		)
+		process.exit(1)
+	}
 
 	// @TODO eliminate channels that are already opened
 	// @TODO assert we have enough funds
