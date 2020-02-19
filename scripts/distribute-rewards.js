@@ -65,7 +65,7 @@ async function relayerPost(url, body) {
 		body: JSON.stringify(body)
 	})
 	const responseBody = await r.json()
-	if (r.statusCode !== 200) throw responseBody
+	if (r.status !== 200) throw responseBody
 	return responseBody
 }
 
@@ -276,12 +276,10 @@ async function main() {
 		}
 		const openTx = new Transaction(openTxRaw)
 		const txSig = splitSig(await adapter.sign(openTx.hash()))
-		console.log(
-			await relayerPost(`/identity/${FEE_DISTRIBUTION_IDENTITY}/execute`, {
-				signatures: [txSig],
-				txnsRaw: [openTxRaw]
-			})
-		)
+		await relayerPost(`/identity/${FEE_DISTRIBUTION_IDENTITY}/execute`, {
+			signatures: [txSig],
+			txnsRaw: [openTxRaw]
+		})
 
 		// Prepare the balance tree and signatures that will grant the ability to withdraw
 		const tree = new MerkleTree(
