@@ -6,6 +6,7 @@ const { Contract, getDefaultProvider } = ethers
 const { keccak256, defaultAbiCoder, id, bigNumberify } = ethers.utils
 const fetch = require('node-fetch')
 const STAKING_ABI = require('adex-protocol-eth/abi/Staking')
+const db = require('../db')
 const cfg = require('../cfg')
 
 // Staking started on 28-12-2019
@@ -13,6 +14,9 @@ const STAKING_START_MONTH = new Date('01-01-2020')
 const ADDR_STAKING = '0x46ad2d37ceaee1e82b70b867e674b903a4b4ca32'
 // This is set in the staking contract
 const TIME_TO_UNLOCK_SECS = 30 * 24 * 60 * 60
+
+// const FEE_DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
+// const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 
 const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 const POOL_VALIDATOR_URL = 'https://tom.adex.network'
@@ -34,13 +38,15 @@ const Staking = new Contract(ADDR_STAKING, STAKING_ABI, provider)
 // cfg relayer would also be useful
 console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
 
+function getNextMonth(n) {
+	return n.getMonth() === 11
+		? new Date(n.getFullYear() + 1, 0, 1)
+		: new Date(n.getFullYear(), n.getMonth() + 1, 1)
+}
+
 function getPeriods(startDate) {
 	let start = new Date(startDate)
 	// Produce all periods: monthly
-	const getNextMonth = n =>
-		n.getMonth() === 11
-			? new Date(n.getFullYear() + 1, 0, 1)
-			: new Date(n.getFullYear(), n.getMonth() + 1, 1)
 	const now = new Date()
 	const periods = []
 	while (true) {
@@ -139,7 +145,7 @@ function calculateDistributionForPeriod(period, bonds) {
 		)
 		if (!activeBonds.length) return
 
-		const total = activeBonds.map(bond => bond.amount).reduce((a, b) => a.add(b), bigNumberify(0))
+		const total = activeBonds.map(bond => bond.amount).reduce(sum, bigNumberify(0))
 		activeBonds.forEach(bond => {
 			if (!all[bond.owner]) all[bond.owner] = bigNumberify(0)
 			all[bond.owner] = all[bond.owner].add(datapoint.value.mul(bond.amount).div(total))
@@ -149,19 +155,33 @@ function calculateDistributionForPeriod(period, bonds) {
 	const totalDistributed = Object.values(all).reduce(sum)
 	assert.ok(totalDistributed.lte(totalInPeriod), 'total distributed <= total in the period')
 
-	return all
+	return { balances: all, totalDistributed }
 }
 
 async function main() {
-	const [bonds, periods] = await Promise.all([
-		getBonds(),
-		getPeriodsToDistributeFor(STAKING_START_MONTH)
-	])
+	await db.connect()
+	const rewardChannels = db.getMongo().collection('rewardChannels')
+	const lastChannel = (await rewardChannels
+		.find()
+		.sort({ validUntil: -1 })
+		.limit(1))[0]
+	const start = lastChannel ? getNextMonth(lastChannel.periodStart) : STAKING_START_MONTH
 
-	console.log(bonds.filter(x => x.status !== 'Active'))
+	const [bonds, periods] = await Promise.all([getBonds(), getPeriodsToDistributeFor(start)])
 
-	const all = calculateDistributionForPeriod(periods[0], bonds)
-	console.log(all)
+	const periodsWithDistribution = periods.map(period => ({
+		...period,
+		...calculateDistributionForPeriod(period, bonds)
+	}))
+	const totalAmount = periodsWithDistribution
+		.map(x => x.totalDistributed)
+		.reduce((a, b) => a.add(b), bigNumberify(0))
+	console.log(totalAmount)
+
+	// @TODO eliminate channels that are already opened
+	// @TODO assert we have enough funds
+
+	process.exit(0)
 }
 
 main().catch(console.error)
