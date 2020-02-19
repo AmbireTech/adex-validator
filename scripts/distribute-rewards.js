@@ -3,8 +3,9 @@ const assert = require('assert')
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
-const { keccak256, defaultAbiCoder, id, bigNumberify } = ethers.utils
+const { keccak256, defaultAbiCoder, id, bigNumberify, Interface } = ethers.utils
 const fetch = require('node-fetch')
+const { Channel, Transaction } = require('adex-protocol-eth/js')
 const stakingAbi = require('adex-protocol-eth/abi/Staking')
 const identityAbi = require('adex-protocol-eth/abi/Identity')
 const db = require('../db')
@@ -36,6 +37,7 @@ const Token = new Contract(
 	['function balanceOf(address owner) view returns (uint)'],
 	provider
 )
+const idInterface = new Interface(identityAbi)
 
 const keystoreFile = process.argv[2]
 const keystorePwd = process.env.KEYSTORE_PWD
@@ -201,7 +203,7 @@ async function main() {
 	const rewardChannels = db.getMongo().collection('rewardChannels')
 	const lastChannel = (await rewardChannels
 		.find()
-		.sort({ validUntil: -1 })
+		.sort({ periodStart: -1 })
 		.limit(1))[0]
 	const start = lastChannel ? getNextMonth(lastChannel.periodStart) : STAKING_START_MONTH
 
@@ -220,16 +222,55 @@ async function main() {
 	const available = await Token.balanceOf(FEE_DISTRIBUTION_IDENTITY)
 	if (totalCost.gt(available)) {
 		console.log(
-			`Insufficient amount in the distribution identity: ${humanReadableToken(
-				available
-			)} (${humanReadableToken(totalAmount)} needed)`
+			`Insufficient amount in the distribution identity: ${humanReadableToken(available)}` +
+				` (${humanReadableToken(totalAmount)} needed)`
 		)
 		process.exit(1)
 	}
 
 	// Submit all
-	// @TODO
 	console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
+	/* eslint-disable no-await-in-loop */
+	/* eslint-disable no-restricted-syntax */
+	for (const period of periodsWithDistribution) {
+		const channelArgs = {
+			creator: FEE_DISTRIBUTION_IDENTITY,
+			tokenAddr: Token.address,
+			tokenAmount: period.totalDistributed.toString(10),
+			validUntil: Math.floor(period.start.getTime() / 1000) + 365 * 24 * 60 * 60,
+			validators: [adapter.whoami(), adapter.whoami()],
+			spec: id(POOL_ID + period.start.toString())
+		}
+		const channel = new Channel({
+			...channelArgs,
+			spec: Buffer.from(channelArgs.spec.slice(2), 'hex')
+		})
+		const channelId = channel.hashHex(cfg.ETHEREUM_CORE_ADDR)
+
+		const openTx = new Transaction({
+			identityContract: FEE_DISTRIBUTION_IDENTITY,
+			nonce: (await Identity.nonce()).toNumber() + 1,
+			feeTokenAddr: Token.address,
+			feeAmount: REWARD_CHANNEL_OPEN_FEE.toString(10),
+			// We are calling the channelOpen() on the Identity itself, which calls the Core
+			to: FEE_DISTRIBUTION_IDENTITY,
+			data: idInterface.functions.channelOpen.encode([
+				cfg.ETHEREUM_CORE_ADDR,
+				channel.toSolidityTuple()
+			])
+		})
+		console.log(openTx)
+
+		// The record that we are saving in the DB
+		const rewardRecord = {
+			_id: channelId,
+			channelId,
+			channelArgs,
+			periodStart: period.start,
+			pariodEnd: period.end
+		}
+		console.log(rewardRecord)
+	}
 
 	process.exit(0)
 }
