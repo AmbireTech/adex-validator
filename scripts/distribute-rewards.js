@@ -3,9 +3,9 @@ const assert = require('assert')
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
-const { keccak256, defaultAbiCoder, id, bigNumberify, Interface } = ethers.utils
+const { keccak256, defaultAbiCoder, id, bigNumberify, hexlify, Interface } = ethers.utils
 const fetch = require('node-fetch')
-const { Channel, Transaction } = require('adex-protocol-eth/js')
+const { Channel, Transaction, MerkleTree, splitSig } = require('adex-protocol-eth/js')
 const stakingAbi = require('adex-protocol-eth/abi/Staking')
 const identityAbi = require('adex-protocol-eth/abi/Identity')
 const db = require('../db')
@@ -38,6 +38,8 @@ const Token = new Contract(
 	provider
 )
 const idInterface = new Interface(identityAbi)
+
+const coreAddr = cfg.ETHEREUM_CORE_ADDR
 
 const keystoreFile = process.argv[2]
 const keystorePwd = process.env.KEYSTORE_PWD
@@ -204,10 +206,15 @@ async function main() {
 	const lastChannel = (await rewardChannels
 		.find()
 		.sort({ periodStart: -1 })
-		.limit(1))[0]
+		.limit(1)
+		.toArray())[0]
 	const start = lastChannel ? getNextMonth(lastChannel.periodStart) : STAKING_START_MONTH
 
 	const [bonds, periods] = await Promise.all([getBonds(), getPeriodsToDistributeFor(start)])
+	if (periods.length === 0) {
+		console.log('Nothing to do!')
+		process.exit(0)
+	}
 
 	const periodsWithDistribution = periods.map(period => ({
 		...period,
@@ -245,31 +252,52 @@ async function main() {
 			...channelArgs,
 			spec: Buffer.from(channelArgs.spec.slice(2), 'hex')
 		})
-		const channelId = channel.hashHex(cfg.ETHEREUM_CORE_ADDR)
+		const channelId = channel.hashHex(coreAddr)
 
-		const openTx = new Transaction({
+		// Prepare for opening the channel
+		const openTxRaw = {
 			identityContract: FEE_DISTRIBUTION_IDENTITY,
 			nonce: (await Identity.nonce()).toNumber() + 1,
 			feeTokenAddr: Token.address,
 			feeAmount: REWARD_CHANNEL_OPEN_FEE.toString(10),
 			// We are calling the channelOpen() on the Identity itself, which calls the Core
 			to: FEE_DISTRIBUTION_IDENTITY,
-			data: idInterface.functions.channelOpen.encode([
-				cfg.ETHEREUM_CORE_ADDR,
-				channel.toSolidityTuple()
-			])
-		})
-		console.log(openTx)
+			data: hexlify(idInterface.functions.channelOpen.encode([coreAddr, channel.toSolidityTuple()]))
+		}
+		const openTx = new Transaction(openTxRaw)
+		const txSig = splitSig(await adapter.sign(openTx.hash()))
+		console.log(openTxRaw, txSig)
 
-		// The record that we are saving in the DB
+		// Prepare the balance tree and signatures that will grant the ability to withdraw
+		const tree = new MerkleTree(
+			Object.entries(period.balances).map(([addr, value]) =>
+				Channel.getBalanceLeaf(addr, value.toString(10))
+			)
+		)
+		const stateRoot = tree.getRoot()
+		const hashToSign = channel.hashToSign(coreAddr, stateRoot)
+		const balancesSig = splitSig(await adapter.sign(hashToSign))
+
+		// The record that we are going to be saving in the DB
 		const rewardRecord = {
 			_id: channelId,
 			channelId,
 			channelArgs,
+			balances: Object.fromEntries(
+				Object.entries(period.balances).map(([addr, value]) => [addr, value.toString(10)])
+			),
+			// The same validator is assigned for both slots
+			signatures: [balancesSig, balancesSig],
 			periodStart: period.start,
 			pariodEnd: period.end
 		}
-		console.log(rewardRecord)
+		await rewardChannels.insertOne(rewardRecord)
+
+		console.log(
+			`Channel ${channelId} created, reward record created, total distributed: ${humanReadableToken(
+				period.totalDistributed
+			)}`
+		)
 	}
 
 	process.exit(0)
