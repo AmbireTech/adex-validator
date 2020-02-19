@@ -169,22 +169,22 @@ tape('getStateRootHash: returns correct result', function(t) {
 	;[
 		{
 			channel: {
-				id: 'testing'
+				id: '0x8fd0f9172b8d8175c004d6e9e6c00322dbcf89e10665d06c2e76e014b5f491b3'
 			},
 			balances: {
 				publisher: 1,
 				tester: 2
 			},
-			expectedHash: 'da9b42bb60da9622404cade0aec4cda0a10104c6ec5f07ad67de081abb58c803'
+			expectedHash: '29bd22619ca2fff2b133760b22ae361d026ca27e679bcae7bb0ac55e5f246482'
 		},
 		{
 			channel: {
-				id: 'fake'
+				id: '0x8fd0f9172b8d8175c004d6e9e6c00322dbcf89e10665d06c2e76e014b5f492e2'
 			},
 			balances: {
 				publisher: 0
 			},
-			expectedHash: '0b64767e909e9f36ab9574e6b93921390c40a0d899c3587db3b2df077b8e87d7'
+			expectedHash: 'b3ed14e49c79c293937549ac12b599c0cf3579f24aba7791a4396f6013f72090'
 		}
 	].forEach(({ expectedHash, channel, balances }) => {
 		const actualHash = getStateRootHash(dummyAdapter, channel, balances).toString('hex')
