@@ -58,6 +58,17 @@ const adapter = new adapters.ethereum.Adapter(
 	provider
 )
 
+async function relayerPost(url, body) {
+	const r = await fetch(cfg.ETHEREUM_ADAPTER_RELAYER + url, {
+		headers: { 'content-type': 'application/json' },
+		method: 'POST',
+		body: JSON.stringify(body)
+	})
+	const responseBody = await r.json()
+	if (r.statusCode !== 200) throw responseBody
+	return responseBody
+}
+
 function humanReadableToken(amnt) {
 	return `⬙ ${(
 		amnt
@@ -236,7 +247,6 @@ async function main() {
 	}
 
 	// Submit all
-	console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
 	/* eslint-disable no-await-in-loop */
 	/* eslint-disable no-restricted-syntax */
 	for (const period of periodsWithDistribution) {
@@ -257,7 +267,7 @@ async function main() {
 		// Prepare for opening the channel
 		const openTxRaw = {
 			identityContract: FEE_DISTRIBUTION_IDENTITY,
-			nonce: (await Identity.nonce()).toNumber() + 1,
+			nonce: (await Identity.nonce()).toNumber(),
 			feeTokenAddr: Token.address,
 			feeAmount: REWARD_CHANNEL_OPEN_FEE.toString(10),
 			// We are calling the channelOpen() on the Identity itself, which calls the Core
@@ -266,7 +276,12 @@ async function main() {
 		}
 		const openTx = new Transaction(openTxRaw)
 		const txSig = splitSig(await adapter.sign(openTx.hash()))
-		console.log(openTxRaw, txSig)
+		console.log(
+			await relayerPost(`/identity/${FEE_DISTRIBUTION_IDENTITY}/execute`, {
+				signatures: [txSig],
+				txnsRaw: [openTxRaw]
+			})
+		)
 
 		// Prepare the balance tree and signatures that will grant the ability to withdraw
 		const tree = new MerkleTree(
@@ -303,4 +318,7 @@ async function main() {
 	process.exit(0)
 }
 
-main().catch(console.error)
+main().catch(e => {
+	console.error(e)
+	process.exit(1)
+})
