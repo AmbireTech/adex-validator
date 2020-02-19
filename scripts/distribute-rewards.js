@@ -104,18 +104,23 @@ function getPeriods(startDate) {
 
 async function getPeriodsToDistributeFor(startDate) {
 	const periods = getPeriods(startDate)
-	// @TODO: filter by the ones we don't have an open channel for
 	return Promise.all(
 		periods.map(async ({ start, end }) => {
-			// @TODO: truncate those to the proper month start if needed
 			const url = `${POOL_VALIDATOR_URL}/analytics?timeframe=month&metric=eventPayouts&start=${start}&end=${end}`
 			const resp = await fetch(url).then(r => r.json())
-			const toDistribute = resp.aggr.map(({ value, time }) => ({
-				time: new Date(time),
-				value: bigNumberify(value)
+			const toDistribute = resp.aggr.map(({ value, time }, i) => {
+				const zero = bigNumberify(0)
+				const val = bigNumberify(value)
 					.mul(REWARD_NUM)
 					.div(REWARD_DEN)
-			}))
+					// Adjust this to remove the channelOpen fee from the monthly turnover
+					.sub(i === 0 ? REWARD_CHANNEL_OPEN_FEE : zero)
+				assert.ok(val.gte(zero))
+				return {
+					time: new Date(time),
+					value: val
+				}
+			})
 			return { start, end, toDistribute }
 		})
 	)
