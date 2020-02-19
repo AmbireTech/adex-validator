@@ -184,6 +184,8 @@ function calculateDistributionForPeriod(period, bonds) {
 }
 
 async function main() {
+	console.log(`Distribution identity: ${FEE_DISTRIBUTION_IDENTITY}`)
+
 	await adapter.init()
 	await adapter.unlock()
 
@@ -218,9 +220,9 @@ async function main() {
 	const available = await Token.balanceOf(FEE_DISTRIBUTION_IDENTITY)
 	if (totalCost.gt(available)) {
 		console.log(
-			`Insufficient amount: ${humanReadableToken(available)} (${humanReadableToken(
-				totalAmount
-			)} needed)`
+			`Insufficient amount in the distribution identity: ${humanReadableToken(
+				available
+			)} (${humanReadableToken(totalAmount)} needed)`
 		)
 		process.exit(1)
 	}
