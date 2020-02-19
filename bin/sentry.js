@@ -36,6 +36,17 @@ app.use('/channel', channelRoutes)
 app.use('/channel', channelCreate.forAdapter(adapter))
 app.use('/cfg', (_, res) => res.send(cfg))
 app.use('/analytics', analyticsRoutes)
+app.use('/fee-rewards', async (_, res) =>
+	res.send(
+		await db
+			.getMongo()
+			.collection('rewardChannels')
+			.find()
+			.sort({ periodStart: -1 })
+			.limit(12)
+			.toArray()
+	)
+)
 app.use('/.well-known', express.static('.well-known'))
 app.use(errors())
 
