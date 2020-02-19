@@ -246,3 +246,13 @@ npm run benchmark
 > npm run benchmark-docker
 
 ```
+
+### Reward distribution
+
+Distributes the earned validator fees to a validator pool. Currently set to the Validator Tom pool (see the hardcodes in `scripts/distribute-rewards.js`).
+
+Example:
+
+```
+NODE_ENV=production KEYSTORE_PWD=<pwd> node scripts/distribute-rewards.js ./keystore.json
+ ```
