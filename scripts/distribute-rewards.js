@@ -11,6 +11,8 @@ const cfg = require('../cfg')
 // Staking started on 28-12-2019
 const STAKING_START_MONTH = new Date('01-01-2020')
 const ADDR_STAKING = '0x46ad2d37ceaee1e82b70b867e674b903a4b4ca32'
+// This is set in the staking contract
+const TIME_TO_UNLOCK_SECS = 30 * 24 * 60 * 60
 
 const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 const POOL_VALIDATOR_URL = 'https://tom.adex.network'
@@ -79,31 +81,30 @@ function getBondId({ owner, amount, poolId, nonce }) {
 }
 
 async function getBonds() {
-	// @TODO: optimize by getting LogBond with this poolId and then getting the rest??? does not sound efficient actually
-	//   ... get LogBond for the pool, then get LogUnbondRequested/LogUnbonded for everything
-	// @TODO: ensure this has no limits
-	// @TODO remind yourself of how slashing work, see if relevant; I think not cause the whole pool will be slashed, so only the amount matters
+	// NOTE: Slashing doesn't matter into this calculation, cause we slash the whole pool together so ratios stay unchanged
+	// NOTE: getLogs should not have limits
+	// NOTE: poolId on LogOpen is not indexed, so we have to get everything and filter
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
 	const allBonds = logs.reduce((bonds, log) => {
 		const topic = log.topics[0]
 		const evs = Staking.interface.events
 		if (topic === evs.LogBond.topic) {
 			const vals = Staking.interface.parseLog(log).values
-			// @TODO there's also slashedAtStart, do we use it?
+			// NOTE there's also slashedAtStart, but we do not need it cause slashing doesn't matter (whole pool gets slashed, ratios stay the same)
 			const { owner, amount, poolId, nonce } = vals
-			const bond = { owner, amount, poolId, nonce }
+			const bond = { owner, amount, poolId, nonce, openedAtBlock: log.blockNumber, end: null }
 			bonds.push({
 				id: getBondId(bond),
 				status: 'Active',
 				...bond
 			})
 		} else if (topic === evs.LogUnbondRequested.topic) {
-			// @TODO the time when the unbond was requested is willUnlock - TIME_TO_UNBOND
 			// NOTE: assuming that .find() will return something is safe, as long as the logs are properly ordered
 			const { bondId, willUnlock } = Staking.interface.parseLog(log).values
 			const bond = bonds.find(x => x.id === bondId)
 			bond.status = 'UnbondRequested'
 			bond.willUnlock = new Date(willUnlock * 1000)
+			bond.end = new Date((willUnlock - TIME_TO_UNLOCK_SECS) * 1000)
 		} else if (topic === evs.LogUnbonded.topic) {
 			const { bondId } = Staking.interface.parseLog(log).values
 			const bond = bonds.find(x => x.id === bondId)
@@ -112,7 +113,17 @@ async function getBonds() {
 		return bonds
 	}, [])
 
-	return allBonds.filter(x => x.poolId === POOL_ID)
+	const bondsForPool = allBonds.filter(x => x.poolId === POOL_ID)
+
+	// NOTE: Unfortunately, we don't have the proper start date, so we have to calculate it from the block
+	return Promise.all(
+		bondsForPool.map(async bond => {
+			return {
+				...bond,
+				start: new Date((await provider.getBlock(bond.openedAtBlock)).timestamp * 1000)
+			}
+		})
+	)
 }
 
 async function main() {
