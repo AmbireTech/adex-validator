@@ -24,6 +24,8 @@ const POOL_VALIDATOR_URL = 'https://tom.adex.network'
 const REWARD_NUM = bigNumberify(5)
 const REWARD_DEN = bigNumberify(100)
 
+const REWARD_CHANNEL_OPEN_FEE = bigNumberify('150000000000000000')
+
 const provider = getDefaultProvider('homestead')
 const Staking = new Contract(ADDR_STAKING, STAKING_ABI, provider)
 const Token = new Contract(
@@ -41,7 +43,7 @@ console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
 function humanReadableToken(amnt) {
 	return `⬙ ${(
 		amnt
-			// 10 ** 18
+			// 10 ** 16
 			.div(bigNumberify('0x2386f26fc10000'))
 			.toNumber() / 100
 	).toFixed(2)}`
@@ -187,9 +189,9 @@ async function main() {
 	const totalAmount = periodsWithDistribution
 		.map(x => x.totalDistributed)
 		.reduce((a, b) => a.add(b), bigNumberify(0))
+	const totalCost = totalAmount.add(REWARD_CHANNEL_OPEN_FEE)
 	const available = await Token.balanceOf(FEE_DISTRIBUTION_IDENTITY)
-	// @TODO: factor in the channel open fee
-	if (totalAmount.gt(available)) {
+	if (totalCost.gt(available)) {
 		console.log(
 			`Insufficient amount: ${humanReadableToken(available)} (${humanReadableToken(
 				totalAmount
@@ -197,9 +199,6 @@ async function main() {
 		)
 		process.exit(1)
 	}
-
-	// @TODO eliminate channels that are already opened
-	// @TODO assert we have enough funds
 
 	process.exit(0)
 }
