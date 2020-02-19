@@ -5,9 +5,11 @@ const ethers = require('ethers')
 const { Contract, getDefaultProvider } = ethers
 const { keccak256, defaultAbiCoder, id, bigNumberify } = ethers.utils
 const fetch = require('node-fetch')
-const STAKING_ABI = require('adex-protocol-eth/abi/Staking')
+const stakingAbi = require('adex-protocol-eth/abi/Staking')
+const identityAbi = require('adex-protocol-eth/abi/Identity')
 const db = require('../db')
 const cfg = require('../cfg')
+const adapters = require('../adapters')
 
 // Staking started on 28-12-2019
 const STAKING_START_MONTH = new Date('01-01-2020')
@@ -27,18 +29,30 @@ const REWARD_DEN = bigNumberify(100)
 const REWARD_CHANNEL_OPEN_FEE = bigNumberify('150000000000000000')
 
 const provider = getDefaultProvider('homestead')
-const Staking = new Contract(ADDR_STAKING, STAKING_ABI, provider)
+const Staking = new Contract(ADDR_STAKING, stakingAbi, provider)
+const Identity = new Contract(FEE_DISTRIBUTION_IDENTITY, identityAbi, provider)
 const Token = new Contract(
 	FEE_TOKEN,
 	['function balanceOf(address owner) view returns (uint)'],
 	provider
 )
 
-// consider using the adapter for opening the keystore
-// we just need to sign technically, so it should be good!
+const keystoreFile = process.argv[2]
+const keystorePwd = process.env.KEYSTORE_PWD
+if (!(keystoreFile && keystorePwd)) {
+	console.log(`Usage: .${process.argv[1]} <path to keystore file>`)
+	console.log(`KEYSTORE_PWD needs to be set in env!`)
+	process.exit(1)
+}
 
-// cfg relayer would also be useful
-console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
+const adapter = new adapters.ethereum.Adapter(
+	{
+		keystoreFile: process.argv[2],
+		keystorePwd: process.env.KEYSTORE_PWD
+	},
+	cfg,
+	provider
+)
 
 function humanReadableToken(amnt) {
 	return `⬙ ${(
@@ -170,6 +184,17 @@ function calculateDistributionForPeriod(period, bonds) {
 }
 
 async function main() {
+	await adapter.init()
+	await adapter.unlock()
+
+	// Safety check: whether we have sufficient privileges
+	if ((await Identity.privileges(adapter.whoami())) < 2) {
+		console.log(
+			`Insufficient privilege in the distribution identity (${FEE_DISTRIBUTION_IDENTITY})`
+		)
+		process.exit(1)
+	}
+
 	await db.connect()
 	const rewardChannels = db.getMongo().collection('rewardChannels')
 	const lastChannel = (await rewardChannels
@@ -199,6 +224,10 @@ async function main() {
 		)
 		process.exit(1)
 	}
+
+	// Submit all
+	// @TODO
+	console.log(cfg.ETHEREUM_ADAPTER_RELAYER)
 
 	process.exit(0)
 }
