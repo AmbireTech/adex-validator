@@ -79,9 +79,11 @@ function humanReadableToken(amnt) {
 }
 
 function getNextMonth(n) {
-	return n.getMonth() === 11
-		? new Date(n.getFullYear() + 1, 0, 1)
-		: new Date(n.getFullYear(), n.getMonth() + 1, 1)
+	return new Date(
+		n.getMonth() === 11
+			? Date.UTC(n.getFullYear() + 1, 0, 1)
+			: Date.UTC(n.getFullYear(), n.getMonth() + 1, 1)
+	)
 }
 
 function getPeriods(startDate) {
