@@ -310,7 +310,7 @@ async function main() {
 			// The same validator is assigned for both slots
 			signatures: [balancesSig, balancesSig],
 			periodStart: period.start,
-			pariodEnd: period.end
+			periodEnd: period.end
 		}
 		await rewardChannels.insertOne(rewardRecord)
 
