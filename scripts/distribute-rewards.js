@@ -45,8 +45,7 @@ const coreAddr = cfg.ETHEREUM_CORE_ADDR
 const keystoreFile = process.argv[2]
 const keystorePwd = process.env.KEYSTORE_PWD
 if (!(keystoreFile && keystorePwd)) {
-	console.log(`Usage: .${process.argv[1]} <path to keystore file>`)
-	console.log(`KEYSTORE_PWD needs to be set in env!`)
+	console.log(`Usage: KEYSTORE_PWD=... .${process.argv[1]} <path to keystore file>`)
 	process.exit(1)
 }
 
