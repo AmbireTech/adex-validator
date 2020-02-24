@@ -1,6 +1,6 @@
 {
   "name": "adex-validator-stack",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "description": "AdEx Validator stack (sentry, validator worker, watcher)",
   "main": "bin/sentry.js",
   "scripts": {
