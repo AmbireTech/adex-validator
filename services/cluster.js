@@ -4,12 +4,14 @@ const logger = require('../services/logger')('cluster')
 
 const setupWorkerProcesses = () => {
 	// to read number of cores on system
+	const maxWorkers = process.env.MAX_WORKERS ? parseInt(process.env.MAX_WORKERS, 10) : 0
 	const numCores = os.cpus().length
-	logger.info(`Master cluster setting up ${numCores} workers`)
+	const workers = maxWorkers && !Number.isNaN(maxWorkers) ? maxWorkers : numCores
+	logger.info(`Master cluster setting up ${workers} workers`)
 
 	// iterate on number of cores need to be utilized by an application
 	// current example will utilize all of them
-	for (let i = 0; i < numCores; i += 1) {
+	for (let i = 0; i < workers; i += 1) {
 		cluster.fork()
 	}
 
