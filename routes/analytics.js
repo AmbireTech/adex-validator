@@ -116,7 +116,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	]
 
 	return eventsCol
-		.aggregate(pipeline, { maxTimeMS: 10000 })
+		.aggregate(pipeline, { maxTimeMS: 15000 })
 		.toArray()
 		.then(aggr => ({
 			limit: appliedLimit,
