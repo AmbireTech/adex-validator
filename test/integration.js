@@ -422,6 +422,17 @@ tape('should close channel', async function(t) {
 		'792',
 		'creator balance should be remaining channel deposit minus fees'
 	)
+	t.equal(
+		balances[channel.spec.validators[0].id],
+		channel.spec.validators[0].fee,
+		'validator 0 fee is OK'
+	)
+	t.equal(
+		balances[channel.spec.validators[1].id],
+		channel.spec.validators[1].fee,
+		'validator 1 fee is OK'
+	)
+
 	const sum = Object.keys(balances)
 		.map(k => parseInt(balances[k], 10))
 		.reduce((a, b) => a + b, 0)
