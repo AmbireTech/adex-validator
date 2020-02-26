@@ -44,13 +44,13 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	// the CLICK is not paid for by default
 	// the IMPRESSION, however, pays 1 by default
 	// We use .toLowerCase() to also test if the balance tree contains properly checksummed addrs
-	const evs = genEvents(2, defaultPubName.toLowerCase())
+	const evs = genEvents(200, defaultPubName.toLowerCase())
 		.concat(genEvents(1, defaultPubName))
 		.concat(genEvents(2, randomAddress()))
 		.concat(genEvents(1, randomAddress(), 'CLICK'))
 
-	const expectedBal = '3'
-	const expectedBalAfterFees = '2'
+	const expectedBal = '201'
+	const expectedBalAfterFees = Math.floor(201 * 0.8).toString(10)
 
 	const channel = dummyVals.channel
 	await Promise.all(
@@ -92,6 +92,12 @@ tape('submit events and ensure they are accounted for', async function(t) {
 		lastNew.msg.balances[defaultPubName],
 		expectedBalAfterFees,
 		'NewState: balance is as expected, after fees'
+	)
+	// Math.floor(204 / channel.depositAmount * channel.spec.validators[0].fee) = Math.floor(204/1000*100)
+	t.equal(
+		lastNew.msg.balances[channel.spec.validators[0].id],
+		'20',
+		'NewState: the fee is proportionally assigned to the validator'
 	)
 	t.deepEqual(
 		lastNew.msg.balances,
@@ -137,11 +143,9 @@ tape('submit events and ensure they are accounted for', async function(t) {
 	const { stateRoot } = lastNew.msg
 	t.equals(stateRootRaw, stateRoot, 'stateRoot matches merkle tree root')
 
-	// @TODO: revert this to what it was before the fees, since fees will be moved to a separate test path
 	// this is a bit out of scope, looks like a test of the MerkleTree lib,
 	// but better be safe than sorry
-	const expectedBalanceAfterFees = '2'
-	const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBalanceAfterFees)
+	const leaf = Channel.getBalanceLeaf(defaultPubName, expectedBalAfterFees)
 	const proof = mTree.proof(leaf)
 	t.ok(mTree.verify(proof, leaf), 'balance leaf is in stateRoot')
 	t.end()
@@ -516,6 +520,5 @@ tape('analytics routes return correct values', async function(t) {
 	t.end()
 })
 
-// @TODO fees are adequately applied to NewState
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
