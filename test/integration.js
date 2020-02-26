@@ -503,7 +503,7 @@ tape('analytics routes return correct values', async function(t) {
 			fetch(`${leaderUrl}/analytics${url}`, {
 				method: 'GET',
 				headers: {
-					authorization: `Bearer ${auth}`,
+					authorization: auth ? `Bearer ${auth}` : '',
 					'content-type': 'application/json'
 				}
 			})
