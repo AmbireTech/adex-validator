@@ -22,7 +22,7 @@ const dummyVals = {
 		id: '0x061d5e2a67d0a9a10f1c732bca12a676d83f79663a396f7d87b3e30b9b411088',
 		depositAsset: '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359',
 		depositAmount: '1000',
-		creator: '0x033ed90e0fec3f3ea1c9b005c724d704501e0196',
+		creator: '0x033Ed90e0FeC3F3ea1C9b005C724D704501e0196',
 		// UNIX timestamp for 2100-01-01
 		validUntil: 4102444800,
 		spec: {

@@ -9,7 +9,8 @@ const {
 	genEvents,
 	withdrawPeriodStart,
 	validUntil,
-	getValidEthChannel
+	getValidEthChannel,
+	randomAddress
 } = require('./lib')
 
 // const cfg = require('../cfg')
@@ -35,7 +36,7 @@ tape('/channel/list - with filters', async function(t) {
 	const channelFilterFixtures = [
 		['', 1],
 		[`?validator=${id}`, 1],
-		[`?validator=${id}1`, 0],
+		[`?validator=${randomAddress()}`, 0],
 		// 2200-01-01
 		[`?validUntil=7258118400`, 0]
 	]
@@ -195,7 +196,6 @@ tape('POST /channel: create channel', async function(t) {
 			minPerImpression: '1',
 			maxPerImpression: '1',
 			withdrawPeriodStart,
-			adUnits: [],
 			targeting: [{ tag: 'gender_female', score: 17 }]
 		}
 	}
@@ -387,7 +387,7 @@ tape('should prevent submitting events for a channel in withdraw period', async 
 	)
 
 	// we can still submit an un-authenticated CLOSE while we're in the withdraw period
-	const closeHttpResp = await postEvents(followerUrl, channel.id, [{ type: 'CLOSE' }], null)
+	const closeHttpResp = await postEvents(followerUrl, channel.id, [{ type: 'CLOSE' }], '')
 	t.equal(closeHttpResp.status, 200, 'we can post an unauthenticated CLOSE during withdraw period')
 
 	t.end()
@@ -397,13 +397,13 @@ tape('should test analytic auth required routes', async function(t) {
 	const urls = [
 		'/for-publisher',
 		'/for-advertiser',
-		`for-publisher/${dummyVals.channel.id}`,
+		`/for-publisher/${dummyVals.channel.id}`,
 		'/advanced'
 	]
 
 	await Promise.all(
 		urls.map(url =>
-			fetch(`${leaderUrl}/analytics/${url}`).then(function(resp) {
+			fetch(`${leaderUrl}/analytics${url}`).then(function(resp) {
 				t.equal(resp.status, 401, `${url} status is Unauthorized`)
 			})
 		)

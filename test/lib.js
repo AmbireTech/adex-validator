@@ -96,7 +96,7 @@ function getValidEthChannel() {
 }
 
 let validUntil = new Date()
-validUntil.setFullYear(validUntil.getFullYear() + 1)
+validUntil.setDate(validUntil.getDate() + 365)
 validUntil = Math.floor(validUntil.getTime() / 1000)
 
 let withdrawPeriodStart = new Date()
