@@ -8,7 +8,7 @@ const dummyVals = {
 		user: '0x20754168c00a6e58116ccfd0a5f7d1bb66c5de9d',
 		publisher: '0xb7d3f81e857692d13e9d63b232a90f4a1793189e',
 		publisher2: '0x2054b0c1339309597ad04ba47f4590f8cdb4e305',
-		creator: '0x033ed90e0fec3f3ea1c9b005c724d704501e0196',
+		creator: '0x033Ed90e0FeC3F3ea1C9b005C724D704501e0196',
 	},
 	auth: {
 		leader: 'AUTH_awesomeLeader',
@@ -16,7 +16,7 @@ const dummyVals = {
 		user: 'x8c9v1b2',
 		publisher: 'testing',
 		publisher2: 'testing2',
-		creator: '0x033ed90e0fec3f3ea1c9b005c724d704501e0196',
+		creator: '0x033Ed90e0FeC3F3ea1C9b005C724D704501e0196',
 	},
 	channel: {
 		id: '0x061d5e2a67d0a9a10f1c732bca12a676d83f79663a396f7d87b3e30b9b411088',
