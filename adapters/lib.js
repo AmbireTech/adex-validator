@@ -5,7 +5,7 @@ async function isChannelValid(cfg, channel, address) {
 	const ourValidator = channel.spec.validators.find(({ id }) => address === id)
 	assert.ok(ourValidator, 'channel is not validated by us')
 	const inOneYear = new Date()
-	inOneYear.setFullYear(inOneYear.getFullYear() + 1)
+	inOneYear.setDate(inOneYear.getDate() + 365)
 
 	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
 	assert.ok(
