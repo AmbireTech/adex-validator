@@ -481,7 +481,6 @@ tape('analytics routes return correct values', async function(t) {
 		postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' }),
 		postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
 	])
-	await wait(500)
 
 	const sumValues = vals => vals.map(x => parseInt(x.value, 10)).reduce((a, b) => a + b, 0)
 	const urls = [
