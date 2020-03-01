@@ -213,6 +213,10 @@ function postValidatorMessages(req, res, next) {
 
 function postEvents(req, res, next) {
 	const { events } = req.body
+	if (!Array.isArray(events)) {
+		res.send(400)
+		return
+	}
 	const referrerHeader = req.headers.referrer
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
