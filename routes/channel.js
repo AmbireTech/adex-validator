@@ -217,7 +217,7 @@ function postEvents(req, res, next) {
 		res.send(400)
 		return
 	}
-	const referrerHeader = req.headers.referrer
+	const referrerHeader = req.headers.referrer || req.headers.referer
 	const trueip = req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
