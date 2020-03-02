@@ -1,6 +1,8 @@
 module.exports = {
 	MAX_CHANNELS: 512,
 	WAIT_TIME: 40000,
+	// 60000/AGGR_THROTTLE must be an integer!
+	// otherwise by-minute analytics charts would look jagged cause every Nth minute will have more aggrs
 	AGGR_THROTTLE: 30000,
 	HEARTBEAT_TIME: 60000,
 	CHANNELS_FIND_LIMIT: 512,
