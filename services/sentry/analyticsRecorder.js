@@ -25,6 +25,8 @@ function record(channel, session, events) {
 				? [
 						// publisher -> ad unit -> impressions; answers which ad units are shown the most
 						['zincrby', `reportPublisherToAdUnit:${ev.type}:${publisher}`, 1, ev.adUnit],
+						// publisher -> ad unit -> impressions; answers which ad units paid the most
+						['zincrby', `reportPublisherToAdUnitPay:${ev.type}:${publisher}`, payAmount, ev.adUnit],
 						// campaignId -> ad unit -> impressions, clicks (will calculate %, CTR); answers which of the units performed best
 						['zincrby', `reportChannelToAdUnit:${ev.type}:${channel.id}`, 1, ev.adUnit]
 				  ]
@@ -83,6 +85,7 @@ async function getAdvancedReports({ evType, publisher, channels = [] }) {
 	const publisherKeys = publisher
 		? [
 				`reportPublisherToAdUnit:${evType}:${publisher}`,
+				`reportPublisherToAdUnitPay:${evType}:${publisher}`,
 				`reportPublisherToAdSlot:${evType}:${publisher}`,
 				`reportPublisherToAdSlotPay:${evType}:${publisher}`,
 				`reportPublisherToCountry:${getEpoch()}:${evType}:${publisher}`,
