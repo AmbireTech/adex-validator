@@ -96,6 +96,8 @@ async function getAdvancedReports({ evType, publisher, channels = [] }) {
 		  ]
 		: []
 	const publisherStats = Object.fromEntries(await Promise.all(publisherKeys.map(getStatsPair)))
+	// @TODO: if the responses become too big to manage, we can move channel responses to a separate route
+	// or only respond for active channels
 	const byChannelStats = Object.fromEntries(
 		await Promise.all(
 			channels.map(async channelId => {
