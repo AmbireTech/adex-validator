@@ -38,16 +38,18 @@ function record(channel, session, events) {
 						['zincrby', `reportPublisherToAdSlotPay:${ev.type}:${publisher}`, payAmount, ev.adSlot]
 				  ]
 				: []
-			// @TODO the country report needs to be time segmented otherwise it won't really be accurate
+			const countryPubSuffix = `${getEpoch()}:${ev.type}:${publisher}`
 			const countryRep = session.country
 				? [
+						['zincrby', `reportPublisherToCountry:${countryPubSuffix}`, 1, session.country],
+						['zincrby', `reportPublisherToCountryPay:${countryPubSuffix}`, 1, session.country],
+						['zincrby', `reportChannelToCountry:${ev.type}:${channel.id}`, 1, session.country],
 						[
 							'zincrby',
-							`reportPublisherToCountry:${getEpoch()}:${ev.type}:${publisher}`,
-							1,
+							`reportChannelToCountryPay:${ev.type}:${channel.id}`,
+							payAmount,
 							session.country
 						]
-						// @TODO collect payouts when we roll out mutable payments info
 				  ]
 				: []
 			const ref = ev.ref || session.referrerHeader
@@ -89,6 +91,7 @@ async function getAdvancedReports({ evType, publisher, channels = [] }) {
 				`reportPublisherToAdSlot:${evType}:${publisher}`,
 				`reportPublisherToAdSlotPay:${evType}:${publisher}`,
 				`reportPublisherToCountry:${getEpoch()}:${evType}:${publisher}`,
+				`reportPublisherToCountryPay:${getEpoch()}:${evType}:${publisher}`,
 				`reportPublisherToHostname:${evType}:${publisher}`
 		  ]
 		: []
@@ -99,7 +102,9 @@ async function getAdvancedReports({ evType, publisher, channels = [] }) {
 				const keys = [
 					`reportChannelToAdUnit:${evType}:${channelId}`,
 					`reportChannelToHostname:${evType}:${channelId}`,
-					`reportChannelToHostnamePay:${evType}:${channelId}`
+					`reportChannelToHostnamePay:${evType}:${channelId}`,
+					`reportChannelToCountry:${evType}:${channelId}`,
+					`reportChannelToCountryPay:${evType}:${channelId}`
 				]
 				return [channelId, Object.fromEntries(await Promise.all(keys.map(getStatsPair)))]
 			})
