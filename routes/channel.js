@@ -214,7 +214,7 @@ function postValidatorMessages(req, res, next) {
 function postEvents(req, res, next) {
 	const { events } = req.body
 	if (!Array.isArray(events)) {
-		res.send(400)
+		res.sendStatus(400)
 		return
 	}
 	const referrerHeader = req.headers.referrer || req.headers.referer
