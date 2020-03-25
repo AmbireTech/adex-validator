@@ -42,7 +42,12 @@ function record(channel, session, events) {
 			const countryRep = session.country
 				? [
 						['zincrby', `reportPublisherToCountry:${countryPubSuffix}`, 1, session.country],
-						['zincrby', `reportPublisherToCountryPay:${countryPubSuffix}`, 1, session.country],
+						[
+							'zincrby',
+							`reportPublisherToCountryPay:${countryPubSuffix}`,
+							payAmount,
+							session.country
+						],
 						['zincrby', `reportChannelToCountry:${ev.type}:${channel.id}`, 1, session.country],
 						[
 							'zincrby',
