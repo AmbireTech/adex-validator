@@ -357,11 +357,104 @@ tape('eventReducer: newAggr', function(t) {
 })
 
 tape('getPayout: get event payouts', function(t) {
-	const pricingBounds = { CLICK: { min: new BN(23) } }
-	const channel = { depositAmount: '100', spec: { minPerImpression: '8', pricingBounds } }
-	t.deepEqual(getPayout(channel, { publisher: 'test1', type: 'IMPRESSION' }), ['test1', new BN(8)])
-	t.deepEqual(getPayout(channel, { publisher: 'test2', type: 'CLICK' }), ['test2', new BN(23)])
-	t.deepEqual(getPayout(channel, { type: 'CLOSE' }), null)
+	let i = 0
+	const pricingBounds = { CLICK: { min: new BN(23), max: new BN(100) } }
+	const channel = {
+		depositAmount: '100',
+		spec: { minPerImpression: '8', maxPerImpression: '64', pricingBounds }
+	}
+	const priceMultiplicationRules = [{ amount: '10', country: ['US'], eventType: ['CLICK'] }]
+
+	t.deepEqual(
+		getPayout(channel, { publisher: 'test1', type: 'IMPRESSION' }),
+		['test1', new BN(8)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(
+		getPayout(channel, { publisher: 'test2', type: 'CLICK' }),
+		['test2', new BN(23)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(getPayout(channel, { type: 'CLOSE' }), null, `valid payout ${(i += 1)}`)
+	t.deepEqual(
+		getPayout(
+			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules } },
+			{ publisher: 'test1', type: 'IMPRESSION' }
+		),
+		['test1', new BN(8)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(
+		getPayout(
+			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules } },
+			{ publisher: 'test1', type: 'CLICK', country: 'US' }
+		),
+		['test1', new BN(10)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(
+		getPayout(
+			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules: [{ amount: '10' }] } },
+			{ publisher: 'test1', type: 'CLICK', country: 'US' }
+		),
+		['test1', new BN(10)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(
+		getPayout(
+			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules: [{ amount: '10000' }] } },
+			{ publisher: 'test1', type: 'IMPRESSION' }
+		),
+		['test1', new BN(64)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(
+		getPayout(
+			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules: [{ amount: '10000' }] } },
+			{ publisher: 'test1', type: 'CLICK', country: 'US' }
+		),
+		['test1', new BN(100)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(
+		getPayout(
+			{
+				...channel,
+				spec: {
+					...channel.spec,
+					priceMultiplicationRules: [
+						...priceMultiplicationRules,
+						{ amount: '12', country: ['US'], eventType: ['CLICK'], publisher: ['test1'] }
+					]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US' }
+		),
+		['test1', new BN(10)],
+		`valid payout ${(i += 1)}`
+	)
+	t.deepEqual(
+		getPayout(
+			{
+				...channel,
+				spec: {
+					...channel.spec,
+					priceMultiplicationRules: [
+						{
+							amount: '12',
+							country: ['US'],
+							eventType: ['CLICK'],
+							publisher: ['test1'],
+							osType: ['android']
+						}
+					]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' }
+		),
+		['test1', new BN(12)],
+		`valid payout ${(i += 1)}`
+	)
 	t.end()
 })
 
@@ -411,5 +504,7 @@ tape('eventReducer: reduce', function(t) {
 
 	t.end()
 })
+
+// payout test
 
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances
