@@ -119,7 +119,18 @@ module.exports = {
 			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
 			nonce: Joi.string(),
 			created: Joi.number(),
-			activeFrom: Joi.number()
+			activeFrom: Joi.number(),
+			priceMultiplicationRules: Joi.array().items(
+				Joi.object({
+					multiplier: Joi.number().precision(10), // max 10 decimal places
+					amount: numericString,
+					evType: Joi.array().items(Joi.string().lowercase()),
+					country: Joi.array().items(Joi.string().lowercase()),
+					publisher: Joi.array().items(Joi.string().lowercase()),
+					osType: Joi.array().items(Joi.string().lowercase())
+				})
+			),
+			priceDynamicAdjustment: Joi.bool()
 		}).required()
 	},
 	validatorMessage: {

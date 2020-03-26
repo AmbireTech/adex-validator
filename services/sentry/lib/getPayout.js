@@ -1,4 +1,5 @@
 /* eslint-disable no-nested-ternary */
+// const BN = require('bignumber.js') // allows
 const BN = require('bn.js')
 const toBalancesKey = require('../toBalancesKey')
 
@@ -10,7 +11,7 @@ function getPayout(channel, ev) {
 		const price = channel.spec.priceMultiplicationRules
 			? payout(channel.spec.priceMultiplicationRules, ev, maxPrice, minPrice)
 			: new BN(channel.spec.minPerImpression || 1)
-		return [toBalancesKey(ev.publisher), price]
+		return [toBalancesKey(ev.publisher), new BN(price.toString())]
 	}
 	if (ev.type === 'CLICK' && ev.publisher) {
 		const minPrice = new BN(
@@ -22,7 +23,7 @@ function getPayout(channel, ev) {
 		const price = channel.spec.priceMultiplicationRules
 			? payout(channel.spec.priceMultiplicationRules, ev, maxPrice, minPrice)
 			: new BN((channel.spec.pricingBounds && channel.spec.pricingBounds.CLICK.min) || 0)
-		return [toBalancesKey(ev.publisher), price]
+		return [toBalancesKey(ev.publisher), new BN(price.toString())]
 	}
 	return null
 }
@@ -30,19 +31,25 @@ function getPayout(channel, ev) {
 function payout(rules, ev, maxPrice, startPrice) {
 	const match = isRuleMatching.bind(null, ev)
 	const matchingRules = rules.filter(match)
-
 	let finalPrice = startPrice
 
 	if (matchingRules.length > 0) {
+		const divisionExponent = new BN(10).pow(new BN(18, 10))
 		const firstFixed = matchingRules.find(x => x.amount)
 		const priceByRules = firstFixed
 			? new BN(firstFixed.amount)
-			: startPrice.mul(
-					matchingRules
-						.filter(x => x.multiplier)
-						.map(x => x.multiplier)
-						.reduce((a, b) => a.mul(b), 1)
-			  )
+			: startPrice
+					.mul(
+						new BN(
+							(
+								matchingRules
+									.filter(x => x.multiplier)
+									.map(x => x.multiplier)
+									.reduce((a, b) => a * b, 1) * 1e18
+							).toString()
+						)
+					)
+					.div(divisionExponent)
 		finalPrice = BN.min(maxPrice, priceByRules)
 	}
 
@@ -51,13 +58,13 @@ function payout(rules, ev, maxPrice, startPrice) {
 
 function isRuleMatching(ev, rule) {
 	return rule.eventType
-		? rule.eventType.includes(ev.type)
+		? rule.eventType.includes(ev.type.toLowerCase())
 		: true && rule.publisher
-		? rule.publisher.includes(ev.publisher)
+		? rule.publisher.includes(ev.publisher.toLowerCase())
 		: true && rule.osType
-		? rule.osType.includes(ev.os)
+		? rule.osType.includes(ev.os.toLowerCase())
 		: true && rule.country
-		? rule.country.includes(ev.country)
+		? rule.country.includes(ev.country.toLowerCase())
 		: true
 }
 

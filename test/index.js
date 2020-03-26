@@ -357,104 +357,9 @@ tape('eventReducer: newAggr', function(t) {
 })
 
 tape('getPayout: get event payouts', function(t) {
-	let i = 0
-	const pricingBounds = { CLICK: { min: new BN(23), max: new BN(100) } }
-	const channel = {
-		depositAmount: '100',
-		spec: { minPerImpression: '8', maxPerImpression: '64', pricingBounds }
-	}
-	const priceMultiplicationRules = [{ amount: '10', country: ['US'], eventType: ['CLICK'] }]
-
-	t.deepEqual(
-		getPayout(channel, { publisher: 'test1', type: 'IMPRESSION' }),
-		['test1', new BN(8)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(
-		getPayout(channel, { publisher: 'test2', type: 'CLICK' }),
-		['test2', new BN(23)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(getPayout(channel, { type: 'CLOSE' }), null, `valid payout ${(i += 1)}`)
-	t.deepEqual(
-		getPayout(
-			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules } },
-			{ publisher: 'test1', type: 'IMPRESSION' }
-		),
-		['test1', new BN(8)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(
-		getPayout(
-			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules } },
-			{ publisher: 'test1', type: 'CLICK', country: 'US' }
-		),
-		['test1', new BN(10)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(
-		getPayout(
-			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules: [{ amount: '10' }] } },
-			{ publisher: 'test1', type: 'CLICK', country: 'US' }
-		),
-		['test1', new BN(10)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(
-		getPayout(
-			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules: [{ amount: '10000' }] } },
-			{ publisher: 'test1', type: 'IMPRESSION' }
-		),
-		['test1', new BN(64)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(
-		getPayout(
-			{ ...channel, spec: { ...channel.spec, priceMultiplicationRules: [{ amount: '10000' }] } },
-			{ publisher: 'test1', type: 'CLICK', country: 'US' }
-		),
-		['test1', new BN(100)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(
-		getPayout(
-			{
-				...channel,
-				spec: {
-					...channel.spec,
-					priceMultiplicationRules: [
-						...priceMultiplicationRules,
-						{ amount: '12', country: ['US'], eventType: ['CLICK'], publisher: ['test1'] }
-					]
-				}
-			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US' }
-		),
-		['test1', new BN(10)],
-		`valid payout ${(i += 1)}`
-	)
-	t.deepEqual(
-		getPayout(
-			{
-				...channel,
-				spec: {
-					...channel.spec,
-					priceMultiplicationRules: [
-						{
-							amount: '12',
-							country: ['US'],
-							eventType: ['CLICK'],
-							publisher: ['test1'],
-							osType: ['android']
-						}
-					]
-				}
-			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' }
-		),
-		['test1', new BN(12)],
-		`valid payout ${(i += 1)}`
-	)
+	fixtures.payoutRules.forEach(([channel, event, expectedResult, message]) => {
+		t.deepEqual(getPayout(channel, event), expectedResult, message)
+	})
 	t.end()
 })
 
@@ -474,10 +379,10 @@ tape('eventReducer: reduce', function(t) {
 
 	// reduce 100 events
 	for (let i = 0; i < 100; i += 1) {
-		eventReducer.reduce(channel, aggr, event)
+		eventReducer.reduce(channel, {}, aggr, event)
 	}
 
-	const result = eventReducer.reduce(channel, aggr, event)
+	const result = eventReducer.reduce(channel, {}, aggr, event)
 
 	t.equal(result.channelId, channel.id, 'should have same channel id')
 	t.equal(
@@ -491,7 +396,7 @@ tape('eventReducer: reduce', function(t) {
 		'should have the correct number of eventsPayouts'
 	)
 
-	const closeReduce = eventReducer.reduce(channel, aggr, {
+	const closeReduce = eventReducer.reduce(channel, {}, aggr, {
 		type: 'CLOSE'
 	})
 
@@ -504,7 +409,5 @@ tape('eventReducer: reduce', function(t) {
 
 	t.end()
 })
-
-// payout test
 
 // @TODO: producer, possibly leader/follower; mergePayableIntoBalances

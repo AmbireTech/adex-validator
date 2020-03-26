@@ -1,3 +1,4 @@
+const BN = require('bn.js')
 const dummyVals = require('./prep-db/mongo')
 
 const validatorMessage = {
@@ -6,6 +7,15 @@ const validatorMessage = {
 	signature:
 		'Dummy adapter signature for 0cdf5b460367b8640a84e0b82fd5fd41d60b7fa4386f2239b3cb3d293a864951 by awesomeLeader',
 	balances: { myAwesomePublisher: '214000000000000000000000', anotherPublisher: '2' }
+}
+
+const payoutChannel = {
+	depositAmount: '100',
+	spec: {
+		minPerImpression: '8',
+		maxPerImpression: '64',
+		pricingBounds: { CLICK: { min: new BN(23), max: new BN(100) } }
+	}
 }
 
 module.exports = {
@@ -413,5 +423,197 @@ module.exports = {
 				`ValidationError: "value" at position 0 fails because [child "channelId" fails because ["channelId" is required]]`
 			]
 		]
-	}
+	},
+	payoutRules: [
+		[
+			{
+				depositAmount: '100',
+				spec: {
+					minPerImpression: '8',
+					maxPerImpression: '64',
+					pricingBounds: { CLICK: { min: new BN(23), max: new BN(100) } }
+				}
+			},
+			{ publisher: 'test1', type: 'IMPRESSION' },
+			['test1', new BN(8)],
+			`pricingBounds: impression event`
+		],
+		[
+			{
+				depositAmount: '100',
+				spec: {
+					minPerImpression: '8',
+					maxPerImpression: '64',
+					pricingBounds: { CLICK: { min: new BN(23), max: new BN(100) } }
+				}
+			},
+			{ publisher: 'test2', type: 'CLICK' },
+			['test2', new BN(23)],
+			`pricingBounds: click event`
+		],
+		[
+			{
+				depositAmount: '100',
+				spec: {
+					minPerImpression: '8',
+					maxPerImpression: '64',
+					pricingBounds: { CLICK: { min: new BN(23), max: new BN(100) } }
+				}
+			},
+			{ type: 'CLOSE' },
+			null,
+			`pricingBounds: close event `
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [{ amount: '10', country: ['us'], eventType: ['click'] }]
+				}
+			},
+			{ publisher: 'test1', type: 'IMPRESSION' },
+			['test1', new BN(8)],
+			`fixedAmount: impression`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [{ amount: '10', country: ['us'], eventType: ['click'] }]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US' },
+			['test1', new BN(10)],
+			`fixedAmount (country, publisher): click`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [{ amount: '10' }]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US' },
+			['test1', new BN(10)],
+			`fixedAmount (all): click`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [{ amount: '10000' }]
+				}
+			},
+			{ publisher: 'test1', type: 'IMPRESSION' },
+			['test1', new BN(64)],
+			`fixedAmount (all): price should not exceed maxPerImpressionPrice`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [{ amount: '10000' }]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US' },
+			['test1', new BN(100)],
+			`fixedAmount (all): price should not exceed event pricingBound max`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [
+						{ amount: '10', country: ['us'], eventType: ['click'] },
+						{ amount: '12', country: ['us'], eventType: ['click'], publisher: ['test1'] }
+					]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US' },
+			['test1', new BN(10)],
+			`fixedAmount (country, pulisher): should choose first fixedAmount rule`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [
+						{
+							amount: '15',
+							country: ['us'],
+							eventType: ['click'],
+							publisher: ['test1'],
+							osType: ['android']
+						}
+					]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' },
+			['test1', new BN(15)],
+			`fixedAmount (country, pulisher, osType): click`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					priceMultiplicationRules: [
+						{
+							multiplier: 1.2,
+							country: ['us'],
+							eventType: ['click'],
+							publisher: ['test1'],
+							osType: ['android']
+						},
+						{
+							amount: '12',
+							country: ['us'],
+							eventType: ['click'],
+							publisher: ['test1'],
+							osType: ['android']
+						}
+					]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' },
+			['test1', new BN(12)],
+			`fixedAmount (country, osType, publisher): choose fixedAmount rule over multiplier if present`
+		],
+		[
+			{
+				...payoutChannel,
+				spec: {
+					...payoutChannel.spec,
+					pricingBounds: {
+						CLICK: {
+							min: new BN((1e18).toString()).toString(),
+							max: new BN((100e18).toString()).toString()
+						}
+					},
+					priceMultiplicationRules: [
+						{
+							multiplier: 1.2,
+							country: ['us'],
+							eventType: ['click'],
+							publisher: ['test1'],
+							osType: ['android']
+						},
+						{
+							multiplier: 1.2
+						}
+					]
+				}
+			},
+			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' },
+			['test1', new BN('1440000000000000000')],
+			`multiplier (country, osType, publisher | all) - apply all multiplier rules`
+		]
+	]
 }
