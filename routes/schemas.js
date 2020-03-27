@@ -126,7 +126,7 @@ module.exports = {
 					amount: numericString,
 					evType: Joi.array().items(Joi.string().lowercase()),
 					country: Joi.array().items(Joi.string().lowercase()),
-					publisher: Joi.array().items(Joi.string().lowercase()),
+					publisher: Joi.array().items(Joi.string()),
 					osType: Joi.array().items(Joi.string().lowercase())
 				})
 			),
