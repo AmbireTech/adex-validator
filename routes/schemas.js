@@ -114,7 +114,7 @@ module.exports = {
 				.keys()
 				.pattern(
 					/^(IMPRESSION|CLICK)$/,
-					Joi.object({ min: numericString.default('0'), max: numericString.default('0') })
+					Joi.object({ min: numericString.required(), max: numericString.required() })
 				),
 			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
 			nonce: Joi.string(),

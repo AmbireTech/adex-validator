@@ -3,27 +3,27 @@
 const BN = require('bn.js')
 const toBalancesKey = require('../toBalancesKey')
 
-function getPayout(channel, ev) {
+function getPayout(channel, ev, session) {
 	if (ev.type === 'IMPRESSION' && ev.publisher) {
 		// add the minimum price for the event to the current amount
 		const [minPrice, maxPrice] = getPriceBounds(channel.spec, ev.type)
 		const price = channel.spec.priceMultiplicationRules
-			? payout(channel.spec.priceMultiplicationRules, ev, maxPrice, minPrice)
+			? payout(channel.spec.priceMultiplicationRules, ev, session, maxPrice, minPrice)
 			: minPrice
 		return [toBalancesKey(ev.publisher), new BN(price.toString())]
 	}
 	if (ev.type === 'CLICK' && ev.publisher) {
 		const [minPrice, maxPrice] = getPriceBounds(channel.spec, ev.type)
 		const price = channel.spec.priceMultiplicationRules
-			? payout(channel.spec.priceMultiplicationRules, ev, maxPrice, minPrice)
+			? payout(channel.spec.priceMultiplicationRules, ev, session, maxPrice, minPrice)
 			: minPrice
 		return [toBalancesKey(ev.publisher), new BN(price.toString())]
 	}
 	return null
 }
 
-function payout(rules, ev, maxPrice, startPrice) {
-	const match = isRuleMatching.bind(null, ev)
+function payout(rules, ev, session, maxPrice, startPrice) {
+	const match = isRuleMatching.bind(null, ev, session)
 	const matchingRules = rules.filter(match)
 	let finalPrice = startPrice
 
@@ -50,15 +50,15 @@ function payout(rules, ev, maxPrice, startPrice) {
 	return finalPrice
 }
 
-function isRuleMatching(ev, rule) {
+function isRuleMatching(ev, session, rule) {
 	return rule.eventType
 		? rule.eventType.includes(ev.type.toLowerCase())
 		: true && rule.publisher
-		? rule.publisher.includes(ev.publisher.toLowerCase())
+		? rule.publisher.includes(ev.publisher)
 		: true && rule.osType
-		? rule.osType.includes(ev.os.toLowerCase())
+		? rule.osType.includes(session.os && session.os.toLowerCase())
 		: true && rule.country
-		? rule.country.includes(ev.country.toLowerCase())
+		? rule.country.includes(session.country && session.country.toLowerCase())
 		: true
 }
 

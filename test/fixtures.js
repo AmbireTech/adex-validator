@@ -434,8 +434,9 @@ module.exports = {
 					pricingBounds: { CLICK: { min: new BN(23), max: new BN(100) } }
 				}
 			},
-			{ publisher: 'test1', type: 'IMPRESSION' },
-			['test1', new BN(8)],
+			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'IMPRESSION' },
+			{},
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(8)],
 			`pricingBounds: impression event`
 		],
 		[
@@ -447,8 +448,9 @@ module.exports = {
 					pricingBounds: { CLICK: { min: new BN(23), max: new BN(100) } }
 				}
 			},
-			{ publisher: 'test2', type: 'CLICK' },
-			['test2', new BN(23)],
+			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'CLICK' },
+			{},
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(23)],
 			`pricingBounds: click event`
 		],
 		[
@@ -461,6 +463,7 @@ module.exports = {
 				}
 			},
 			{ type: 'CLOSE' },
+			{},
 			null,
 			`pricingBounds: close event `
 		],
@@ -472,8 +475,9 @@ module.exports = {
 					priceMultiplicationRules: [{ amount: '10', country: ['us'], eventType: ['click'] }]
 				}
 			},
-			{ publisher: 'test1', type: 'IMPRESSION' },
-			['test1', new BN(8)],
+			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'IMPRESSION' },
+			{},
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(8)],
 			`fixedAmount: impression`
 		],
 		[
@@ -484,8 +488,9 @@ module.exports = {
 					priceMultiplicationRules: [{ amount: '10', country: ['us'], eventType: ['click'] }]
 				}
 			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US' },
-			['test1', new BN(10)],
+			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'CLICK' },
+			{ country: 'US' },
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(10)],
 			`fixedAmount (country, publisher): click`
 		],
 		[
@@ -496,8 +501,9 @@ module.exports = {
 					priceMultiplicationRules: [{ amount: '10' }]
 				}
 			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US' },
-			['test1', new BN(10)],
+			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'CLICK' },
+			{ country: 'US' },
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(10)],
 			`fixedAmount (all): click`
 		],
 		[
@@ -508,8 +514,9 @@ module.exports = {
 					priceMultiplicationRules: [{ amount: '10000' }]
 				}
 			},
-			{ publisher: 'test1', type: 'IMPRESSION' },
-			['test1', new BN(64)],
+			{ publisher: '0xce07cbb7e054514d590a0262c93070d838bfba2e', type: 'IMPRESSION' },
+			{},
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(64)],
 			`fixedAmount (all): price should not exceed maxPerImpressionPrice`
 		],
 		[
@@ -520,8 +527,9 @@ module.exports = {
 					priceMultiplicationRules: [{ amount: '10000' }]
 				}
 			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US' },
-			['test1', new BN(100)],
+			{ publisher: '0xce07cbb7e054514d590a0262c93070d838bfba2e', type: 'CLICK' },
+			{ country: 'US' },
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(100)],
 			`fixedAmount (all): price should not exceed event pricingBound max`
 		],
 		[
@@ -531,12 +539,18 @@ module.exports = {
 					...payoutChannel.spec,
 					priceMultiplicationRules: [
 						{ amount: '10', country: ['us'], eventType: ['click'] },
-						{ amount: '12', country: ['us'], eventType: ['click'], publisher: ['test1'] }
+						{
+							amount: '12',
+							country: ['us'],
+							eventType: ['click'],
+							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e']
+						}
 					]
 				}
 			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US' },
-			['test1', new BN(10)],
+			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'CLICK' },
+			{ country: 'US' },
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(10)],
 			`fixedAmount (country, pulisher): should choose first fixedAmount rule`
 		],
 		[
@@ -549,14 +563,18 @@ module.exports = {
 							amount: '15',
 							country: ['us'],
 							eventType: ['click'],
-							publisher: ['test1'],
+							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						}
 					]
 				}
 			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' },
-			['test1', new BN(15)],
+			{
+				publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e',
+				type: 'CLICK'
+			},
+			{ country: 'US', osType: 'android' },
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(15)],
 			`fixedAmount (country, pulisher, osType): click`
 		],
 		[
@@ -569,21 +587,25 @@ module.exports = {
 							multiplier: 1.2,
 							country: ['us'],
 							eventType: ['click'],
-							publisher: ['test1'],
+							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						},
 						{
 							amount: '12',
 							country: ['us'],
 							eventType: ['click'],
-							publisher: ['test1'],
+							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						}
 					]
 				}
 			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' },
-			['test1', new BN(12)],
+			{
+				publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e',
+				type: 'CLICK'
+			},
+			{ country: 'US', osType: 'android' },
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN(12)],
 			`fixedAmount (country, osType, publisher): choose fixedAmount rule over multiplier if present`
 		],
 		[
@@ -602,7 +624,7 @@ module.exports = {
 							multiplier: 1.2,
 							country: ['us'],
 							eventType: ['click'],
-							publisher: ['test1'],
+							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						},
 						{
@@ -611,8 +633,12 @@ module.exports = {
 					]
 				}
 			},
-			{ publisher: 'test1', type: 'CLICK', country: 'US', osType: 'android' },
-			['test1', new BN('1440000000000000000')],
+			{
+				publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e',
+				type: 'CLICK'
+			},
+			{ country: 'US', osType: 'android' },
+			['0xce07cbb7e054514d590a0262c93070d838bfba2e', new BN('1440000000000000000')],
 			`multiplier (country, osType, publisher | all) - apply all multiplier rules`
 		]
 	]
