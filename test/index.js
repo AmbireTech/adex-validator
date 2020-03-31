@@ -356,7 +356,7 @@ tape('eventReducer: newAggr', function(t) {
 	t.end()
 })
 
-tape.only('getPayout: get event payouts', function(t) {
+tape('getPayout: get event payouts', function(t) {
 	fixtures.payoutRules.forEach(([channel, event, session, expectedResult, message]) => {
 		t.deepEqual(getPayout(channel, event, session), expectedResult, message)
 	})

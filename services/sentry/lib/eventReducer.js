@@ -6,10 +6,9 @@ function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {}, totals: {}, earners: [] }
 }
 
-function reduce(channel, session, initialAggr, event) {
+function reduce(channel, session, initialAggr, ev) {
 	let aggr = { ...initialAggr }
-	const ev = { ...event, ...session } // add session details (i.e country, device type etc) to event
-	const payout = getPayout(channel, ev)
+	const payout = getPayout(channel, ev, session)
 	if (payout) {
 		aggr.events[ev.type] = mergeEv(initialAggr.events[ev.type], payout)
 		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, ev.type, payout) }

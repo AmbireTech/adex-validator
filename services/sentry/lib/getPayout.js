@@ -1,18 +1,9 @@
 /* eslint-disable no-nested-ternary */
-// const BN = require('bignumber.js') // allows
 const BN = require('bn.js')
 const toBalancesKey = require('../toBalancesKey')
 
 function getPayout(channel, ev, session) {
-	if (ev.type === 'IMPRESSION' && ev.publisher) {
-		// add the minimum price for the event to the current amount
-		const [minPrice, maxPrice] = getPriceBounds(channel.spec, ev.type)
-		const price = channel.spec.priceMultiplicationRules
-			? payout(channel.spec.priceMultiplicationRules, ev, session, maxPrice, minPrice)
-			: minPrice
-		return [toBalancesKey(ev.publisher), new BN(price.toString())]
-	}
-	if (ev.type === 'CLICK' && ev.publisher) {
+	if (ev.type && ev.publisher && ['IMPRESSION', 'CLICK'].includes(ev.type)) {
 		const [minPrice, maxPrice] = getPriceBounds(channel.spec, ev.type)
 		const price = channel.spec.priceMultiplicationRules
 			? payout(channel.spec.priceMultiplicationRules, ev, session, maxPrice, minPrice)
@@ -64,21 +55,12 @@ function isRuleMatching(ev, session, rule) {
 
 function getPriceBounds(spec, evType) {
 	const { pricingBounds, minPerImpression, maxPerImpression } = spec
+	const fromPricingBounds = pricingBounds &&
+		pricingBounds[evType] && [new BN(pricingBounds[evType].min), new BN(pricingBounds[evType].max)]
 	if (evType === 'IMPRESSION') {
-		return (
-			(pricingBounds &&
-				pricingBounds[evType] && [
-					new BN(pricingBounds[evType].min),
-					new BN(pricingBounds[evType].max)
-				]) || [new BN(minPerImpression || 1), new BN(maxPerImpression || 1)]
-		)
+		return [new BN(minPerImpression || 1), new BN(maxPerImpression || 1)]
 	}
-	return (
-		(pricingBounds &&
-			pricingBounds[evType] && [
-				new BN(pricingBounds[evType].min),
-				new BN(pricingBounds[evType].max)
-			]) || [new BN(0), new BN(0)]
-	)
+	return fromPricingBounds || [new BN(0), new BN(0)]
 }
+
 module.exports = getPayout
