@@ -3,7 +3,7 @@ const BN = require('bn.js')
 const toBalancesKey = require('../toBalancesKey')
 
 function getPayout(channel, ev, session) {
-	if (ev.type && ev.publisher && ['IMPRESSION', 'CLICK'].includes(ev.type)) {
+	if (ev.type && ev.publisher && ['IMPRESSION', 'CLICK'].includes(ev.type.toUpperCase())) {
 		const [minPrice, maxPrice] = getPriceBounds(channel.spec, ev.type)
 		const price = channel.spec.priceMultiplicationRules
 			? payout(channel.spec.priceMultiplicationRules, ev, session, maxPrice, minPrice)
@@ -42,8 +42,8 @@ function payout(rules, ev, session, maxPrice, startPrice) {
 }
 
 function isRuleMatching(ev, session, rule) {
-	return rule.eventType
-		? rule.eventType.includes(ev.type.toLowerCase())
+	return rule.evType
+		? rule.evType.includes(ev.type.toLowerCase())
 		: true && rule.publisher
 		? rule.publisher.includes(ev.publisher)
 		: true && rule.osType

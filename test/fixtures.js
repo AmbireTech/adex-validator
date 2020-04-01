@@ -472,7 +472,7 @@ module.exports = {
 				...payoutChannel,
 				spec: {
 					...payoutChannel.spec,
-					priceMultiplicationRules: [{ amount: '10', country: ['us'], eventType: ['click'] }]
+					priceMultiplicationRules: [{ amount: '10', country: ['us'], evType: ['click'] }]
 				}
 			},
 			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'IMPRESSION' },
@@ -485,7 +485,7 @@ module.exports = {
 				...payoutChannel,
 				spec: {
 					...payoutChannel.spec,
-					priceMultiplicationRules: [{ amount: '10', country: ['us'], eventType: ['click'] }]
+					priceMultiplicationRules: [{ amount: '10', country: ['us'], evType: ['click'] }]
 				}
 			},
 			{ publisher: '0xce07CbB7e054514D590a0262C93070D838bFBA2e', type: 'CLICK' },
@@ -538,11 +538,11 @@ module.exports = {
 				spec: {
 					...payoutChannel.spec,
 					priceMultiplicationRules: [
-						{ amount: '10', country: ['us'], eventType: ['click'] },
+						{ amount: '10', country: ['us'], evType: ['click'] },
 						{
 							amount: '12',
 							country: ['us'],
-							eventType: ['click'],
+							evType: ['click'],
 							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e']
 						}
 					]
@@ -562,7 +562,7 @@ module.exports = {
 						{
 							amount: '15',
 							country: ['us'],
-							eventType: ['click'],
+							evType: ['click'],
 							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						}
@@ -586,14 +586,14 @@ module.exports = {
 						{
 							multiplier: 1.2,
 							country: ['us'],
-							eventType: ['click'],
+							evType: ['click'],
 							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						},
 						{
 							amount: '12',
 							country: ['us'],
-							eventType: ['click'],
+							evType: ['click'],
 							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						}
@@ -623,7 +623,7 @@ module.exports = {
 						{
 							multiplier: 1.2,
 							country: ['us'],
-							eventType: ['click'],
+							evType: ['click'],
 							publisher: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 							osType: ['android']
 						},

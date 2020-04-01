@@ -465,9 +465,39 @@ tape('should record clicks', async function(t) {
 	t.end()
 })
 
+tape('should record: correct payout clicks', async function(t) {
+	const channel = getValidEthChannel()
+	channel.spec = {
+		...channel.spec,
+		pricingBounds: {
+			CLICK: {
+				min: '1',
+				max: '2'
+			}
+		},
+		priceMultiplicationRules: [{ amount: '2', country: ['US'], evType: ['CLICK'] }]
+	}
+	const num = 66
+	const evs = genEvents(num, randomAddress(), 'CLICK')
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+	// Technically we don't need to tick, since the events should be reflected immediately
+	const analytics = await fetch(
+		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`
+	).then(r => r.json())
+
+	t.equal(analytics.aggr[0].value, (num * 2).toString(), 'proper payout amount')
+
+	t.end()
+})
+
 tape('analytics routes return correct values', async function(t) {
 	const channel = getValidEthChannel()
-
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
