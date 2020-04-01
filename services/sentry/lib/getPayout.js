@@ -58,7 +58,7 @@ function getPriceBounds(spec, evType) {
 	const fromPricingBounds = pricingBounds &&
 		pricingBounds[evType] && [new BN(pricingBounds[evType].min), new BN(pricingBounds[evType].max)]
 	if (evType === 'IMPRESSION') {
-		return [new BN(minPerImpression || 1), new BN(maxPerImpression || 1)]
+		return fromPricingBounds || [new BN(minPerImpression || 1), new BN(maxPerImpression || 1)]
 	}
 	return fromPricingBounds || [new BN(0), new BN(0)]
 }
