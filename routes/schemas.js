@@ -114,12 +114,23 @@ module.exports = {
 				.keys()
 				.pattern(
 					/^(IMPRESSION|CLICK)$/,
-					Joi.object({ min: numericString.default('0'), max: numericString.default('0') })
+					Joi.object({ min: numericString.required(), max: numericString.required() })
 				),
 			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
 			nonce: Joi.string(),
 			created: Joi.number(),
-			activeFrom: Joi.number()
+			activeFrom: Joi.number(),
+			priceMultiplicationRules: Joi.array().items(
+				Joi.object({
+					multiplier: Joi.number().precision(10), // max 10 decimal places
+					amount: numericString,
+					evType: Joi.array().items(Joi.string().lowercase()),
+					country: Joi.array().items(Joi.string().lowercase()),
+					publisher: Joi.array().items(Joi.string()),
+					osType: Joi.array().items(Joi.string().lowercase())
+				})
+			),
+			priceDynamicAdjustment: Joi.bool()
 		}).required()
 	},
 	validatorMessage: {

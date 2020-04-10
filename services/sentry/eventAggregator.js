@@ -73,7 +73,7 @@ function makeRecorder(channelId) {
 		// this will be saved in the channel object, which is passed into the eventReducer
 
 		// Record the events
-		aggr = events.reduce(eventReducer.reduce.bind(null, channel), aggr)
+		aggr = events.reduce(eventReducer.reduce.bind(null, channel, session), aggr)
 		if (cfg.AGGR_THROTTLE) {
 			throttledPersistAndReset()
 			return { success: true }
