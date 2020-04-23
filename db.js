@@ -26,4 +26,5 @@ function getRedis() {
 	return redisClient
 }
 
-module.exports = { connect, getMongo, getRedis }
+const analyticsAggrCol = getMongo().collection('analyticsAggregate')
+module.exports = { connect, getMongo, getRedis, analyticsAggrCol }

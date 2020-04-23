@@ -77,7 +77,10 @@ function getProjAndMatch(
 }
 
 function analytics(req, advertiserChannels, skipPublisherFiltering) {
-	const eventsCol = db.getMongo().collection('eventAggregates')
+	const database =
+		process.env.ANALYTICS_READ && req.query.timeframe !== 'hour'
+			? db.getMongo().collection('analyticsAggregates')
+			: db.getMongo().collection('eventAggregates')
 	const { limit, timeframe, eventType, metric, start, end, segmentByChannel } = req.query
 	const { period, span } = getTimeframe(timeframe)
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
@@ -115,7 +118,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		{ $project: resultProjection }
 	]
 
-	return eventsCol
+	return database
 		.aggregate(pipeline, { maxTimeMS: 15000 })
 		.toArray()
 		.then(aggr => ({
