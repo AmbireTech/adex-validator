@@ -10,7 +10,7 @@ const { database } = require('../services/constants')
 const TIME_INTERVAL = parseInt(process.env.TIME_INTERVAL, 10) * 60 * 1000 || 5 * 60 * 1000
 
 // eslint-disable-next-line no-console
-const log = console.log
+const { log } = console
 
 async function aggregate() {
 	await db.connect()
