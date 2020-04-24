@@ -1,12 +1,13 @@
 #!/usr/bin/env node
+/* eslint-disable no-underscore-dangle */
 
 const BN = require('bn.js')
 const db = require('../db')
 const { sumBNValues } = require('../services')
 const { database } = require('../services/constants')
-// TIME Interval in seconds
-// default 300 == 5 mins
-const TIME_INTERVAL = parseInt(process.env.TIME_INTERVAL, 10) || 5 * 60
+
+// Default TIME_INTERVAL 5 mins
+const TIME_INTERVAL = parseInt(process.env.TIME_INTERVAL, 10) * 60 * 1000 || 5 * 60 * 1000
 
 // eslint-disable-next-line no-console
 const log = console.log
@@ -18,7 +19,7 @@ async function aggregate() {
 	const analyticsCol = db.getMongo().collection(database.analyticsAggregate)
 	const eventsCol = db.getMongo().collection(database.eventAggregates)
 
-	const lastAggr = await analyticsCol.findOne().sort({ created: -1 })
+	const lastAggr = await analyticsCol.findOne({}, { sort: ['created', 'desc'] })
 	const start = (lastAggr && lastAggr.created) || new Date(0)
 
 	const pipeline = [
@@ -31,35 +32,41 @@ async function aggregate() {
 					},
 					channelId: '$channelId'
 				},
-				aggr: { $mergeObjects: '$events' }
+				aggr: { $push: '$events' },
+				earners: { $push: '$earners' }
 			}
 		},
-		{ $sort: { _id: 1, channelId: 1, created: 1 } }
+		{
+			$addFields: {
+				earners: {
+					$reduce: {
+						input: '$earners',
+						initialValue: [],
+						in: { $setUnion: ['$$value', '$$this'] }
+					}
+				}
+			}
+		}
 	]
 
 	const data = await eventsCol.aggregate(pipeline).toArray()
 
-	// console.log({ data })
-
-	// "events" : { "IMPRESSION" : { "eventCounts" : { "0xb7d3f81e857692d13e9d63b232a90f4a1793189e" : "60" }, "eventPayouts" : { "0xb7d3f81e857692d13e9d63b232a90f4a1793189e" : "60" } } }
-
-	// process the data and store in analyticsCol
-	// generate 5 mins bounds and aggregate data within this period and store
 	await Promise.all(
-		data.map(async item => {
+		data.map(async ({ aggr, _id, earners }) => {
 			const events = {}
 			const totals = {}
-			item.aggr.forEach(evAggr => {
+			aggr.forEach(evAggr => {
 				Object.keys(evAggr).forEach(evType => {
 					const { eventCounts, eventPayouts } = evAggr[evType]
 
-					totals[evType].eventCounts = sumBNValues(eventCounts)
-					totals[evType].eventPayouts = sumBNValues(eventPayouts)
+					totals[evType] = {
+						eventCounts: sumBNValues(eventCounts).toString(),
+						eventPayouts: sumBNValues(eventPayouts).toString()
+					}
 
 					Object.keys(eventCounts).forEach(publisher => {
 						// if it exists in eventCounts then it exists in payouts
 						if (events[evType] && events[evType].eventCounts[publisher]) {
-							// sum
 							events[evType].eventCounts[publisher] = new BN(eventCounts[publisher])
 								.add(new BN(events[evType].eventCounts[publisher]))
 								.toString()
@@ -67,21 +74,44 @@ async function aggregate() {
 								.add(new BN(events[evType].eventPayouts[publisher]))
 								.toString()
 						} else {
-							events[evType].eventCounts[publisher] = eventCounts[publisher]
-							events[evType].eventPayouts[publisher] = eventPayouts[publisher]
+							events[evType] = {
+								eventCounts: {
+									...(events[evType] && events[evType].eventCounts),
+									[publisher]: eventCounts[publisher]
+								},
+								eventPayouts: {
+									...(events[evType] && events[evType].eventPayouts),
+									[publisher]: eventPayouts[publisher]
+								}
+							}
 						}
 					})
 				})
 			})
 
-			// persist
-			return analyticsCol.insertOne({
-				...item,
-				events,
-				totals
-			})
+			return analyticsCol.updateOne(
+				{
+					_id: `${_id.channelId}:${_id.time}`
+				},
+				{
+					$set: {
+						_id: `${_id.channelId}:${_id.time}`,
+						channelId: _id.channelId,
+						created: new Date(_id.time),
+						earners,
+						events,
+						totals
+					}
+				},
+				{
+					upsert: true
+				}
+			)
 		})
 	)
 }
 
-aggregate().then(() => log(`Finsished processesing ${new Date()}`))
+aggregate().then(() => {
+	log(`Finsished processesing ${new Date()}`)
+	process.exit()
+})
