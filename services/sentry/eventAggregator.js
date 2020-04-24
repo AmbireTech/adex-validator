@@ -21,7 +21,7 @@ function makeRecorder(channelId) {
 	const channelsCol = db.getMongo().collection('channels')
 
 	// get the channel
-	const channelPromise = channelsCol.findOne({ _id: channelId })
+	let channelPromise = channelsCol.findOne({ _id: channelId })
 
 	// persist each individual aggregate
 	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
@@ -55,8 +55,28 @@ function makeRecorder(channelId) {
 		trailing: true
 	})
 
+	const updateChannelPriceMultiplicationRules = async ev => {
+		const priceMultiplicationRules = ev.type === 'PRICE_UPDATE' ? ev.priceMultiplicationRules : {}
+		await channelsCol.updateOne(
+			{ id: channelId },
+			{ $set: { 'spec.priceMultiplicationRules': priceMultiplicationRules } }
+		)
+	}
+
 	// return a recorder
 	return async function(session, events) {
+		const priceModifyEvs = events.filter(
+			x => x.type === 'UPDATE_IMPRESSION_PRICE' || x.type === 'PAUSE_CHANNEL'
+		)
+		if (priceModifyEvs.length) {
+			await Promise.all(
+				priceModifyEvs.map(async priceModifyEv =>
+					updateChannelPriceMultiplicationRules(priceModifyEv)
+				)
+			)
+			channelPromise = channelsCol.findOne({ _id: channel.id })
+		}
+
 		const channel = await channelPromise
 
 		const hasAccess = await checkAccess(channel, session, events)
