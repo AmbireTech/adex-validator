@@ -10,6 +10,7 @@
     "test-eth-adapter": "node test/ethereum_adapter.js",
     "test-integration": "./test/run-integration-tests.sh",
     "test-integration-external": "./test/run-integration-tests.sh external",
+    "analytics-aggr": "./scripts/analyticsAggregator.js",
     "benchmark": "./test/run-integration-tests.sh benchmark",
     "benchmark-docker": "./test/benchmark/benchmark.sh"
   },

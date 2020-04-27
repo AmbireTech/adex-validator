@@ -26,4 +26,8 @@ function getRedis() {
 	return redisClient
 }
 
-module.exports = { connect, getMongo, getRedis }
+function close() {
+	return mongoClient.close()
+}
+
+module.exports = { connect, getMongo, close, getRedis }

@@ -6,6 +6,7 @@ const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
+const { collections } = require('../services/constants')
 
 const router = express.Router()
 const redisCli = db.getRedis()
@@ -77,9 +78,14 @@ function getProjAndMatch(
 }
 
 function analytics(req, advertiserChannels, skipPublisherFiltering) {
-	const eventsCol = db.getMongo().collection('eventAggregates')
 	const { limit, timeframe, eventType, metric, start, end, segmentByChannel } = req.query
 	const { period, span } = getTimeframe(timeframe)
+
+	const collection =
+		process.env.ANALYTICS_DB && span >= parseInt(process.env.TIME_INTERVAL || 0, 10)
+			? db.getMongo().collection(collections.analyticsAggregate)
+			: db.getMongo().collection(collections.eventAggregates)
+
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
 		req.session,
@@ -115,7 +121,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		{ $project: resultProjection }
 	]
 
-	return eventsCol
+	return collection
 		.aggregate(pipeline, { maxTimeMS: 15000 })
 		.toArray()
 		.then(aggr => ({
