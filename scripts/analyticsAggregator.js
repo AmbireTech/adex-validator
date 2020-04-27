@@ -24,6 +24,7 @@ async function aggregate() {
 
 	const pipeline = [
 		{ $match: { created: { $gt: start } } },
+		{ $limit: 2000 },
 		{
 			$group: {
 				_id: {
