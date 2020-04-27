@@ -4,7 +4,7 @@
 const BN = require('bn.js')
 const db = require('../db')
 const { sumBNValues } = require('../services')
-const { database } = require('../services/constants')
+const { collections } = require('../services/constants')
 
 // Default TIME_INTERVAL 5 mins
 const TIME_INTERVAL = parseInt(process.env.TIME_INTERVAL, 10) * 60 * 1000 || 5 * 60 * 1000
@@ -16,8 +16,8 @@ async function aggregate() {
 	await db.connect()
 	// enter the eventAggregates collection
 	// produce a new aggregate per channel
-	const analyticsCol = db.getMongo().collection(database.analyticsAggregate)
-	const eventsCol = db.getMongo().collection(database.eventAggregates)
+	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
+	const eventsCol = db.getMongo().collection(collections.eventAggregates)
 
 	const lastAggr = await analyticsCol.findOne({}, { sort: ['created', 'desc'] })
 	const start = (lastAggr && lastAggr.created) || new Date(0)
@@ -60,8 +60,12 @@ async function aggregate() {
 					const { eventCounts, eventPayouts } = evAggr[evType]
 
 					totals[evType] = {
-						eventCounts: sumBNValues(eventCounts).toString(),
-						eventPayouts: sumBNValues(eventPayouts).toString()
+						eventCounts: new BN((totals[evType] && totals[evType].eventCounts) || '0')
+							.add(sumBNValues(eventCounts))
+							.toString(),
+						eventPayouts: new BN((totals[evType] && totals[evType].eventPayouts) || '0')
+							.add(sumBNValues(eventPayouts))
+							.toString()
 					}
 
 					Object.keys(eventCounts).forEach(publisher => {
@@ -112,6 +116,6 @@ async function aggregate() {
 }
 
 aggregate().then(() => {
-	log(`Finsished processesing ${new Date()}`)
+	log(`Finished processing ${new Date()}`)
 	process.exit()
 })

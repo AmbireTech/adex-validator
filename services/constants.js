@@ -1,5 +1,5 @@
 module.exports = Object.freeze({
-	database: {
+	collections: {
 		eventAggregates: 'eventAggregates',
 		analyticsAggregate: 'analyticsAggregate'
 	}
