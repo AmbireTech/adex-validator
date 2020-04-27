@@ -23,8 +23,8 @@ async function aggregate() {
 	const start = (lastAggr && lastAggr.created) || new Date(0)
 
 	const pipeline = [
-		{ $match: { created: { $gt: start } } },
-		{ $limit: 2000 },
+		{ $match: { created: { $gte: start } } },
+		{ $limit: 10000 },
 		{
 			$group: {
 				_id: {
