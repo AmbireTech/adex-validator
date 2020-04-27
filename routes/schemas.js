@@ -1,4 +1,5 @@
 const { Joi } = require('celebrate')
+const { eventTypes } = require('../services/constants')
 
 const numericString = Joi.string().regex(/^\d+$/)
 
@@ -146,7 +147,10 @@ module.exports = {
 				ref: Joi.string().allow(''),
 				adUnit: Joi.string(),
 				adSlot: Joi.string(),
-				priceMultiplicationRules
+				priceMultiplicationRules: priceMultiplicationRules.when('type', {
+					is: eventTypes.update_price_rules,
+					then: Joi.required()
+				})
 			})
 		)
 	},

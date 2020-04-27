@@ -5,6 +5,7 @@ const analyticsRecorder = require('./analyticsRecorder')
 const eventReducer = require('./lib/eventReducer')
 const checkAccess = require('./lib/access')
 const logger = require('../logger')('sentry')
+const { eventTypes } = require('../constants')
 
 const recorders = new Map()
 
@@ -56,32 +57,27 @@ function makeRecorder(channelId) {
 	})
 
 	const updateChannelPriceMultiplicationRules = async ev => {
-		const priceMultiplicationRules = ev.type === 'PRICE_UPDATE' ? ev.priceMultiplicationRules : {}
 		await channelsCol.updateOne(
 			{ id: channelId },
-			{ $set: { 'spec.priceMultiplicationRules': priceMultiplicationRules } }
+			{ $set: { 'spec.priceMultiplicationRules': ev.priceMultiplicationRules } }
 		)
 	}
 
 	// return a recorder
 	return async function(session, events) {
-		const priceModifyEvs = events.filter(
-			x => x.type === 'UPDATE_IMPRESSION_PRICE' || x.type === 'PAUSE_CHANNEL'
-		)
-		if (priceModifyEvs.length) {
-			await Promise.all(
-				priceModifyEvs.map(async priceModifyEv =>
-					updateChannelPriceMultiplicationRules(priceModifyEv)
-				)
-			)
-			channelPromise = channelsCol.findOne({ _id: channel.id })
-		}
-
 		const channel = await channelPromise
 
 		const hasAccess = await checkAccess(channel, session, events)
 		if (!hasAccess.success) {
 			return hasAccess
+		}
+
+		const priceRuleModifyEvs = events.filter(x => x.type === eventTypes.update_price_rules)
+		if (priceRuleModifyEvs.length) {
+			// if there are multiple evs only apply the latest
+			await updateChannelPriceMultiplicationRules(priceRuleModifyEvs[priceRuleModifyEvs.length - 1])
+
+			channelPromise = channelsCol.findOne({ _id: channel.id })
 		}
 
 		// No need to wait for this, it's simply a stats recorder
