@@ -357,11 +357,9 @@ tape('eventReducer: newAggr', function(t) {
 })
 
 tape('getPayout: get event payouts', function(t) {
-	const pricingBounds = { CLICK: { min: new BN(23) } }
-	const channel = { depositAmount: '100', spec: { minPerImpression: '8', pricingBounds } }
-	t.deepEqual(getPayout(channel, { publisher: 'test1', type: 'IMPRESSION' }), ['test1', new BN(8)])
-	t.deepEqual(getPayout(channel, { publisher: 'test2', type: 'CLICK' }), ['test2', new BN(23)])
-	t.deepEqual(getPayout(channel, { type: 'CLOSE' }), null)
+	fixtures.payoutRules.forEach(([channel, event, session, expectedResult, message]) => {
+		t.deepEqual(getPayout(channel, event, session), expectedResult, message)
+	})
 	t.end()
 })
 
@@ -381,10 +379,10 @@ tape('eventReducer: reduce', function(t) {
 
 	// reduce 100 events
 	for (let i = 0; i < 100; i += 1) {
-		eventReducer.reduce(channel, aggr, event)
+		eventReducer.reduce(channel, {}, aggr, event)
 	}
 
-	const result = eventReducer.reduce(channel, aggr, event)
+	const result = eventReducer.reduce(channel, {}, aggr, event)
 
 	t.equal(result.channelId, channel.id, 'should have same channel id')
 	t.equal(
@@ -398,7 +396,7 @@ tape('eventReducer: reduce', function(t) {
 		'should have the correct number of eventsPayouts'
 	)
 
-	const closeReduce = eventReducer.reduce(channel, aggr, {
+	const closeReduce = eventReducer.reduce(channel, {}, aggr, {
 		type: 'CLOSE'
 	})
 
