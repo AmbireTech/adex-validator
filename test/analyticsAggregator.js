@@ -107,7 +107,9 @@ tape('analyticsAggregator: aggregate', async t => {
 		.collection(collections.eventAggregates)
 		.insertMany(fixtures)
 
-	await exec(`DB_MONGO_NAME='${DB_MONGO_NAME}' ./scripts/analyticsAggregator.js`)
+	// testing for multiple page data
+	await exec(`LIMIT=2 DB_MONGO_NAME='${DB_MONGO_NAME}' ./scripts/analyticsAggregator.js`)
+	await exec(`LIMIT=2 DB_MONGO_NAME='${DB_MONGO_NAME}' ./scripts/analyticsAggregator.js`)
 
 	const eventCol = await db
 		.getMongo()
@@ -132,7 +134,9 @@ tape('analyticsAggregator: aggregate', async t => {
 	t.deepEqual(result.events, analyticAggr.events, 'should perform correct events aggregation')
 	t.deepEqual(result.totals, analyticAggr.totals, 'should perform correct totals aggregation')
 
-	t.deepEqual(
+	eventAggr.lastUpdateTimestamp = new Date(0)
+
+	t.deepEquals(
 		Object.keys(eventAggr).sort(),
 		Object.keys(analyticAggr).sort(),
 		'should have the same db structure'
