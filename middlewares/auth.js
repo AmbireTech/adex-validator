@@ -18,7 +18,10 @@ function forAdapter(adapter) {
 				req.session = session
 				next()
 			})
-			.catch(next)
+			.catch(function(error) {
+				if (error.message === 'insufficient privilege') res.sendStatus(401)
+				else next(error)
+			})
 	}
 }
 
