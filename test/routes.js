@@ -12,6 +12,7 @@ const {
 	getValidEthChannel,
 	randomAddress
 } = require('./lib')
+const { eventTypes } = require('../services/constants')
 
 // const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -131,6 +132,22 @@ tape('POST /channel/{id}/events: CLOSE: a publisher but not a creator', async fu
 	})
 	t.end()
 })
+
+tape(
+	`POST /channel/{id}/events: ${eventTypes.update_price_rules}: a publisher but not a creator`,
+	async function(t) {
+		await fetchPost(
+			`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
+			dummyVals.auth.publisher,
+			{
+				events: [{ type: eventTypes.update_price_rules, priceMultiplicationRules: [] }]
+			}
+		).then(function(resp) {
+			t.equal(resp.status, 403, 'status must be Forbidden')
+		})
+		t.end()
+	}
+)
 
 tape('POST /channel/validate: invalid schema', async function(t) {
 	const resp = await fetchPost(`${followerUrl}/channel/validate`, dummyVals.auth.leader, {}).then(
