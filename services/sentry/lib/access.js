@@ -6,6 +6,7 @@ const cfg = require('../../../cfg')
 const redisCli = db.getRedis()
 const redisExists = promisify(redisCli.exists).bind(redisCli)
 const redisSetex = promisify(redisCli.setex).bind(redisCli)
+const { eventTypes } = require('../../constants')
 
 async function checkAccess(channel, session, events) {
 	const currentTime = Date.now()
@@ -23,8 +24,11 @@ async function checkAccess(channel, session, events) {
 	if (events.every(e => e.type === 'CLOSE') && (isCreator || isInWithdrawPeriod)) {
 		return { success: true }
 	}
-	// Only the creator can send a CLOSE
-	if (!isCreator && events.find(e => e.type === 'CLOSE')) {
+	// Only the creator can send a CLOSE & PRICE_RULE_UPDATE
+	if (
+		!isCreator &&
+		events.find(e => e.type === 'CLOSE' || e.type === eventTypes.update_price_rules)
+	) {
 		return { success: false, statusCode: 403 }
 	}
 

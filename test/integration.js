@@ -17,6 +17,7 @@ const {
 } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
+const constants = require('../services/constants')
 
 const postEvsAsCreator = (url, id, ev, headers = {}) =>
 	postEvents(url, id, ev, dummyVals.auth.creator, headers)
@@ -546,6 +547,46 @@ tape('analytics routes return correct values', async function(t) {
 				})
 		)
 	)
+	t.end()
+})
+
+tape('should update the priceMultiplicationRules', async function(t) {
+	const channel = getValidEthChannel()
+	channel.spec = {
+		...channel.spec,
+		pricingBounds: {
+			CLICK: {
+				min: '1',
+				max: '3'
+			}
+		},
+		priceMultiplicationRules: [{ amount: '2', country: ['US'], evType: ['CLICK'] }]
+	}
+	const num = 66
+	const evs = genEvents(num, randomAddress(), 'CLICK')
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// update priceMultiplicationRule
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
+		events: [
+			{
+				type: constants.eventTypes.update_price_rules,
+				priceMultiplicationRules: [{ amount: '3', country: ['US'], evType: ['CLICK'] }]
+			}
+		]
+	})
+
+	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+	// Technically we don't need to tick, since the events should be reflected immediately
+	const analytics = await fetch(
+		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`
+	).then(r => r.json())
+	t.equal(analytics.aggr[0].value, (num * 3).toString(), 'proper payout amount')
+
 	t.end()
 })
 

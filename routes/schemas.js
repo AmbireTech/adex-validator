@@ -1,4 +1,5 @@
 const { Joi } = require('celebrate')
+const { eventTypes } = require('../services/constants')
 
 const numericString = Joi.string().regex(/^\d+$/)
 
@@ -70,6 +71,17 @@ const sentryValidatorMessage = Joi.object({
 	msg: Joi.array().items(validatorMessage)
 })
 
+const priceMultiplicationRules = Joi.array().items(
+	Joi.object({
+		multiplier: Joi.number().precision(10), // max 10 decimal places
+		amount: numericString,
+		evType: Joi.array().items(Joi.string().lowercase()),
+		country: Joi.array().items(Joi.string().lowercase()),
+		publisher: Joi.array().items(Joi.string()),
+		osType: Joi.array().items(Joi.string().lowercase())
+	})
+)
+
 module.exports = {
 	createChannel: {
 		id: Joi.string().required(),
@@ -120,16 +132,7 @@ module.exports = {
 			nonce: Joi.string(),
 			created: Joi.number(),
 			activeFrom: Joi.number(),
-			priceMultiplicationRules: Joi.array().items(
-				Joi.object({
-					multiplier: Joi.number().precision(10), // max 10 decimal places
-					amount: numericString,
-					evType: Joi.array().items(Joi.string().lowercase()),
-					country: Joi.array().items(Joi.string().lowercase()),
-					publisher: Joi.array().items(Joi.string()),
-					osType: Joi.array().items(Joi.string().lowercase())
-				})
-			),
+			priceMultiplicationRules,
 			priceDynamicAdjustment: Joi.bool()
 		}).required()
 	},
@@ -143,7 +146,11 @@ module.exports = {
 				publisher: Joi.string(),
 				ref: Joi.string().allow(''),
 				adUnit: Joi.string(),
-				adSlot: Joi.string()
+				adSlot: Joi.string(),
+				priceMultiplicationRules: priceMultiplicationRules.when('type', {
+					is: eventTypes.update_price_rules,
+					then: Joi.required()
+				})
 			})
 		)
 	},
