@@ -580,6 +580,9 @@ tape('should update the priceMultiplicationRules', async function(t) {
 		]
 	})
 
+	// sleep
+	await wait(cfg.CHANNEL_REFRESH_INTERVAL)
+
 	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
 	// Technically we don't need to tick, since the events should be reflected immediately
 	const analytics = await fetch(

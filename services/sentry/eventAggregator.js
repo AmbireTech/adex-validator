@@ -24,6 +24,11 @@ function makeRecorder(channelId) {
 	// get the channel
 	let channelPromise = channelsCol.findOne({ _id: channelId })
 
+	// update channel promise
+	setInterval(() => {
+		channelPromise = channelsCol.findOne({ _id: channelId })
+	}, cfg.CHANNEL_REFRESH_INTERVAL)
+
 	// persist each individual aggregate
 	// this is done in a one-at-a-time queue, with re-trying, to ensure everything is saved
 	let saveQueue = Promise.resolve()
@@ -56,13 +61,6 @@ function makeRecorder(channelId) {
 		trailing: true
 	})
 
-	const updateChannelPriceMultiplicationRules = async ev => {
-		await channelsCol.updateOne(
-			{ id: channelId },
-			{ $set: { 'spec.priceMultiplicationRules': ev.priceMultiplicationRules } }
-		)
-	}
-
 	// return a recorder
 	return async function(session, events) {
 		const channel = await channelPromise
@@ -72,12 +70,16 @@ function makeRecorder(channelId) {
 			return hasAccess
 		}
 
-		const priceRuleModifyEvs = events.filter(x => x.type === eventTypes.update_price_rules)
-		if (priceRuleModifyEvs.length) {
-			// if there are multiple evs only apply the latest
-			await updateChannelPriceMultiplicationRules(priceRuleModifyEvs[priceRuleModifyEvs.length - 1])
-
-			channelPromise = channelsCol.findOne({ _id: channel.id })
+		const priceRuleModifyEv = events.find(x => x.type === eventTypes.update_price_rules)
+		if (priceRuleModifyEv) {
+			await channelsCol.updateOne(
+				{ id: channelId },
+				{
+					$set: {
+						'spec.priceMultiplicationRules': priceRuleModifyEv.priceMultiplicationRules
+					}
+				}
+			)
 		}
 
 		// No need to wait for this, it's simply a stats recorder
