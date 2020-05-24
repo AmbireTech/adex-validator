@@ -50,14 +50,12 @@ async function checkAccess(channel, session, events) {
 			: [{ uids: [channel.creator] }, { uids: null, rateLimit: cfg.IP_RATE_LIMIT }]
 	// first, find an applicable access rule
 	const rules = allowRules.filter(r => {
-		// uid === null means it applies to all UIDs
-		if (r.uids === null) return true
-		if (Array.isArray(r.uids)) {
-			const ourUid = session.uid || null
-			return r.uids.includes(ourUid)
-		}
-		// @TODO: does it apply to any of the events
-		return false
+		const ourUid = session.uid || null
+		const matchesUids = Array.isArray(r.uids) ? r.uids.includes(ourUid) : true
+		const matchesTypes = Array.isArray(r.evTypes)
+			? events.some(e => r.evTypes.includes(e.type))
+			: true
+		return matchesUids && matchesTypes
 	})
 
 	const noLimitRule = rules.find(r => !r.rateLimit)
@@ -75,7 +73,7 @@ async function checkAccess(channel, session, events) {
 				return new Error('rateLimit: only allows 1 event')
 			}
 			let key
-			// @TODO: this is the place to add more rateLimit types, such as PoW (AIP26) or hcaptcha (AIP29)
+			// @TODO: this is the place to add more rateLimit types, such as PoW (AIP26) or captcha (AIP29)
 			if (type === 'uid') {
 				if (!session.uid) {
 					return new Error('rateLimit: unauthenticated request')
