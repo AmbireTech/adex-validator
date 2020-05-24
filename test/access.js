@@ -11,7 +11,7 @@ tape('check access: session uid rateLimit', async function(t) {
 		creator: 'creator',
 		spec: {
 			eventSubmission: {
-				allow: [{ uids: null, rateLimit: { type: 'sid', timeframe: 20000 } }]
+				allow: [{ uids: null, rateLimit: { type: 'uid', timeframe: 20000 } }]
 			}
 		}
 	}

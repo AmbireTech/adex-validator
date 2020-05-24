@@ -56,6 +56,7 @@ async function checkAccess(channel, session, events) {
 			const ourUid = session.uid || null
 			return r.uids.includes(ourUid)
 		}
+		// @TODO: does it apply to any of the events
 		return false
 	})
 
@@ -71,7 +72,7 @@ async function checkAccess(channel, session, events) {
 
 			const type = rule.rateLimit.type
 			let key
-			if (type === 'sid') {
+			if (type === 'uid') {
 				if (!session.uid) {
 					return new Error('rateLimit: unauthenticated request')
 				}
@@ -81,6 +82,9 @@ async function checkAccess(channel, session, events) {
 					return new Error('rateLimit: only allows 1 event')
 				}
 				key = `adexRateLimit:${channel.id}:${events[0].type}:${session.ip}`
+				// @TODO: pow
+				// @TODO: hcaptcha token
+				// @TODO: both of which should allow only one event, like the ip
 			} else {
 				// unsupported limit type
 				return null
