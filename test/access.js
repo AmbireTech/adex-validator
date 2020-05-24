@@ -16,7 +16,7 @@ tape('check access: session uid rateLimit', async function(t) {
 		}
 	}
 
-	const events = genEvents(2, 'working')
+	const events = genEvents(1, 'working')
 	const response = await checkAccess(channel, { uid: 'response' }, events)
 	t.equal(response.success, true, 'should process request')
 

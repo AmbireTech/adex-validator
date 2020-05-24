@@ -71,20 +71,18 @@ async function checkAccess(channel, session, events) {
 			if (!rule.rateLimit) return null
 
 			const type = rule.rateLimit.type
+			if (events.length !== 1) {
+				return new Error('rateLimit: only allows 1 event')
+			}
 			let key
+			// @TODO: this is the place to add more rateLimit types, such as PoW (AIP26) or hcaptcha (AIP29)
 			if (type === 'uid') {
 				if (!session.uid) {
 					return new Error('rateLimit: unauthenticated request')
 				}
 				key = `adexRateLimit:${channel.id}:${session.uid}`
 			} else if (type === 'ip') {
-				if (events.length !== 1) {
-					return new Error('rateLimit: only allows 1 event')
-				}
 				key = `adexRateLimit:${channel.id}:${events[0].type}:${session.ip}`
-				// @TODO: pow
-				// @TODO: hcaptcha token
-				// @TODO: both of which should allow only one event, like the ip
 			} else {
 				// unsupported limit type
 				return null
