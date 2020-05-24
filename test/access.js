@@ -11,12 +11,12 @@ tape('check access: session uid rateLimit', async function(t) {
 		creator: 'creator',
 		spec: {
 			eventSubmission: {
-				allow: [{ uids: null, rateLimit: { type: 'sid', timeframe: 20000 } }]
+				allow: [{ uids: null, rateLimit: { type: 'uid', timeframe: 20000 } }]
 			}
 		}
 	}
 
-	const events = genEvents(2, 'working')
+	const events = genEvents(1, 'working')
 	const response = await checkAccess(channel, { uid: 'response' }, events)
 	t.equal(response.success, true, 'should process request')
 
