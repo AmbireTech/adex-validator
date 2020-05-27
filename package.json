@@ -11,6 +11,7 @@
     "test-integration": "./test/run-integration-tests.sh",
     "test-integration-external": "./test/run-integration-tests.sh external",
     "analytics-aggr": "./scripts/analyticsAggregator.js",
+    "export-bigquery": "./scripts/export-bigquery.js",
     "benchmark": "./test/run-integration-tests.sh benchmark",
     "benchmark-docker": "./test/benchmark/benchmark.sh"
   },
@@ -45,6 +46,7 @@
   "homepage": "https://github.com/AdExNetwork/adex-validator-stack-js#readme",
   "dependencies": {
     "adex-adview-manager": "^2.0.1",
+    "@google-cloud/bigquery": "^4.7.0",
     "adex-protocol-eth": "^4.1.3",
     "base64url": "^3.0.1",
     "bn.js": "^4.11.8",
