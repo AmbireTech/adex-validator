@@ -256,3 +256,14 @@ Example:
 ```
 NODE_ENV=production KEYSTORE_PWD=<pwd> node scripts/distribute-rewards.js ./keystore.json
  ```
+
+#### Export Biquery
+
+To run the BigQuery export script 
+
+```sh
+
+> export GOOGLE_APPLICATION_CREDENTIALS="[PATH]"
+> ./scripts/export-bigquery.js
+
+```
