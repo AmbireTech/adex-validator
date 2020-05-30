@@ -13,7 +13,7 @@ function forAdapter(adapter) {
 		const channelsCol = db.getMongo().collection('channels')
 		const specHash = crypto
 			.createHash('sha256')
-			.update(JSON.stringify(channel.spec))
+			.update(JSON.stringify(req.body.spec))
 			.digest()
 		const channel = {
 			...req.body,
