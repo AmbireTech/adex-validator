@@ -1,5 +1,6 @@
 const express = require('express')
 const { celebrate } = require('celebrate')
+const crypto = require('crypto')
 const schema = require('./schemas')
 const db = require('../db')
 
@@ -10,9 +11,14 @@ function forAdapter(adapter) {
 	})
 	router.post('/', celebrate({ body: schema.createChannel }), function(req, res, next) {
 		const channelsCol = db.getMongo().collection('channels')
+		const specHash = crypto
+			.createHash('sha256')
+			.update(JSON.stringify(channel.spec))
+			.digest()
 		const channel = {
 			...req.body,
-			_id: req.body.id
+			_id: req.body.id,
+			specHash
 		}
 
 		adapter

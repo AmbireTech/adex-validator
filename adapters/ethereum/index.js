@@ -6,7 +6,6 @@ const fetch = require('node-fetch')
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
-const crypto = require('crypto')
 
 const readFile = util.promisify(fs.readFile)
 const lib = require('../lib')
@@ -161,17 +160,14 @@ Adapter.prototype.MerkleTree = MerkleTree
 // p.then(() => console.log(Date.now()-start))
 
 function toEthereumChannel(channel) {
-	const specHash = crypto
-		.createHash('sha256')
-		.update(JSON.stringify(channel.spec))
-		.digest()
+	assert.ok(typeof channel.specHash === 'string', 'channel.specHash required')
 	return new Channel({
 		creator: channel.creator,
 		tokenAddr: channel.depositAsset,
 		tokenAmount: channel.depositAmount,
 		validUntil: channel.validUntil,
 		validators: channel.spec.validators.map(v => v.id),
-		spec: specHash
+		spec: channel.specHash
 	})
 }
 
