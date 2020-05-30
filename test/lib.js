@@ -2,7 +2,7 @@ const fetch = require('node-fetch')
 const childproc = require('child_process')
 const ethers = require('ethers')
 const dummyVals = require('./prep-db/mongo')
-const { ethereum } = require('../adapters')
+const { toEthereumChannel } = require('./ethereum')
 
 const defaultPubName = dummyVals.ids.publisher
 
@@ -88,7 +88,7 @@ function getValidEthChannel() {
 		}
 	}
 
-	const ethChannel = ethereum.toEthereumChannel(channel)
+	const ethChannel = toEthereumChannel(channel)
 	// Just a hardcoded core addr is fine here; we don't need for more than the hash
 	const coreAddr = '0x333420fc6a897356e69b62417cd17ff012177d2b'
 	channel.id = ethChannel.hashHex(coreAddr)

@@ -203,7 +203,4 @@ async function testValidation() {
 testValidation().catch(e => console.error(e))
 */
 
-module.exports = {
-	Adapter,
-	toEthereumChannel
-}
+module.exports = { Adapter }

@@ -4,9 +4,9 @@ const assert = require('assert')
 const { providers } = require('ethers')
 const { readFileSync } = require('fs')
 const formatAddress = require('ethers').utils.getAddress
-const { ethereum } = require('../adapters')
 const cfg = require('../cfg')
-const { channelOpen, deployContracts, sampleChannel } = require('./ethereum')
+const { ethereum } = require('../adapters')
+const { channelOpen, deployContracts, sampleChannel, toEthereumChannel } = require('./ethereum')
 const ewt = require('../adapters/ethereum/ewt')
 const fixtures = require('./fixtures')
 
@@ -165,7 +165,7 @@ tape('should not validate invalid channels', async function(t) {
 			provider
 		)
 		// ethereum representation
-		const ethChannel = ethereum.toEthereumChannel(channel)
+		const ethChannel = toEthereumChannel(channel)
 		channel.id = ethChannel.hashHex(core.address)
 
 		await tryCatchAsync(async () => ethAdapter.validateChannel(channel), err)
@@ -215,7 +215,7 @@ async function getValidChannel() {
 
 	// get a sample valid channel
 	const channel = await sampleChannel()
-	const ethChannel = ethereum.toEthereumChannel(channel)
+	const ethChannel = toEthereumChannel(channel)
 	channel.id = ethChannel.hashHex(core.address)
 
 	// cannot validate if its not onchain

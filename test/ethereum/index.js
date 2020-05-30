@@ -1,7 +1,9 @@
 const assert = require('assert')
+const crypto = require('crypto')
 const { ContractFactory, Contract, Wallet, providers } = require('ethers')
 const formatAddress = require('ethers').utils.getAddress
 
+const { Channel } = require('adex-protocol-eth/js')
 const adexCoreABI = require('adex-protocol-eth/abi/AdExCore.json')
 const adexCoreBytecode = require('adex-protocol-eth/resources/bytecode/AdExCore.json')
 const tokenbytecode = require('./token/tokenbytecode.json')
@@ -75,8 +77,24 @@ async function sampleChannel() {
 	}
 }
 
+function toEthereumChannel(channel) {
+	const specHash = crypto
+		.createHash('sha256')
+		.update(JSON.stringify(channel.spec))
+		.digest()
+	return new Channel({
+		creator: channel.creator,
+		tokenAddr: channel.depositAsset,
+		tokenAmount: channel.depositAmount,
+		validUntil: channel.validUntil,
+		validators: channel.spec.validators.map(v => v.id),
+		spec: specHash
+	})
+}
+
 module.exports = {
 	channelOpen,
 	deployContracts,
+	toEthereumChannel,
 	sampleChannel
 }
