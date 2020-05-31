@@ -134,13 +134,13 @@ tape('POST /channel/{id}/events: CLOSE: a publisher but not a creator', async fu
 })
 
 tape(
-	`POST /channel/{id}/events: ${eventTypes.update_price_rules}: a publisher but not a creator`,
+	`POST /channel/{id}/events: ${eventTypes.update_targeting}: a publisher but not a creator`,
 	async function(t) {
 		await fetchPost(
 			`${leaderUrl}/channel/${dummyVals.channel.id}/events`,
 			dummyVals.auth.publisher,
 			{
-				events: [{ type: eventTypes.update_price_rules, priceMultiplicationRules: [] }]
+				events: [{ type: eventTypes.update_targeting, targetingRules: [] }]
 			}
 		).then(function(resp) {
 			t.equal(resp.status, 403, 'status must be Forbidden')

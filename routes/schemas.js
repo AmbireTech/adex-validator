@@ -71,16 +71,7 @@ const sentryValidatorMessage = Joi.object({
 	msg: Joi.array().items(validatorMessage)
 })
 
-const priceMultiplicationRules = Joi.array().items(
-	Joi.object({
-		multiplier: Joi.number().precision(10), // max 10 decimal places
-		amount: numericString,
-		evType: Joi.array().items(Joi.string().lowercase()),
-		country: Joi.array().items(Joi.string().lowercase()),
-		publisher: Joi.array().items(Joi.string()),
-		osType: Joi.array().items(Joi.string().lowercase())
-	})
-)
+const targetingRules = Joi.array().items(Joi.object())
 
 module.exports = {
 	createChannel: {
@@ -132,8 +123,7 @@ module.exports = {
 			nonce: Joi.string(),
 			created: Joi.number(),
 			activeFrom: Joi.number(),
-			priceMultiplicationRules,
-			priceDynamicAdjustment: Joi.bool()
+			targetingRules
 		}).required()
 	},
 	validatorMessage: {
@@ -147,8 +137,8 @@ module.exports = {
 				ref: Joi.string().allow(''),
 				adUnit: Joi.string(),
 				adSlot: Joi.string(),
-				priceMultiplicationRules: priceMultiplicationRules.when('type', {
-					is: eventTypes.update_price_rules,
+				targetingRules: targetingRules.when('type', {
+					is: eventTypes.update_targeting,
 					then: Joi.required()
 				})
 			})

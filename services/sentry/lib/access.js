@@ -24,10 +24,10 @@ async function checkAccess(channel, session, events) {
 	if (events.every(e => e.type === 'CLOSE') && (isCreator || isInWithdrawPeriod)) {
 		return { success: true }
 	}
-	// Only the creator can send a CLOSE & PRICE_RULE_UPDATE
+	// Only the creator can send a CLOSE & UPDATE_TARGETING
 	if (
 		!isCreator &&
-		events.find(e => e.type === 'CLOSE' || e.type === eventTypes.update_price_rules)
+		events.find(e => e.type === 'CLOSE' || e.type === eventTypes.update_targeting)
 	) {
 		return { success: false, statusCode: 403 }
 	}

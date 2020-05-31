@@ -1,66 +1,45 @@
 /* eslint-disable no-nested-ternary */
 const BN = require('bn.js')
+const { evaluateMultiple } = require('adex-adview-manager/lib/rules')
+const { targetingInputGetter, getPricingBounds } = require('adex-adview-manager/lib/helpers')
 const toBalancesKey = require('../toBalancesKey')
+const logger = require('../../logger')('sentry')
 
 function getPayout(channel, ev, session) {
-	if (ev.type && ev.publisher && ['IMPRESSION', 'CLICK'].includes(ev.type.toUpperCase())) {
-		const [minPrice, maxPrice] = getPriceBounds(channel.spec, ev.type)
-		const price = channel.spec.priceMultiplicationRules
-			? payout(channel.spec.priceMultiplicationRules, ev, session, maxPrice, minPrice)
-			: minPrice
-		return [toBalancesKey(ev.publisher), new BN(price.toString())]
+	if (!ev.publisher) return null
+	const targetingRules = channel.targetingRules || channel.spec.targetingRules || []
+	const eventType = ev.type.toUpperCase()
+	const [minPrice, maxPrice] = getPricingBounds(channel, eventType)
+	if (targetingRules.length === 0) return [toBalancesKey(ev.publisher), minPrice]
+
+	const targetingInputBase = {
+		adSlotId: ev.adSlot,
+		adUnitId: ev.adUnit,
+		// @TODO
+		// adSlotType: adSlot.type,
+		publisherId: ev.publisher,
+		country: session.country,
+		eventType,
+		secondsSinceEpoch: Math.floor(Date.now() / 1000)
+		// @TODO
+		// userAgentOS: ua.os.name,
+		// userAgentBrowserFamily: ua.browser.name,
 	}
-	return null
-}
-
-function payout(rules, ev, session, maxPrice, startPrice) {
-	const match = isRuleMatching.bind(null, ev, session)
-	const matchingRules = rules.filter(match)
-	let finalPrice = startPrice
-
-	if (matchingRules.length > 0) {
-		const divisionExponent = new BN(10).pow(new BN(18, 10))
-		const firstFixed = matchingRules.find(x => x.amount)
-		const priceByRules = firstFixed
-			? new BN(firstFixed.amount)
-			: startPrice
-					.mul(
-						new BN(
-							(
-								matchingRules
-									.filter(x => x.multiplier)
-									.map(x => x.multiplier)
-									.reduce((a, b) => a * b, 1) * 1e18
-							).toString()
-						)
-					)
-					.div(divisionExponent)
-		finalPrice = BN.min(maxPrice, priceByRules)
+	const input = targetingInputGetter.bind(null, targetingInputBase, channel, null)
+	const priceKey = `price.${eventType}`
+	let output = {
+		show: true,
+		[priceKey]: minPrice
 	}
+	const onTypeErr = (e, rule) =>
+		logger.error(`WARNING: rule for ${channel.id} failing with:`, e, rule)
+	output = evaluateMultiple(input, output, targetingRules, onTypeErr)
 
-	return finalPrice
-}
+	// @TODO: find a way to return a HTTP error code in this case
+	if (output.show === false) return null
 
-function isRuleMatching(ev, session, rule) {
-	return rule.evType
-		? rule.evType.includes(ev.type.toLowerCase())
-		: true && rule.publisher
-		? rule.publisher.includes(ev.publisher)
-		: true && rule.osType
-		? rule.osType.includes(session.os && session.os.toLowerCase())
-		: true && rule.country
-		? rule.country.includes(session.country && session.country.toLowerCase())
-		: true
-}
-
-function getPriceBounds(spec, evType) {
-	const { pricingBounds, minPerImpression, maxPerImpression } = spec
-	const fromPricingBounds = pricingBounds &&
-		pricingBounds[evType] && [new BN(pricingBounds[evType].min), new BN(pricingBounds[evType].max)]
-	if (evType === 'IMPRESSION') {
-		return fromPricingBounds || [new BN(minPerImpression || 1), new BN(maxPerImpression || 1)]
-	}
-	return fromPricingBounds || [new BN(0), new BN(0)]
+	const price = BN.max(minPrice, BN.min(maxPrice, output[priceKey]))
+	return [toBalancesKey(ev.publisher), price]
 }
 
 module.exports = getPayout

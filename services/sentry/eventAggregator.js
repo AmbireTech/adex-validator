@@ -70,15 +70,11 @@ function makeRecorder(channelId) {
 			return hasAccess
 		}
 
-		const priceRuleModifyEv = events.find(x => x.type === eventTypes.update_price_rules)
-		if (priceRuleModifyEv) {
+		const targetingRulesEv = events.find(x => x.type === eventTypes.update_targeting)
+		if (targetingRulesEv) {
 			await channelsCol.updateOne(
 				{ id: channelId },
-				{
-					$set: {
-						'spec.priceMultiplicationRules': priceRuleModifyEv.priceMultiplicationRules
-					}
-				}
+				{ $set: { targetingRules: targetingRulesEv.targetingRules } }
 			)
 		}
 

@@ -466,7 +466,7 @@ tape('should record clicks', async function(t) {
 	t.end()
 })
 
-tape('should record: correct payout clicks', async function(t) {
+tape('should record: correct payout for clicks with targetingRules', async function(t) {
 	const channel = getValidEthChannel()
 	channel.spec = {
 		...channel.spec,
@@ -476,7 +476,9 @@ tape('should record: correct payout clicks', async function(t) {
 				max: '2'
 			}
 		},
-		priceMultiplicationRules: [{ amount: '2', country: ['US'], evType: ['CLICK'] }]
+		targetingRules: [
+			{ if: [{ eq: [{ get: 'country' }, 'US'] }, { set: ['price.CLICK', { bn: '2' }] }] }
+		]
 	}
 	const num = 66
 	const evs = genEvents(num, randomAddress(), 'CLICK')
@@ -486,13 +488,17 @@ tape('should record: correct payout clicks', async function(t) {
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
 
+	// Those should be counted as '2' by virtue of the targetingRules
 	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+	// Send some w/o country: US, to see if we count those as '1'
+	await postEvsAsCreator(leaderUrl, channel.id, evs)
+
 	// Technically we don't need to tick, since the events should be reflected immediately
 	const analytics = await fetch(
 		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`
 	).then(r => r.json())
 
-	t.equal(analytics.aggr[0].value, (num * 2).toString(), 'proper payout amount')
+	t.equal(analytics.aggr[0].value, (num * 2 + num).toString(), 'proper payout amount')
 
 	t.end()
 })
@@ -550,7 +556,7 @@ tape('analytics routes return correct values', async function(t) {
 	t.end()
 })
 
-tape('should update the priceMultiplicationRules', async function(t) {
+tape('should update the targetingRules', async function(t) {
 	const channel = getValidEthChannel()
 	channel.spec = {
 		...channel.spec,
@@ -559,8 +565,7 @@ tape('should update the priceMultiplicationRules', async function(t) {
 				min: '1',
 				max: '3'
 			}
-		},
-		priceMultiplicationRules: [{ amount: '2', country: ['US'], evType: ['CLICK'] }]
+		}
 	}
 	const num = 66
 	const evs = genEvents(num, randomAddress(), 'CLICK')
@@ -570,12 +575,14 @@ tape('should update the priceMultiplicationRules', async function(t) {
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
 
-	// update priceMultiplicationRule
+	// update targetingRules, and then try to see if the new values apply
 	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
 		events: [
 			{
-				type: constants.eventTypes.update_price_rules,
-				priceMultiplicationRules: [{ amount: '3', country: ['US'], evType: ['CLICK'] }]
+				type: constants.eventTypes.update_targeting,
+				targetingRules: [
+					{ if: [{ eq: [{ get: 'country' }, 'US'] }, { set: ['price.CLICK', { bn: '3' }] }] }
+				]
 			}
 		]
 	})
