@@ -46,7 +46,7 @@ function shimTargetingRules(campaign) {
 	// @TODO: consider adding categories for IAB12 - news, IAB13 - personal finance, ADX-1 - crypto, IAB1 - entertainment
 	if (!includeIncentivized)
 		rules.push({
-			onlyShowIf: { nin: [{ get: 'adSlot.categories' }, 'Incentive'] }
+			onlyShowIf: { nin: [{ get: 'adSlot.categories' }, 'IAB25-7'] }
 		})
 	if (!isCatchAll)
 		rules.push({
