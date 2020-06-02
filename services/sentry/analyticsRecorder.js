@@ -19,7 +19,7 @@ function record(channel, session, events, payouts) {
 			if (!payout) return []
 			// @TODO is there a way to get rid of this ugly hardcode (10**18)?
 			const MUL = 10 ** 18
-			const payAmount = payout[1].toNumber() / MUL
+			const payAmount = parseInt(payout[1].toString(), 10) / MUL
 			const adUnitRep = ev.adUnit
 				? [
 						// publisher -> ad unit -> impressions; answers which ad units are shown the most
