@@ -8,7 +8,6 @@ function newAggr(channelId) {
 function reduce(channel, initialAggr, evType, payout) {
 	let aggr = { ...initialAggr }
 	if (payout) {
-		console.log(evType, payout)
 		aggr.events[evType] = mergeEv(initialAggr.events[evType], payout)
 		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, evType, payout) }
 	}
