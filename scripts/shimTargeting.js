@@ -39,7 +39,7 @@ function shimTargetingRules(campaign) {
 		}
 	}
 	const isCatchAll =
-		typeof campaign.title === 'string' ? campaign.title.includes('catchAll') : false
+		typeof campaign.spec.title === 'string' ? campaign.spec.title.includes('catchAll') : false
 	const lowCpm = parseInt(campaign.spec.minPerImpression, 10) < 200000000000000
 	const includeIncentivized = isCatchAll || (lowCpm && isCrypto)
 	const rules = []
