@@ -42,6 +42,7 @@ function shimTargetingRules(campaign) {
 	const lowCpm = parseInt(campaign.spec.minPerImpression, 10) < 200000000000000
 	const includeIncentivized = isCatchAll || (lowCpm && isCrypto)
 	const rules = []
+	// @TODO: consider adding categories for IAB12 - news, IAB13 - personal finance, ADX-1 - crypto, IAB1 - entertainment
 	if (!includeIncentivized)
 		rules.push({
 			onlyShowIf: { nin: [{ get: 'adSlot.categories' }, 'Incentive'] }
