@@ -13,12 +13,16 @@ function getPayout(channel, ev, session) {
 	if (targetingRules.length === 0) return [toBalancesKey(ev.publisher), minPrice]
 
 	const targetingInputBase = {
-		adSlotId: ev.adSlot,
-		adUnitId: ev.adUnit,
+		// Some properties may not be passed, in which case they're undefined and
+		// the rules are skipped with UndefinedVar error
+		// This is a problem, since it means it's essentially a vulnerability: the rules would be bypassable
+		// That's why we default them to ""
+		adSlotId: ev.adSlot || '',
+		adUnitId: ev.adUnit || '',
 		// @TODO; we can infer that from the adUnit
 		// adSlotType: adSlot.type,
-		publisherId: ev.publisher,
-		country: session.country,
+		publisherId: ev.publisher || '',
+		country: session.country || '',
 		eventType,
 		secondsSinceEpoch: Math.floor(Date.now() / 1000)
 		// @TODO
