@@ -466,14 +466,16 @@ tape('should record clicks', async function(t) {
 	t.end()
 })
 
-tape('should record: correct payout with targetingRules', async function(t) {
+tape('should record: correct payout with targetingRules, consistent with balances', async function(
+	t
+) {
 	const channel = getValidEthChannel()
 	channel.spec = {
 		...channel.spec,
 		pricingBounds: {
 			CLICK: {
 				min: '1',
-				max: '2'
+				max: '3'
 			}
 		},
 		targetingRules: [
@@ -565,7 +567,7 @@ tape('analytics routes return correct values', async function(t) {
 	t.end()
 })
 
-tape('should update the targetingRules', async function(t) {
+tape('targetingRules: event to update them works', async function(t) {
 	const channel = getValidEthChannel()
 	channel.spec = {
 		...channel.spec,
@@ -606,6 +608,43 @@ tape('should update the targetingRules', async function(t) {
 		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`
 	).then(r => r.json())
 	t.equal(analytics.aggr[0].value, (num * 30).toString(), 'proper payout amount')
+
+	t.end()
+})
+
+tape('targetingRules: onlyShowIf is respected and returns a HTTP error code', async function(t) {
+	const channel = getValidEthChannel()
+	const specialPublisher = randomAddress()
+	channel.spec = {
+		...channel.spec,
+		targetingRules: [{ onlyShowIf: { eq: [{ get: 'publisherId' }, specialPublisher] } }]
+	}
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	const num = 55
+	const evs = genEvents(num, specialPublisher, 'IMPRESSION').concat(
+		genEvents(num, randomAddress(), 'IMPRESSION')
+	)
+	await postEvsAsCreator(leaderUrl, channel.id, evs, {})
+
+	// If it's only one event, it will return an error code
+	const postOneResp = await postEvsAsCreator(
+		leaderUrl,
+		channel.id,
+		genEvents(1, randomAddress(), 'IMPRESSION')
+	)
+	t.equal(postOneResp.status, 469, 'returned proper HTTP response code')
+
+	// Technically we don't need to tick, since the events should be reflected immediately
+	const analytics = await fetch(
+		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`
+	).then(r => r.json())
+	t.equal(analytics.aggr[0].value, num.toString(), 'proper payout amount')
 
 	t.end()
 })
