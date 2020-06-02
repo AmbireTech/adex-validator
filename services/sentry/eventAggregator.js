@@ -3,6 +3,7 @@ const db = require('../../db')
 const cfg = require('../../cfg')
 const analyticsRecorder = require('./analyticsRecorder')
 const eventReducer = require('./lib/eventReducer')
+const getPayout = require('./lib/getPayout')
 const checkAccess = require('./lib/access')
 const logger = require('../logger')('sentry')
 const { eventTypes } = require('../constants')
@@ -36,7 +37,7 @@ function makeRecorder(channelId) {
 		saveQueue = saveQueue.then(function() {
 			// created needs to be set to the latest date right before saving, otherwise we risk data inconsistency when running in clustered mode
 			return eventAggrCol.insertOne({ ...toSave, created: new Date() }).catch(function(err) {
-				logger.error('eventAggregator fatal error; will re-try', err)
+				logger.error(`eventAggregator fatal error: ${err.message || err}; will re-try`)
 				persist(toSave)
 			})
 		})
@@ -70,28 +71,34 @@ function makeRecorder(channelId) {
 			return hasAccess
 		}
 
-		const priceRuleModifyEv = events.find(x => x.type === eventTypes.update_price_rules)
-		if (priceRuleModifyEv) {
+		const targetingRulesEv = events.find(x => x.type === eventTypes.update_targeting)
+		if (targetingRulesEv) {
 			await channelsCol.updateOne(
 				{ id: channelId },
-				{
-					$set: {
-						'spec.priceMultiplicationRules': priceRuleModifyEv.priceMultiplicationRules
-					}
-				}
+				{ $set: { targetingRules: targetingRulesEv.targetingRules } }
 			)
+		}
+
+		// Pre-compute payouts once so we don't have to compute them separately in analytics/eventReducer
+		// this is also where AIP31 is applied
+		const payouts = events.map(ev => getPayout(channel, ev, session))
+		if (events.length === 1 && events[0].publisher && !payouts[0]) {
+			return { success: false, statusCode: 469, message: 'no event payout' }
 		}
 
 		// No need to wait for this, it's simply a stats recorder
 		if (process.env.ANALYTICS_RECORDER) {
-			analyticsRecorder.record(channel, session, events)
+			analyticsRecorder.record(channel, session, events, payouts)
 		}
 
 		// Keep in mind that at one point validator messages will be able to change payment/bidding information
 		// this will be saved in the channel object, which is passed into the eventReducer
 
 		// Record the events
-		aggr = events.reduce(eventReducer.reduce.bind(null, channel, session), aggr)
+		aggr = events.reduce(
+			(acc, ev, i) => eventReducer.reduce(channel, acc, ev.type, payouts[i]),
+			aggr
+		)
 		if (cfg.AGGR_THROTTLE) {
 			throttledPersistAndReset()
 			return { success: true }

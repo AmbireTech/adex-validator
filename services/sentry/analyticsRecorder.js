@@ -1,6 +1,5 @@
 const { promisify } = require('util')
 const db = require('../../db')
-const getPayout = require('./lib/getPayout')
 const toBalancesKey = require('./toBalancesKey')
 const logger = require('../logger')('sentry')
 
@@ -10,11 +9,11 @@ function getEpoch() {
 	return Math.floor(Date.now() / 2628000000)
 }
 
-function record(channel, session, events) {
+function record(channel, session, events, payouts) {
 	const batch = events
 		.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
-		.map(ev => {
-			const payout = getPayout(channel, ev)
+		.map((ev, i) => {
+			const payout = payouts[i]
 			const publisher = toBalancesKey(ev.publisher)
 			// This should never happen, as the conditions we are checking for in the .filter are the same as getPayout's
 			if (!payout) return []

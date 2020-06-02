@@ -466,33 +466,50 @@ tape('should record clicks', async function(t) {
 	t.end()
 })
 
-tape('should record: correct payout clicks', async function(t) {
+tape('should record: correct payout with targetingRules, consistent with balances', async function(
+	t
+) {
 	const channel = getValidEthChannel()
 	channel.spec = {
 		...channel.spec,
 		pricingBounds: {
 			CLICK: {
 				min: '1',
-				max: '2'
+				max: '3'
 			}
 		},
-		priceMultiplicationRules: [{ amount: '2', country: ['US'], evType: ['CLICK'] }]
+		targetingRules: [
+			{ if: [{ eq: [{ get: 'country' }, 'US'] }, { set: ['price.CLICK', { bn: '2' }] }] }
+		]
 	}
 	const num = 66
-	const evs = genEvents(num, randomAddress(), 'CLICK')
+	const addr = randomAddress()
+	const evs = genEvents(num, addr, 'CLICK')
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
 
+	// Those should be counted as '2' by virtue of the targetingRules
 	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+	// Send some w/o country: US, to see if we count those as '1'
+	await postEvsAsCreator(leaderUrl, channel.id, evs)
+
 	// Technically we don't need to tick, since the events should be reflected immediately
 	const analytics = await fetch(
 		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`
 	).then(r => r.json())
 
-	t.equal(analytics.aggr[0].value, (num * 2).toString(), 'proper payout amount')
+	t.equal(analytics.aggr[0].value, (num * 2 + num).toString(), 'proper payout amount')
+
+	// Check if balances is consistent
+	await aggrAndTick()
+	await forceTick()
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	const expectedAfterFees = Math.floor((num * 2 + num) * 0.8).toString(10)
+	t.equal(balances[addr], expectedAfterFees, 'proper amount in balances')
 
 	t.end()
 })
@@ -550,45 +567,164 @@ tape('analytics routes return correct values', async function(t) {
 	t.end()
 })
 
-tape('should update the priceMultiplicationRules', async function(t) {
+tape('targetingRules: event to update them works', async function(t) {
 	const channel = getValidEthChannel()
 	channel.spec = {
 		...channel.spec,
 		pricingBounds: {
-			CLICK: {
-				min: '1',
-				max: '3'
+			IMPRESSION: {
+				min: '10',
+				max: '30'
 			}
-		},
-		priceMultiplicationRules: [{ amount: '2', country: ['US'], evType: ['CLICK'] }]
+		}
 	}
-	const num = 66
-	const evs = genEvents(num, randomAddress(), 'CLICK')
+
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
 
-	// update priceMultiplicationRule
+	// update targetingRules, and then try to see if the new values apply
 	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
 		events: [
 			{
-				type: constants.eventTypes.update_price_rules,
-				priceMultiplicationRules: [{ amount: '3', country: ['US'], evType: ['CLICK'] }]
+				type: constants.eventTypes.update_targeting,
+				targetingRules: [
+					{ if: [{ eq: [{ get: 'country' }, 'US'] }, { set: ['price.IMPRESSION', { bn: '30' }] }] }
+				]
 			}
 		]
 	})
 
-	// sleep
+	// sleep to give some time for the channel to be updated
 	await wait(cfg.CHANNEL_REFRESH_INTERVAL)
 
+	const num = 66
+	const evs = genEvents(num, randomAddress(), 'IMPRESSION')
 	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
 	// Technically we don't need to tick, since the events should be reflected immediately
 	const analytics = await fetch(
-		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`
+		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`
 	).then(r => r.json())
-	t.equal(analytics.aggr[0].value, (num * 3).toString(), 'proper payout amount')
+	t.equal(analytics.aggr[0].value, (num * 30).toString(), 'proper payout amount')
+
+	t.end()
+})
+
+tape('targetingRules: onlyShowIf is respected and returns a HTTP error code', async function(t) {
+	const channel = getValidEthChannel()
+	const specialPublisher = randomAddress()
+	channel.spec = {
+		...channel.spec,
+		targetingRules: [{ onlyShowIf: { eq: [{ get: 'publisherId' }, specialPublisher] } }]
+	}
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	const num = 55
+	const evs = genEvents(num, specialPublisher, 'IMPRESSION').concat(
+		genEvents(num, randomAddress(), 'IMPRESSION')
+	)
+	await postEvsAsCreator(leaderUrl, channel.id, evs, {})
+
+	// If it's only one event, it will return an error code
+	const postOneResp = await postEvsAsCreator(
+		leaderUrl,
+		channel.id,
+		genEvents(1, randomAddress(), 'IMPRESSION')
+	)
+	t.equal(postOneResp.status, 469, 'returned proper HTTP response code')
+
+	// Technically we don't need to tick, since the events should be reflected immediately
+	const analytics = await fetch(
+		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`
+	).then(r => r.json())
+	t.equal(analytics.aggr[0].value, num.toString(), 'proper payout amount')
+
+	t.end()
+})
+
+tape('targetingRules: multiple rules are applied, pricingBounds are honored', async function(t) {
+	const channel = getValidEthChannel()
+	channel.spec = {
+		...channel.spec,
+		pricingBounds: {
+			IMPRESSION: {
+				min: '10',
+				max: '30'
+			}
+		},
+		targetingRules: [
+			// To make sure we can't set a price, considering the default pricingBounds is max 0
+			{ if: [{ eq: [{ get: 'eventType' }, 'CLICK'] }, { set: ['price.CLICK', { bn: '10' }] }] },
+			{
+				if: [
+					{ eq: [{ get: 'adUnitId' }, 'underpriced'] },
+					{ set: ['price.IMPRESSION', { bn: '5' }] }
+				]
+			},
+			{
+				if: [
+					{ eq: [{ get: 'adUnitId' }, 'overpriced'] },
+					{ set: ['price.IMPRESSION', { bn: '35' }] }
+				]
+			},
+			{ onlyShowIf: { startsWith: [{ get: 'adSlotId' }, 'goodSlot_'] } }
+		]
+	}
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// Send the events
+	const publisher = randomAddress()
+	const expectedPayout = 20 + 30 + 30 + 10
+	await postEvsAsCreator(
+		leaderUrl,
+		channel.id,
+		[
+			// those two would be paid normally
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_1', publisher },
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_2', publisher },
+
+			// try to exploit with two overpriced, 1 underpriced, but should result in 30 + 30 + 10
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_1', adUnit: 'overpriced', publisher },
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_2', adUnit: 'overpriced', publisher },
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_3', adUnit: 'underpriced', publisher },
+
+			// send one without adSlotId to make sure we can't exploit it by sending an undefined var
+			{ type: 'IMPRESSION', publisher },
+
+			// two clicks, none of which should be paid
+			{ type: 'CLICK', adSlot: 'goodSlot_1', publisher },
+			{ type: 'CLICK', adSlot: 'goodSlot_2', publisher }
+		],
+		{}
+	)
+
+	const getLastAnalytics = async (ev, metric) => {
+		const resp = await fetch(
+			`${leaderUrl}/analytics/${channel.id}?eventType=${ev}&metric=${metric}`
+		)
+		const { aggr } = await resp.json()
+		return aggr[0] ? aggr[0].value : '0'
+	}
+
+	t.equal(
+		await getLastAnalytics('IMPRESSION', 'eventPayouts'),
+		expectedPayout.toString(10),
+		'proper payout amount for IMPRESSION'
+	)
+	t.equal(await getLastAnalytics('CLICK', 'eventPayouts'), '0', 'zero payout amount for CLICK')
+	t.equal(await getLastAnalytics('CLICK', 'eventCounts'), '2', 'proper count for CLICK')
 
 	t.end()
 })

@@ -379,10 +379,10 @@ tape('eventReducer: reduce', function(t) {
 
 	// reduce 100 events
 	for (let i = 0; i < 100; i += 1) {
-		eventReducer.reduce(channel, {}, aggr, event)
+		eventReducer.reduce(channel, aggr, event.type, getPayout(channel, event, {}))
 	}
 
-	const result = eventReducer.reduce(channel, {}, aggr, event)
+	const result = eventReducer.reduce(channel, aggr, event.type, getPayout(channel, event, {}))
 
 	t.equal(result.channelId, channel.id, 'should have same channel id')
 	t.equal(
@@ -395,10 +395,11 @@ tape('eventReducer: reduce', function(t) {
 		'101',
 		'should have the correct number of eventsPayouts'
 	)
+	t.equal(result.totals.IMPRESSION.eventCounts, '101', 'correct total amount of events')
+	t.equal(result.totals.IMPRESSION.eventPayouts, '101', 'correct total payouts of events')
+	t.deepEqual(result.earners, ['myAwesomePublisher'], 'earners aggregation is correct')
 
-	const closeReduce = eventReducer.reduce(channel, {}, aggr, {
-		type: 'CLOSE'
-	})
+	const closeReduce = eventReducer.reduce(channel, aggr, 'CLOSE')
 
 	t.equal(
 		closeReduce.events.CLOSE.eventPayouts.reduce,
