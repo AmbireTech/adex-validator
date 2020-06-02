@@ -15,7 +15,7 @@ function getPayout(channel, ev, session) {
 	const targetingInputBase = {
 		adSlotId: ev.adSlot,
 		adUnitId: ev.adUnit,
-		// @TODO
+		// @TODO; we can infer that from the adUnit
 		// adSlotType: adSlot.type,
 		publisherId: ev.publisher,
 		country: session.country,
@@ -32,7 +32,9 @@ function getPayout(channel, ev, session) {
 		[priceKey]: minPrice
 	}
 	const onTypeErr = (e, rule) =>
-		logger.error(`WARNING: rule for ${channel.id} failing with:`, e, rule)
+		logger.error(
+			`WARNING: rule for ${channel.id} failing with: ${e.message}; rule ${JSON.stringify(rule)}`
+		)
 	output = evaluateMultiple(input, output, targetingRules, onTypeErr)
 
 	// @TODO: find a way to return a HTTP error code in this case
