@@ -395,6 +395,9 @@ tape('eventReducer: reduce', function(t) {
 		'101',
 		'should have the correct number of eventsPayouts'
 	)
+	t.equal(result.totals.IMPRESSION.eventCounts, '101', 'correct total amount of events')
+	t.equal(result.totals.IMPRESSION.eventPayouts, '101', 'correct total payouts of events')
+	t.deepEqual(result.earners, ['myAwesomePublisher'], 'earners aggregation is correct')
 
 	const closeReduce = eventReducer.reduce(channel, aggr, 'CLOSE')
 
