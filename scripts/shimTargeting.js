@@ -53,10 +53,16 @@ function shimTargetingRules(campaign) {
 				gt: [{ get: 'adView.secondsSinceCampaignImpression' }, 900]
 			}
 		})
-	if (isStremio)
+	if (isStremio && !campaign.minTargetingScore)
 		rules.push({
 			onlyShowIf: {
-				eq: [{ get: 'publisherId' }, '0xd5860D6196A4900bf46617cEf088ee6E6b61C9d6']
+				in: [
+					[
+						'0xd5860D6196A4900bf46617cEf088ee6E6b61C9d6',
+						'0xd5860d6196a4900bf46617cef088ee6e6b61c9d6'
+					],
+					{ get: 'publisherId' }
+				]
 			}
 		})
 	if (countries.length)
