@@ -14,7 +14,7 @@ function record(channel, session, events) {
 	const batch = events
 		.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
 		.map(ev => {
-			const payout = getPayout(channel, ev)
+			const payout = getPayout(channel, ev, session)
 			const publisher = toBalancesKey(ev.publisher)
 			// This should never happen, as the conditions we are checking for in the .filter are the same as getPayout's
 			if (!payout) return []
