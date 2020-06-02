@@ -501,6 +501,14 @@ tape('should record: correct payout with targetingRules', async function(t) {
 
 	t.equal(analytics.aggr[0].value, (num * 2 + num).toString(), 'proper payout amount')
 
+	// Check if balances is consistent
+	await aggrAndTick()
+	await forceTick()
+	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	const expectedAfterFees = Math.floor((num * 2 + num) * 0.8).toString(10)
+	t.equal(balances[addr], expectedAfterFees, 'proper amount in balances')
+
 	t.end()
 })
 
