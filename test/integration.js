@@ -649,5 +649,54 @@ tape('targetingRules: onlyShowIf is respected and returns a HTTP error code', as
 	t.end()
 })
 
+tape('targetingRules: multiple rules are applied, pricingBounds are honored', async function(t) {
+	const channel = getValidEthChannel()
+	channel.spec = {
+		...channel.spec,
+		pricingBounds: {
+			IMPRESSION: {
+				min: '10',
+				max: '30'
+			}
+		},
+		targetingRules: [
+			// To make sure we can't set a price, considering the default pricingBounds is max 0
+			{ if: [{ eq: [{ get: 'eventType' }, 'CLICK'] }, { set: ['price.CLICK', { bn: '10' }] }] }
+			// { if: [{ eq: [{ get: 'adUnitId' }, 'underpriced'] }, { set: ['price.CLICK', { bn: '5' }] }] }
+			// { if: [{ eq: [{ get: 'adUnitId' }, 'overpriced'] }, { set: ['price.CLICK', { bn: '35' }] }] }
+		]
+	}
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	const num = 42
+	const evs = genEvents(num, randomAddress(), 'IMPRESSION')
+		// we try a few clicks - because the default pricingBounds is max 0, the goal is to ensure that those won't be paid
+		.concat(genEvents(num, randomAddress(), 'CLICK'))
+	await postEvsAsCreator(leaderUrl, channel.id, evs, {})
+
+	const getFirstAnalytics = async (ev, metric) => {
+		const resp = await fetch(
+			`${leaderUrl}/analytics/${channel.id}?eventType=${ev}&metric=${metric}`
+		)
+		const { aggr } = await resp.json()
+		return aggr[0] ? aggr[0].value : '0'
+	}
+
+	t.equal(
+		await getFirstAnalytics('IMPRESSION', 'eventPayouts'),
+		(num * 10).toString(),
+		'proper payout amount for IMPRESSION'
+	)
+	t.equal(await getFirstAnalytics('CLICK', 'eventPayouts'), '0', 'zero payout amount for CLICK')
+	t.equal(await getFirstAnalytics('CLICK', 'eventCounts'), num.toString(), 'proper count for CLICK')
+
+	t.end()
+})
+
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
