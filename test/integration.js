@@ -661,9 +661,20 @@ tape('targetingRules: multiple rules are applied, pricingBounds are honored', as
 		},
 		targetingRules: [
 			// To make sure we can't set a price, considering the default pricingBounds is max 0
-			{ if: [{ eq: [{ get: 'eventType' }, 'CLICK'] }, { set: ['price.CLICK', { bn: '10' }] }] }
-			// { if: [{ eq: [{ get: 'adUnitId' }, 'underpriced'] }, { set: ['price.CLICK', { bn: '5' }] }] }
-			// { if: [{ eq: [{ get: 'adUnitId' }, 'overpriced'] }, { set: ['price.CLICK', { bn: '35' }] }] }
+			{ if: [{ eq: [{ get: 'eventType' }, 'CLICK'] }, { set: ['price.CLICK', { bn: '10' }] }] },
+			{
+				if: [
+					{ eq: [{ get: 'adUnitId' }, 'underpriced'] },
+					{ set: ['price.IMPRESSION', { bn: '5' }] }
+				]
+			},
+			{
+				if: [
+					{ eq: [{ get: 'adUnitId' }, 'overpriced'] },
+					{ set: ['price.IMPRESSION', { bn: '35' }] }
+				]
+			},
+			{ onlyShowIf: { startsWith: [{ get: 'adSlotId' }, 'goodSlot_'] } }
 		]
 	}
 
@@ -673,13 +684,33 @@ tape('targetingRules: multiple rules are applied, pricingBounds are honored', as
 		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
 	])
 
-	const num = 42
-	const evs = genEvents(num, randomAddress(), 'IMPRESSION')
-		// we try a few clicks - because the default pricingBounds is max 0, the goal is to ensure that those won't be paid
-		.concat(genEvents(num, randomAddress(), 'CLICK'))
-	await postEvsAsCreator(leaderUrl, channel.id, evs, {})
+	// Send the events
+	const publisher = randomAddress()
+	const expectedPayout = 20 + 30 + 30 + 10
+	await postEvsAsCreator(
+		leaderUrl,
+		channel.id,
+		[
+			// those two would be paid normally
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_1', publisher },
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_2', publisher },
 
-	const getFirstAnalytics = async (ev, metric) => {
+			// try to exploit with two overpriced, 1 underpriced, but should result in 30 + 30 + 10
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_1', adUnit: 'overpriced', publisher },
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_2', adUnit: 'overpriced', publisher },
+			{ type: 'IMPRESSION', adSlot: 'goodSlot_3', adUnit: 'underpriced', publisher },
+
+			// send one without adSlotId to make sure we can't exploit it by sending an undefined var
+			{ type: 'IMPRESSION', publisher },
+
+			// two clicks, none of which should be paid
+			{ type: 'CLICK', adSlot: 'goodSlot_1', publisher },
+			{ type: 'CLICK', adSlot: 'goodSlot_2', publisher }
+		],
+		{}
+	)
+
+	const getLastAnalytics = async (ev, metric) => {
 		const resp = await fetch(
 			`${leaderUrl}/analytics/${channel.id}?eventType=${ev}&metric=${metric}`
 		)
@@ -688,12 +719,12 @@ tape('targetingRules: multiple rules are applied, pricingBounds are honored', as
 	}
 
 	t.equal(
-		await getFirstAnalytics('IMPRESSION', 'eventPayouts'),
-		(num * 10).toString(),
+		await getLastAnalytics('IMPRESSION', 'eventPayouts'),
+		expectedPayout.toString(10),
 		'proper payout amount for IMPRESSION'
 	)
-	t.equal(await getFirstAnalytics('CLICK', 'eventPayouts'), '0', 'zero payout amount for CLICK')
-	t.equal(await getFirstAnalytics('CLICK', 'eventCounts'), num.toString(), 'proper count for CLICK')
+	t.equal(await getLastAnalytics('CLICK', 'eventPayouts'), '0', 'zero payout amount for CLICK')
+	t.equal(await getLastAnalytics('CLICK', 'eventCounts'), '2', 'proper count for CLICK')
 
 	t.end()
 })
