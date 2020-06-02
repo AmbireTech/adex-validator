@@ -466,7 +466,7 @@ tape('should record clicks', async function(t) {
 	t.end()
 })
 
-tape('should record: correct payout for clicks with targetingRules', async function(t) {
+tape('should record: correct payout with targetingRules', async function(t) {
 	const channel = getValidEthChannel()
 	channel.spec = {
 		...channel.spec,
@@ -481,7 +481,8 @@ tape('should record: correct payout for clicks with targetingRules', async funct
 		]
 	}
 	const num = 66
-	const evs = genEvents(num, randomAddress(), 'CLICK')
+	const addr = randomAddress()
+	const evs = genEvents(num, addr, 'CLICK')
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
@@ -561,14 +562,13 @@ tape('should update the targetingRules', async function(t) {
 	channel.spec = {
 		...channel.spec,
 		pricingBounds: {
-			CLICK: {
-				min: '1',
-				max: '3'
+			IMPRESSION: {
+				min: '10',
+				max: '30'
 			}
 		}
 	}
-	const num = 66
-	const evs = genEvents(num, randomAddress(), 'CLICK')
+
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
@@ -581,21 +581,23 @@ tape('should update the targetingRules', async function(t) {
 			{
 				type: constants.eventTypes.update_targeting,
 				targetingRules: [
-					{ if: [{ eq: [{ get: 'country' }, 'US'] }, { set: ['price.CLICK', { bn: '3' }] }] }
+					{ if: [{ eq: [{ get: 'country' }, 'US'] }, { set: ['price.IMPRESSION', { bn: '30' }] }] }
 				]
 			}
 		]
 	})
 
-	// sleep
+	// sleep to give some time for the channel to be updated
 	await wait(cfg.CHANNEL_REFRESH_INTERVAL)
 
+	const num = 66
+	const evs = genEvents(num, randomAddress(), 'IMPRESSION')
 	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
 	// Technically we don't need to tick, since the events should be reflected immediately
 	const analytics = await fetch(
-		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`
+		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`
 	).then(r => r.json())
-	t.equal(analytics.aggr[0].value, (num * 3).toString(), 'proper payout amount')
+	t.equal(analytics.aggr[0].value, (num * 30).toString(), 'proper payout amount')
 
 	t.end()
 })
