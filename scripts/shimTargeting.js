@@ -12,7 +12,7 @@ async function shimTargeting() {
 	await db.connect()
 
 	const channelCol = db.getMongo().collection('channels')
-	const channels = await channelCol.find()
+	const channels = await channelCol.find({ targetingRules: { $exists: false } })
 
 	while (await channels.hasNext()) {
 		const channel = await channels.next()
