@@ -54,7 +54,7 @@ function shimTargetingRules(campaign) {
 				gt: [{ get: 'adView.secondsSinceCampaignImpression' }, 900]
 			}
 		})
-	if (isStremio && !campaign.minTargetingScore)
+	if (isStremio && campaign.minTargetingScore)
 		rules.push({
 			onlyShowIf: {
 				in: [
