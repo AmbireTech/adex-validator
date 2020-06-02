@@ -1,24 +1,24 @@
 const BN = require('bn.js')
 const toBalancesKey = require('../toBalancesKey')
-const getPayout = require('./getPayout')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {}, totals: {}, earners: [] }
 }
 
-function reduce(channel, session, initialAggr, ev) {
+function reduce(channel, initialAggr, evType, payout) {
 	let aggr = { ...initialAggr }
-	const payout = getPayout(channel, ev, session)
 	if (payout) {
-		aggr.events[ev.type] = mergeEv(initialAggr.events[ev.type], payout)
-		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, ev.type, payout) }
+		console.log(evType, payout)
+		aggr.events[evType] = mergeEv(initialAggr.events[evType], payout)
+		aggr = { ...aggr, ...mergeToGlobalAcc(aggr, evType, payout) }
 	}
 
 	// Closing is a special case: we don't add it to the global accounting,
 	// we simply pay the deposit back to the advertiser and count the event
 	// When the Validator merges aggrs into the balance tree, it ensures it doesn't overflow the total deposit,
 	// therefore only the remaining funds will be distributed back to the channel creator
-	if (ev.type === 'CLOSE') {
+	// This is not what we'd call a payout (and not a result from getPayout); we don't want it reflected in the analytics
+	if (evType === 'CLOSE') {
 		const { creator, depositAmount } = channel
 		aggr.events.CLOSE = {
 			eventCounts: {
