@@ -37,7 +37,7 @@ function makeRecorder(channelId) {
 		saveQueue = saveQueue.then(function() {
 			// created needs to be set to the latest date right before saving, otherwise we risk data inconsistency when running in clustered mode
 			return eventAggrCol.insertOne({ ...toSave, created: new Date() }).catch(function(err) {
-				logger.error('eventAggregator fatal error; will re-try', err)
+				logger.error(`eventAggregator fatal error: ${err.message || err}; will re-try`)
 				persist(toSave)
 			})
 		})
@@ -82,6 +82,9 @@ function makeRecorder(channelId) {
 		// Pre-compute payouts once so we don't have to compute them separately in analytics/eventReducer
 		// this is also where AIP31 is applied
 		const payouts = events.map(ev => getPayout(channel, ev, session))
+		if (events.length === 1 && events[0].publisher && !payouts[0]) {
+			return { success: false, statusCode: 469, message: 'no event payout' }
+		}
 
 		// No need to wait for this, it's simply a stats recorder
 		if (process.env.ANALYTICS_RECORDER) {
