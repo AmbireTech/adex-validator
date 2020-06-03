@@ -12,6 +12,8 @@ function getPayout(channel, ev, session) {
 	const [minPrice, maxPrice] = getPricingBounds(channel, eventType)
 	if (targetingRules.length === 0) return [toBalancesKey(ev.publisher), minPrice]
 
+	const adUnit =
+		Array.isArray(channel.spec.adUnits) && channel.spec.adUnits.find(u => u.ipfs === ev.adUnit)
 	const targetingInputBase = {
 		// Some properties may not be passed, in which case they're undefined and
 		// the rules are skipped with UndefinedVar error
@@ -19,8 +21,8 @@ function getPayout(channel, ev, session) {
 		// That's why we default them to ""
 		adSlotId: ev.adSlot || '',
 		adUnitId: ev.adUnit || '',
-		// @TODO; we can infer that from the adUnit
-		// adSlotType: adSlot.type,
+		// the type of the slot is the same as the type of the unit
+		adSlotType: adUnit ? adUnit.type : '',
 		publisherId: ev.publisher || '',
 		country: session.country || '',
 		eventType,
