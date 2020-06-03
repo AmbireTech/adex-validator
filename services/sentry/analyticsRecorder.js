@@ -102,6 +102,7 @@ async function getAdvancedReports({ evType, publisher, channels = [] }) {
 				`reportPublisherToAdUnitPay:${evType}:${publisher}`,
 				`reportPublisherToAdSlot:${evType}:${publisher}`,
 				`reportPublisherToAdSlotPay:${evType}:${publisher}`,
+				`reportPublisherToAdSlotEpoch:${getEpoch()}:${evType}:${publisher}`,
 				`reportPublisherToCountry:${getEpoch()}:${evType}:${publisher}`,
 				`reportPublisherToCountryPay:${getEpoch()}:${evType}:${publisher}`,
 				`reportPublisherToHostname:${evType}:${publisher}`
