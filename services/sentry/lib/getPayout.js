@@ -41,7 +41,6 @@ function getPayout(channel, ev, session) {
 		)
 	output = evaluateMultiple(input, output, targetingRules, onTypeErr)
 
-	// @TODO: find a way to return a HTTP error code in this case
 	if (output.show === false) return null
 
 	const price = BN.max(minPrice, BN.min(maxPrice, output[priceKey]))
