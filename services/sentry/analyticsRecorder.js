@@ -34,7 +34,15 @@ function record(channel, session, events, payouts) {
 				? [
 						// publisher -> ad slot -> impressions, clicks (will calculate %, CTR); answers which of my slots perform best
 						['zincrby', `reportPublisherToAdSlot:${ev.type}:${publisher}`, 1, ev.adSlot],
-						['zincrby', `reportPublisherToAdSlotPay:${ev.type}:${publisher}`, payAmount, ev.adSlot]
+						['zincrby', `reportPublisherToAdSlotPay:${ev.type}:${publisher}`, payAmount, ev.adSlot],
+						// epoch -> publisher -> ad slot -> impressions
+						[
+							'zincrby',
+							`reportPublisherToAdSlotEpoch:${getEpoch()}:${ev.type}:${publisher}`,
+							1,
+							ev.adSlot
+						],
+						['zincrby', `reportAdSlotEpoch:${getEpoch()}:${ev.type}`, 1, ev.adSlot]
 				  ]
 				: []
 			const countryPubSuffix = `${getEpoch()}:${ev.type}:${publisher}`
