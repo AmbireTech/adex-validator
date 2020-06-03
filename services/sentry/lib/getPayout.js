@@ -26,10 +26,11 @@ function getPayout(channel, ev, session) {
 		publisherId: ev.publisher || '',
 		country: session.country || '',
 		eventType,
-		secondsSinceEpoch: Math.floor(Date.now() / 1000)
-		// @TODO
-		// userAgentOS: ua.os.name,
-		// userAgentBrowserFamily: ua.browser.name,
+		secondsSinceEpoch: Math.floor(Date.now() / 1000),
+		// the UA parser will just set properties to undefined if user-agent is not passed; this is consisent with the Market's behavior
+		// is not an issue since setting the user-agent to an arbitrary value is just as easy as not passing it
+		userAgentOS: session.ua.os.name,
+		userAgentBrowserFamily: session.ua.browser.name
 	}
 	const input = targetingInputGetter.bind(null, targetingInputBase, channel, null)
 	const priceKey = `price.${eventType}`

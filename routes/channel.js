@@ -1,5 +1,6 @@
 const express = require('express')
 const { celebrate } = require('celebrate')
+const UAParser = require('ua-parser-js')
 const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
@@ -220,10 +221,11 @@ function postEvents(req, res, next) {
 	const referrerHeader = req.headers.referrer || req.headers.referer
 	const trueip = req.headers['cf-connecting-ip'] || req.headers['true-client-ip']
 	const xforwardedfor = req.headers['x-forwarded-for']
+	const ua = UAParser(req.headers['user-agent'])
 	const ip = trueip || (xforwardedfor ? xforwardedfor.split(',')[0] : null)
 	const country = req.headers['cf-ipcountry']
 	eventAggrService
-		.record(req.params.id, { ...req.session, ip, country, referrerHeader }, events)
+		.record(req.params.id, { ...req.session, ip, country, referrerHeader, ua }, events)
 		.then(function(resp) {
 			res.status(resp.statusCode || 200).send(resp)
 		})
