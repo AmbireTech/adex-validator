@@ -55,7 +55,7 @@
     "cors": "^2.8.5",
     "ethers": "^4.0.27",
     "express": "^4.16.4",
-    "graphql-request": "^2.0.0",
+    "graphql-request": "^2.1.0-next.1",
     "lodash.isequal": "^4.5.0",
     "lodash.throttle": "^4.1.1",
     "mongodb": "^3.1.10",

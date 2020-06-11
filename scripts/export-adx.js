@@ -3,6 +3,7 @@
 /**
  * Export ADX data to Biquery
  */
+
 const fetch = require('node-fetch')
 const { createDatasetIfNotExists, createTableIfNotExists, getTableClient } = require('./index')
 const logger = require('../services/logger')('adx')
@@ -30,8 +31,16 @@ const BASE_URL = 'https://api.coingecko.com/api/v3/'
 
 function normalizedDate() {
 	return Math.floor(
-		new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`).getTime() / 1000
+		new Date(`${new Date().toISOString().slice(0, 10)}T23:59:59.000Z`).getTime() / 1000
 	)
+}
+
+function toRequestFormat(d) {
+	const day = d.getDay()
+	const month = d.getMonth()
+	const year = d.getYear()
+
+	return `${day}-${month}-${year}`
 }
 
 async function exportADXPriceAndVolume() {
@@ -42,32 +51,72 @@ async function exportADXPriceAndVolume() {
 	const priceTable = getTableClient(bigQueryTables.price)
 	const volumeTable = getTableClient(bigQueryTables.volume)
 
-	const query = `SELECT created FROM ${bigQueryTables.stake} ORDER BY created DESC LIMIT 1`
+	const query = `SELECT timestamp FROM ${bigQueryTables.price} ORDER BY timestamp DESC LIMIT 1`
 	const [row] = await priceTable.query({ query })
 
 	// Default is date for 10-01-2017, 1st of october 2017
-	const from = (row && row.timestamp) || 1506812400
+	let from = (row && row.timestamp) || 1506812400
 	const to = normalizedDate()
 
-	// if()
-	const PRICE_HISTORY_URL = `${BASE_URL}/coins/${id}/market_chart/range?vs_currency=usd&from=${from}&to=${to}`
+	const DAY = 24 * 60 * 60
 
-	// eslint-disable-next-line camelcase
-	const { prices, total_volumes } = await fetch(PRICE_HISTORY_URL).then(r => r.json())
+	let dailyPrices = []
+	let dailyVolumes = []
 
-	const dailyPrices = prices.map(([timestamp, price]) => ({
-		id: `${price}:${timestamp}`,
-		price,
-		timestamp
-	}))
+	// greater than 90 days
+	if (to - from > DAY * 90) {
+		const PRICE_HISTORY_URL = `${BASE_URL}/coins/${id}/market_chart/range?vs_currency=usd&from=${from}&to=${to}`
+		// eslint-disable-next-line camelcase
+		const { prices, total_volumes } = await fetch(PRICE_HISTORY_URL).then(r => r.json())
+		dailyPrices = prices.map(([timestamp, price]) => ({
+			id: `${price}:${timestamp}`,
+			price,
+			timestamp
+		}))
 
-	const dailyVolumes = total_volumes.map(([timestamp, volume]) => ({
-		id: `${volume}:${timestamp}`,
-		volume,
-		timestamp
-	}))
+		dailyVolumes = total_volumes.map(([timestamp, volume]) => ({
+			id: `${volume}:${timestamp}`,
+			volume,
+			timestamp
+		}))
+	} else {
+		const days = []
 
-	await Promise.all([priceTable.insert(dailyPrices), volumeTable.insert(dailyVolumes)])
+		while (from > to) {
+			from += DAY
+			days.push(toRequestFormat(new Date(from * 1000)))
+		}
+
+		const responses = await Promise.all(
+			days.map(dateParam =>
+				fetch(`${BASE_URL}/coins/${id}/history?date=${dateParam}&localization=false`).then(r =>
+					r.json()
+				)
+			)
+		)
+		// eslint-disable-next-line camelcase
+		responses.forEach(({ market_data: { current_price: { usd }, total_volume } }) => {
+			dailyVolumes.push({
+				// eslint-disable-next-line camelcase
+				id: `${total_volume}:${from}`,
+				volume: total_volume,
+				timestamp: from
+			})
+			dailyPrices.push({
+				id: `${usd}:${from}`,
+				price: usd,
+				timestamp: from
+			})
+		})
+	}
+
+	await Promise.all([
+		(dailyPrices.length && priceTable.insert(dailyPrices)) || true,
+		(dailyVolumes.length && volumeTable.insert(dailyVolumes)) || true
+	])
+
+	logger.info(`Inserted ${dailyPrices.length} price rows`)
+	logger.info(`Inserted ${dailyVolumes.length} volume rows`)
 }
 
 exportADXPriceAndVolume().then(() => logger.info(`Finished export - ${new Date()}`))

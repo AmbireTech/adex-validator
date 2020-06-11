@@ -9,6 +9,7 @@ module.exports = Object.freeze({
 	bigQueryTables: {
 		stake: 'stake',
 		volume: 'volume',
-		price: 'price'
+		price: 'price',
+		analytics: 'analytics'
 	}
 })

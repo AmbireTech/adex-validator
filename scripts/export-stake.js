@@ -1,9 +1,17 @@
 #!/usr/bin/env node
+
 /**
  * Export stake data to Biquery
  */
+
 const { request } = require('graphql-request')
-const { createDatasetIfNotExists, createTableIfNotExists, getTableClient } = require('./index')
+const {
+	createDatasetIfNotExists,
+	createTableIfNotExists,
+	getTableClient,
+	DATASET,
+	PROJECT_ID
+} = require('./index')
 const logger = require('../services/logger')('stake')
 const { bigQueryTables } = require('../services/constants')
 
@@ -24,28 +32,37 @@ const THEGRAPH_API_URL =
 async function stake() {
 	await createDatasetIfNotExists()
 	await createTableIfNotExists(bigQueryTables.stake, stakeSchema)
-
 	const table = getTableClient(bigQueryTables.stake)
-	const query = `SELECT timestamp FROM ${bigQueryTables.stake} ORDER BY timestamp DESC LIMIT 1`
+	const query = `SELECT timestamp FROM ${PROJECT_ID}.${DATASET}.${
+		bigQueryTables.stake
+	} ORDER BY timestamp DESC LIMIT 1`
+
 	const [row] = await table.query({ query })
+
 	// connect to
 	// get last insert into db
-	const lastUpdateTimestamp = (row && row.timestamp) || Math.floor(new Date().getTime() / 1000)
+	const lastUpdateTimestamp =
+		(row.length && row[0].timestamp.toFixed(0)) || Math.floor(new Date(0).getTime() / 1000)
+
 	const bondQuery = `
-      bonds (where: {timestamp_gt: ${lastUpdateTimestamp}}) {
-        id
-        owner
-        amount
-        poolId
-        nonce
-        slashedAtStart
-        timestamp
+      query {
+          bonds (where: {timestamp_gt: ${lastUpdateTimestamp}}) {
+            id
+            owner
+            amount
+            poolId
+            nonce
+            slashedAtStart
+            timestamp
+        }
       }
     `
 	const data = await request(THEGRAPH_API_URL, bondQuery)
-	// insert data into bigquery
-	await table.insert(data.data)
-	logger.info(`Inserted ${data.length} rows`)
+
+	if (data.bonds.length > 0) {
+		await table.insert(data.bonds)
+	}
+	logger.info(`Inserted ${data.bonds.length} rows`)
 }
 
 stake().then(() => logger.info(`Finished stake data - ${new Date()}`))

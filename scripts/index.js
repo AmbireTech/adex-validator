@@ -1,10 +1,11 @@
 const { BigQuery } = require('@google-cloud/bigquery')
-const logger = require('../services/logger')('evAggr')
+const logger = require('../services/logger')('bigquery')
 
 const DATASET = process.env.DATASET || 'adex'
-export const bigQueryClient = new BigQuery() // missing api key
+const PROJECT_ID = process.env.PROJECT_ID || 'adex-275614'
+const bigQueryClient = new BigQuery() // missing api key
 
-export async function createDatasetIfNotExists() {
+async function createDatasetIfNotExists() {
 	const [datasetExists] = await bigQueryClient.dataset(DATASET).exists()
 	if (!datasetExists) {
 		const dataset = await bigQueryClient.createDataset(DATASET)
@@ -12,16 +13,25 @@ export async function createDatasetIfNotExists() {
 	}
 }
 
-export async function createTableIfNotExists(tableId, schema) {
+async function createTableIfNotExists(tableId, schema) {
 	const [exists] = await bigQueryClient
 		.dataset(DATASET)
 		.table(tableId)
 		.exists()
 
 	if (!exists) {
-		const [table] = await bigQueryClient.dataset(DATASET).createTable(tableId, schema)
+		const [table] = await bigQueryClient.dataset(DATASET).createTable(tableId, { schema })
 		logger.info(`Table ${table.id} created.`)
 	}
 }
 
-export const getTableClient = tableId => bigQueryClient.dataset(DATASET).table(tableId)
+const getTableClient = tableId => bigQueryClient.dataset(DATASET).table(tableId)
+
+module.exports = {
+	DATASET,
+	PROJECT_ID,
+	getTableClient,
+	createDatasetIfNotExists,
+	createTableIfNotExists,
+	bigQueryClient
+}

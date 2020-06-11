@@ -1,13 +1,20 @@
 #!/usr/bin/env node
+
 /**
  * Export eventAggregates data to Biquery
  */
-const { BigQuery } = require('@google-cloud/bigquery')
+
+const {
+	createDatasetIfNotExists,
+	createTableIfNotExists,
+	getTableClient,
+	DATASET,
+	PROJECT_ID
+} = require('./index')
 const db = require('../db')
 const logger = require('../services/logger')('evAggr')
-const { collections } = require('../services/constants')
+const { bigQueryTables, collections } = require('../services/constants')
 
-const DATASET = process.env.DATASET || 'adex'
 const schema = [
 	{ name: 'channelId', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'created', type: 'Date', mode: 'REQUIRED' },
@@ -18,35 +25,23 @@ const schema = [
 ]
 
 async function exportData() {
-	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
-	const bigQueryClient = new BigQuery() // missing api key
-	const [datasetExists] = await bigQueryClient.dataset(DATASET).exists()
-	if (!datasetExists) {
-		const dataset = await bigQueryClient.createDataset(DATASET)
-		logger.info(`Dataset ${dataset.id} created.`)
-	}
+	await createDatasetIfNotExists()
+	await createTableIfNotExists(bigQueryTables.analytics, schema)
 
-	const [exists] = await bigQueryClient
-		.dataset(DATASET)
-		.table(collections.analyticsAggregat)
-		.exists()
-
-	if (!exists) {
-		const [table] = await bigQueryClient
-			.dataset(DATASET)
-			.createTable(collections.analyticsAggregate, schema)
-		logger.info(`Table ${table.id} created.`)
-	}
-
-	const table = bigQueryClient.dataset(DATASET).table(collections.analyticsAggregate)
-	const query = `SELECT created FROM \`${
-		collections.analyticsAggregate
+	const table = getTableClient(bigQueryTables.analytics)
+	const query = `SELECT created FROM \`${PROJECT_ID}.${DATASET}.${
+		bigQueryTables.analytics
 	}\` ORDER BY created DESC LIMIT 1`
 
 	const [row] = await table.query({ query })
+
+	console.log(row[0])
+
 	// fetch data from mongodb
+	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
+
 	const data = await analyticsCol
-		.find({ created: { $gt: (row && row.created) || new Date(0) } })
+		.find({ created: { $gt: (row.length && row[0].created) || new Date(0) } })
 		.toArray()
 
 	// insert into BigQuery
