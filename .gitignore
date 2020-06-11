@@ -1,3 +1,6 @@
 node_modules
 .vscode
 *.log
+.env
+#Credentials Folder
+/credentials/*
