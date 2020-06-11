@@ -5,5 +5,10 @@ module.exports = Object.freeze({
 	},
 	eventTypes: {
 		update_targeting: 'UPDATE_TARGETING'
+	},
+	bigQueryTables: {
+		stake: 'stake',
+		volume: 'volume',
+		price: 'price'
 	}
 })

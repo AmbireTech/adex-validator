@@ -4,7 +4,7 @@
  */
 const { BigQuery } = require('@google-cloud/bigquery')
 const db = require('../db')
-const logger = require('../services/logger')('export')
+const logger = require('../services/logger')('evAggr')
 const { collections } = require('../services/constants')
 
 const DATASET = process.env.DATASET || 'adex'
