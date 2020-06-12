@@ -27,7 +27,13 @@ router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalyt
 router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 
 // :id is channelId: needs to be named that way cause of channelIfExists
-router.get('/:id', validate, authRequired, channelAdvertiserIfExists, redisCached(600, analytics))
+router.get(
+	'/:id',
+	validate,
+	authRequired,
+	channelAdvertiserIfExists,
+	redisCached(600, advertiserChannelAnalytics)
+)
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
 const MAX_LIMIT = 500
@@ -135,6 +141,11 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 
 async function advertiserAnalytics(req) {
 	return analytics(req, await getAdvertiserChannels(req), true)
+}
+
+async function advertiserChannelAnalytics(req) {
+	delete req.session // don't segement by advertiser session uid
+	return analytics(req, undefined, undefined)
 }
 
 async function advancedAnalytics(req) {

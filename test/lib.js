@@ -19,6 +19,17 @@ function fetchPost(url, authToken, body, headers = {}) {
 	})
 }
 
+function fetchWithAuth(url, authToken, headers = {}) {
+	return fetch(url, {
+		method: 'GET',
+		headers: {
+			authorization: `Bearer ${authToken}`,
+			'content-type': 'application/json',
+			...headers
+		}
+	})
+}
+
 function postEvents(url, channelId, events, auth = dummyVals.auth.creator, headers = {}) {
 	// It is important to use creator auth, otherwise we'd hit rate limits
 	return fetchPost(`${url}/channel/${channelId}/events`, auth, { events }, headers)
@@ -114,5 +125,6 @@ module.exports = {
 	validUntil,
 	withdrawPeriodStart,
 	getValidEthChannel,
-	randomAddress
+	randomAddress,
+	fetchWithAuth
 }

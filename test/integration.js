@@ -13,7 +13,8 @@ const {
 	getDummySig,
 	fetchPost,
 	getValidEthChannel,
-	randomAddress
+	randomAddress,
+	fetchWithAuth
 } = require('./lib')
 const cfg = require('../cfg')
 const dummyVals = require('./prep-db/mongo')
@@ -458,9 +459,11 @@ tape('should record clicks', async function(t) {
 
 	await postEvsAsCreator(leaderUrl, channel.id, evs)
 	// Technically we don't need to tick, since the events should be reflected immediately
-	const analytics = await fetch(`${leaderUrl}/analytics/${channel.id}?eventType=CLICK`).then(r =>
-		r.json()
-	)
+	const analytics = await fetchWithAuth(
+		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK`,
+		dummyVals.auth.creator,
+		{}
+	).then(r => r.json())
 	t.equal(analytics.aggr[0].value, num.toString(), 'proper number of CLICK events')
 
 	t.end()
@@ -497,8 +500,10 @@ tape('should record: correct payout with targetingRules, consistent with balance
 	await postEvsAsCreator(leaderUrl, channel.id, evs)
 
 	// Technically we don't need to tick, since the events should be reflected immediately
-	const analytics = await fetch(
-		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`
+	const analytics = await fetchWithAuth(
+		`${leaderUrl}/analytics/${channel.id}?eventType=CLICK&metric=eventPayouts`,
+		dummyVals.auth.creator,
+		{}
 	).then(r => r.json())
 
 	t.equal(analytics.aggr[0].value, (num * 2 + num).toString(), 'proper payout amount')
@@ -533,7 +538,7 @@ tape('analytics routes return correct values', async function(t) {
 	const sumValues = vals => vals.map(x => parseInt(x.value, 10)).reduce((a, b) => a + b, 0)
 	const urls = [
 		['', null, resp => sumValues(resp.aggr) >= 20],
-		[`/${channel.id}`, null, resp => sumValues(resp.aggr) === 20],
+		[`/${channel.id}`, dummyVals.auth.creator, resp => sumValues(resp.aggr) === 20],
 		['/for-publisher', dummyVals.auth.publisher, resp => sumValues(resp.aggr) >= 10],
 		['/for-advertiser', dummyVals.auth.creator, resp => sumValues(resp.aggr) >= 20],
 		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => sumValues(resp.aggr) === 10],
@@ -604,8 +609,10 @@ tape('targetingRules: event to update them works', async function(t) {
 	const evs = genEvents(num, randomAddress(), 'IMPRESSION')
 	await postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
 	// Technically we don't need to tick, since the events should be reflected immediately
-	const analytics = await fetch(
-		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`
+	const analytics = await fetchWithAuth(
+		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`,
+		dummyVals.auth.creator,
+		{}
 	).then(r => r.json())
 	t.equal(analytics.aggr[0].value, (num * 30).toString(), 'proper payout amount')
 
@@ -641,8 +648,10 @@ tape('targetingRules: onlyShowIf is respected and returns a HTTP error code', as
 	t.equal(postOneResp.status, 469, 'returned proper HTTP response code')
 
 	// Technically we don't need to tick, since the events should be reflected immediately
-	const analytics = await fetch(
-		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`
+	const analytics = await fetchWithAuth(
+		`${leaderUrl}/analytics/${channel.id}?eventType=IMPRESSION&metric=eventPayouts`,
+		dummyVals.auth.creator,
+		{}
 	).then(r => r.json())
 	t.equal(analytics.aggr[0].value, num.toString(), 'proper payout amount')
 
@@ -711,8 +720,10 @@ tape('targetingRules: multiple rules are applied, pricingBounds are honored', as
 	)
 
 	const getLastAnalytics = async (ev, metric) => {
-		const resp = await fetch(
-			`${leaderUrl}/analytics/${channel.id}?eventType=${ev}&metric=${metric}`
+		const resp = await fetchWithAuth(
+			`${leaderUrl}/analytics/${channel.id}?eventType=${ev}&metric=${metric}`,
+			dummyVals.auth.creator,
+			{}
 		)
 		const { aggr } = await resp.json()
 		return aggr[0] ? aggr[0].value : '0'
