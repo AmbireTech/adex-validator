@@ -17,7 +17,7 @@ const { bigQueryTables, collections } = require('../services/constants')
 
 const schema = [
 	{ name: 'channelId', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'created', type: 'Date', mode: 'REQUIRED' },
+	{ name: 'created', type: 'TIMESTAMP', mode: 'REQUIRED' },
 	{ name: 'event_type', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'earner', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'count', type: 'STRING', mode: 'REQUIRED' },
@@ -35,17 +35,16 @@ async function exportData() {
 
 	const [row] = await table.query({ query })
 
-	console.log(row[0])
-
 	// fetch data from mongodb
 	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 
 	const data = await analyticsCol
-		.find({ created: { $gt: (row.length && row[0].created) || new Date(0) } })
+		.find({ created: { $gt: (row.length && new Date(row[0].created.value)) || new Date(0) } })
 		.toArray()
 
 	// insert into BigQuery
-	await table.insert(expandDocs(data))
+	const rows = expandDocs(data)
+	if (rows.length) await table.insert(rows)
 
 	logger.info(`Inserted ${data.length} rows`)
 }
@@ -70,4 +69,5 @@ function expandDocs(docs) {
 	}
 	return result
 }
-exportData().then(() => logger.info(`Finished export - ${new Date()}`))
+
+db.connect().then(() => exportData().then(() => logger.info(`Finished export - ${new Date()}`)))
