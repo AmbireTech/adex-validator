@@ -27,13 +27,7 @@ router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalyt
 router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 
 // :id is channelId: needs to be named that way cause of channelIfExists
-router.get(
-	'/:id',
-	validate,
-	authRequired,
-	channelAdvertiserIfExists,
-	redisCached(600, advertiserChannelAnalytics)
-)
+router.get('/:id', validate, channelAdvertiserIfOwns, redisCached(600, advertiserChannelAnalytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
 const MAX_LIMIT = 500
@@ -144,8 +138,7 @@ async function advertiserAnalytics(req) {
 }
 
 async function advertiserChannelAnalytics(req) {
-	delete req.session // don't segement by advertiser session uid
-	return analytics(req, undefined, undefined)
+	return analytics(req, [req.params.id], true)
 }
 
 async function advancedAnalytics(req) {
@@ -167,8 +160,12 @@ function getAdvertiserChannels(req) {
 	return advChannels
 }
 
-function channelAdvertiserIfExists(req, res, next) {
+function channelAdvertiserIfOwns(req, res, next) {
 	const channelsCol = db.getMongo().collection('channels')
+	if (!req.session) {
+		res.status(403).json(null)
+		return
+	}
 	const uid = req.session.uid
 	channelsCol
 		.countDocuments({ _id: req.params.id, creator: uid }, { limit: 1 })
