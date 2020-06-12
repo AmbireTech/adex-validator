@@ -54,7 +54,13 @@ async function stake() {
             nonce
             slashedAtStart
             timestamp
-        }
+          }
+          unbondeds() {
+            id
+            owner
+            bondId
+            timestamp
+          }
       }
     `
 	const data = await request(THEGRAPH_API_URL, bondQuery)
