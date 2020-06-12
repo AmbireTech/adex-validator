@@ -126,7 +126,7 @@ async function getAdvancedReports({ evType, publisher, channels = [] }) {
 		)
 	)
 
-	return { publisherStats, byChannelStats }
+	return { publisher, publisherStats, byChannelStats }
 }
 
 module.exports = { record, getAdvancedReports }
