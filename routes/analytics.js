@@ -27,7 +27,7 @@ router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalyt
 router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 
 // :id is channelId: needs to be named that way cause of channelIfExists
-router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
+router.get('/:id', validate, authRequired, channelAdvertiserIfExists, redisCached(600, analytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
 const MAX_LIMIT = 500
@@ -154,6 +154,21 @@ function getAdvertiserChannels(req) {
 		.then(res => res.map(x => x._id))
 
 	return advChannels
+}
+
+function channelAdvertiserIfExists(req, res, next) {
+	const channelsCol = db.getMongo().collection('channels')
+	const uid = req.session.uid
+	channelsCol
+		.countDocuments({ _id: req.params.id, creator: uid }, { limit: 1 })
+		.then(function(n) {
+			if (!n) {
+				res.status(403).json(null)
+			} else {
+				next()
+			}
+		})
+		.catch(next)
 }
 
 function redisCached(seconds, fn) {
