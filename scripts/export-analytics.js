@@ -38,7 +38,7 @@ async function exportData() {
 	// fetch data from mongodb
 	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 
-	const cur = await analyticsCol.find({
+	const cur = analyticsCol.find({
 		created: { $gt: (row.length && new Date(row[0].created.value)) || new Date(0) }
 	})
 
@@ -49,10 +49,9 @@ async function exportData() {
 		// insert into BigQuery
 		const rows = expandDocs([data])
 		if (rows.length) {
-			// eslint-disable-next-line no-loop-func
-			table.insert(rows).then(() => {
-				total += 1
-			})
+			total += rows.length
+			// eslint-disable-next-line no-await-in-loop
+			await table.insert(rows)
 		}
 	}
 
