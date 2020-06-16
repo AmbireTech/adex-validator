@@ -3,7 +3,7 @@ const logger = require('../services/logger')('bigquery')
 
 const DATASET = process.env.DATASET || 'adex'
 const PROJECT_ID = process.env.PROJECT_ID || 'adex-275614'
-const bigQueryClient = new BigQuery() // missing api key
+const bigQueryClient = new BigQuery()
 
 async function createDatasetIfNotExists() {
 	const [datasetExists] = await bigQueryClient.dataset(DATASET).exists()

@@ -38,15 +38,25 @@ async function exportData() {
 	// fetch data from mongodb
 	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 
-	const data = await analyticsCol
-		.find({ created: { $gt: (row.length && new Date(row[0].created.value)) || new Date(0) } })
-		.toArray()
+	const cur = await analyticsCol.find({
+		created: { $gt: (row.length && new Date(row[0].created.value)) || new Date(0) }
+	})
 
-	// insert into BigQuery
-	const rows = expandDocs(data)
-	if (rows.length) await table.insert(rows)
+	let data
+	let total = 0
+	// eslint-disable-next-line no-cond-assign, no-await-in-loop
+	while ((data = await cur.next())) {
+		// insert into BigQuery
+		const rows = expandDocs([data])
+		if (rows.length) {
+			// eslint-disable-next-line no-loop-func
+			table.insert(rows).then(() => {
+				total += 1
+			})
+		}
+	}
 
-	logger.info(`Inserted ${data.length} rows`)
+	logger.info(`Inserted ${total} rows`)
 }
 
 function expandDocs(docs) {
@@ -70,4 +80,9 @@ function expandDocs(docs) {
 	return result
 }
 
-db.connect().then(() => exportData().then(() => logger.info(`Finished export - ${new Date()}`)))
+db.connect().then(() =>
+	exportData().then(() => {
+		logger.info(`Finished export - ${new Date()}`)
+		process.exit(0)
+	})
+)

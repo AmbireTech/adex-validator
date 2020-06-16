@@ -20,13 +20,13 @@ const ADEX_COIN_ID = 'adex'
 const volumeSchema = [
 	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'volume', type: 'FLOAT64', mode: 'REQUIRED' },
-	{ name: 'timestamp', type: 'NUMERIC', mode: 'REQUIRED' }
+	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
 ]
 
 const priceSchema = [
 	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'price', type: 'FLOAT64', mode: 'REQUIRED' },
-	{ name: 'timestamp', type: 'NUMERIC', mode: 'REQUIRED' }
+	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
 ]
 
 // @TODO With an API that gives access to historical exchange ADX volume
@@ -64,7 +64,8 @@ async function exportADXPriceAndVolume() {
 	const [row] = await priceTable.query({ query })
 
 	// Default is date for 10-01-2017, 1st of october 2017
-	let from = (row.length && Math.floor(row[0].timestamp.toFixed(0) / 1000)) || 1506812400
+	let from =
+		(row.length && Math.floor(new Date(row[0].timestamp.value).getTime() / 1000)) || 1506812400
 	const to = normalizedDate()
 
 	const DAY = 24 * 60 * 60
@@ -80,13 +81,13 @@ async function exportADXPriceAndVolume() {
 		dailyPrices = prices.map(([timestamp, price]) => ({
 			id: `${price}:${timestamp}`,
 			price,
-			timestamp
+			timestamp: new Date(timestamp).toJSON()
 		}))
 
 		dailyVolumes = total_volumes.map(([timestamp, volume]) => ({
 			id: `${volume}:${timestamp}`,
 			volume,
-			timestamp
+			timestamp: new Date(timestamp).toJSON()
 		}))
 	} else {
 		const days = []
@@ -109,12 +110,12 @@ async function exportADXPriceAndVolume() {
 				// eslint-disable-next-line camelcase
 				id: `${total_volume}:${from}`,
 				volume: total_volume,
-				timestamp: from
+				timestamp: new Date(from).toJSON()
 			})
 			dailyPrices.push({
 				id: `${usd}:${from}`,
 				price: usd,
-				timestamp: from
+				timestamp: new Date(from).toJSON()
 			})
 		})
 	}
