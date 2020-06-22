@@ -4,14 +4,16 @@ const { getMongo, connect } = require('../db')
 const { collections } = require('../services/constants')
 const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 
-const REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME = 'reportPublisherToAdUnit'
-const REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME = 'reportPublisherToCountry'
+const REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME = 'reportPublisherToAdUnit7'
+const REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME = 'reportPublisherToCountry7'
 const BIGQUERY_RATE_LIMIT = 10 // There is a limit of ~ 2-10 min between delete and insert or changing schema
-const DATASET_NAME = process.env.DATASET_NAME || 'advancedAnalytics'
+const DATASET_NAME = process.env.DATASET_NAME || 'development'
 const options = {
 	keyFilename: process.env.PATH_TO_KEY_FILE || './credentials/adex-bigquery.json', // gitignored folder
 	projectId: process.env.GOOGLE_CLOUD_PROJECT
 }
+
+const toNumericLimit = number => Number(number).toFixed(9)
 
 let dataset = null
 
@@ -23,9 +25,9 @@ async function createReportPublisherToAdUnitTables() {
 				{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
 				{ name: 'adUnitId', type: 'STRING', mode: 'NULLABLE' },
 				{ name: 'impressions', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'impressionsPayout', type: 'FLOAT64', mode: 'NULLABLE' },
+				{ name: 'impressionsPayout', type: 'NUMERIC', mode: 'NULLABLE' },
 				{ name: 'clicks', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'clicksPayout', type: 'FLOAT64', mode: 'NULLABLE' }
+				{ name: 'clicksPayout', type: 'NUMERIC', mode: 'NULLABLE' }
 			]
 		}
 	})
@@ -54,10 +56,12 @@ async function createReportPublisherToAdUnitTables() {
 				results.push({
 					id: _id,
 					adUnitId: key,
-					impressions: value || 0,
-					impressionsPayout: impressions.publisherStats.reportPublisherToAdUnitPay[key] || 0,
-					clicks: clicks.publisherStats.reportPublisherToAdUnit[key] || 0,
-					clicksPayout: clicks.publisherStats.reportPublisherToAdUnitPay[key] || 0
+					impressions: toNumericLimit(value || 0),
+					impressionsPayout: toNumericLimit(
+						impressions.publisherStats.reportPublisherToAdUnitPay[key] || 0
+					),
+					clicks: toNumericLimit(clicks.publisherStats.reportPublisherToAdUnit[key] || 0),
+					clicksPayout: toNumericLimit(clicks.publisherStats.reportPublisherToAdUnitPay[key] || 0)
 				})
 			})
 			// eslint-disable-next-line consistent-return
@@ -74,9 +78,9 @@ async function createReportPublisherToCountryTable() {
 				{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
 				{ name: 'countryCode', type: 'STRING', mode: 'NULLABLE' },
 				{ name: 'impressions', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'impressionsPayout', type: 'FLOAT64', mode: 'NULLABLE' },
+				{ name: 'impressionsPayout', type: 'NUMERIC', mode: 'NULLABLE' },
 				{ name: 'clicks', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'clicksPayout', type: 'FLOAT64', mode: 'NULLABLE' }
+				{ name: 'clicksPayout', type: 'NUMERIC', mode: 'NULLABLE' }
 			]
 		}
 	})
@@ -106,10 +110,14 @@ async function createReportPublisherToCountryTable() {
 					results.push({
 						id: _id,
 						countryCode: key,
-						impressions: value || 0,
-						impressionsPayout: impressions.publisherStats.reportPublisherToCountryPay[key] || 0,
-						clicks: clicks.publisherStats.reportPublisherToCountry[key] || 0,
-						clicksPayout: clicks.publisherStats.reportPublisherToCountryPay[key] || 0
+						impressions: toNumericLimit(value || 0),
+						impressionsPayout: toNumericLimit(
+							impressions.publisherStats.reportPublisherToCountryPay[key] || 0
+						),
+						clicks: toNumericLimit(clicks.publisherStats.reportPublisherToCountry[key] || 0),
+						clicksPayout: toNumericLimit(
+							clicks.publisherStats.reportPublisherToCountryPay[key] || 0
+						)
 					})
 				}
 			)
@@ -191,7 +199,6 @@ function startImport(tableName, stream, map) {
 		stream.on('end', async () => {
 			ready = true
 			const resolved = await checkReady()
-			// TODO check
 			resolve(resolved)
 		})
 		stream.on('error', err => reject(err))
@@ -214,7 +221,7 @@ function startImport(tableName, stream, map) {
 			queue.push(mappedData)
 		}
 
-		if (queue.length > 5) flush()
+		if (queue.length > 100) flush()
 	}
 
 	async function flush() {
@@ -223,7 +230,7 @@ function startImport(tableName, stream, map) {
 			queue = []
 			const resolved = await Promise.all(toInsert)
 			const flat = [].concat([], ...resolved)
-			await dataset.table(tableName).insert(flat)
+			if (flat.length > 0) await dataset.table(tableName).insert(flat)
 			done += toInsert.length
 			return checkReady()
 		} catch (e) {
