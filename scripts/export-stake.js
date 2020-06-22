@@ -4,7 +4,7 @@
 /**
  * Export stake data to Biquery
  */
-
+const BN = require('bn.js')
 const { request } = require('graphql-request')
 const {
 	createDatasetIfNotExists,
@@ -19,7 +19,7 @@ const { bigQueryTables } = require('../services/constants')
 const stakeSchema = [
 	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'owner', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'amount', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'amount', type: 'NUMERIC', mode: 'REQUIRED' },
 	{ name: 'poolId', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'bondId', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'nonce', type: 'STRING', mode: 'REQUIRED' },
@@ -52,7 +52,7 @@ async function stake() {
 
 	const bondQuery = `
       query {
-		  stakingTransactions(limit: 1000, orderBy: timestamp, where: {timestamp_gt: ${lastFetchTimestamp}}) {
+		  stakingTransactions(first: 1000, orderBy: timestamp, where: {timestamp_gt: ${lastFetchTimestamp}}) {
 			  timestamp
 			  __typename
 
@@ -90,7 +90,8 @@ async function stake() {
 		.map(({ amount, bondId, id, nonce, owner, poolId, slashedAtStart, timestamp, __typename }) => {
 			let status = __typename.toLowerCase()
 			let lastUpdateTimestamp = timestamp
-
+			// convert to number
+			const nAmount = new BN(amount).div(new BN('10').pow(new BN('18'))).toNumber()
 			// Find if any transactions in unbonds interact with this bondId
 			// and apply the tx before inserting
 			// this is due to restriction by BigQuery to not
@@ -107,7 +108,7 @@ async function stake() {
 			}
 
 			return {
-				amount,
+				amount: nAmount,
 				bondId,
 				id,
 				nonce,

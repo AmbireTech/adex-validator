@@ -19,13 +19,13 @@ const ADEX_COIN_ID = 'adex'
 
 const volumeSchema = [
 	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'volume', type: 'FLOAT64', mode: 'REQUIRED' },
+	{ name: 'volume', type: 'NUMERIC', mode: 'REQUIRED' },
 	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
 ]
 
 const priceSchema = [
 	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'price', type: 'FLOAT64', mode: 'REQUIRED' },
+	{ name: 'price', type: 'NUMERIC', mode: 'REQUIRED' },
 	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
 ]
 
@@ -80,13 +80,13 @@ async function exportADXPriceAndVolume() {
 		const { prices, total_volumes } = await fetch(PRICE_HISTORY_URL).then(r => r.json())
 		dailyPrices = prices.map(([timestamp, price]) => ({
 			id: `${price}:${timestamp}`,
-			price,
+			price: parseFloat(price.toFixed(8)),
 			timestamp: new Date(timestamp).toJSON()
 		}))
 
 		dailyVolumes = total_volumes.map(([timestamp, volume]) => ({
 			id: `${volume}:${timestamp}`,
-			volume,
+			volume: parseFloat(volume.toFixed(8)),
 			timestamp: new Date(timestamp).toJSON()
 		}))
 	} else {
@@ -109,12 +109,12 @@ async function exportADXPriceAndVolume() {
 			dailyVolumes.push({
 				// eslint-disable-next-line camelcase
 				id: `${total_volume}:${from}`,
-				volume: total_volume,
+				volume: parseFloat(total_volume.toFixed(8)),
 				timestamp: new Date(from).toJSON()
 			})
 			dailyPrices.push({
 				id: `${usd}:${from}`,
-				price: usd,
+				price: parseFloat(usd.toFixed(8)),
 				timestamp: new Date(from).toJSON()
 			})
 		})
