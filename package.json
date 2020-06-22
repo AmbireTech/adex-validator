@@ -47,10 +47,11 @@
   },
   "homepage": "https://github.com/AdExNetwork/adex-validator-stack-js#readme",
   "dependencies": {
-    "adex-adview-manager": "^2.0.1",
     "@google-cloud/bigquery": "^4.7.0",
+    "adex-adview-manager": "^2.0.1",
     "adex-protocol-eth": "^4.1.3",
     "base64url": "^3.0.1",
+    "bignumber.js": "^9.0.0",
     "bn.js": "^4.11.8",
     "body-parser": "^1.18.3",
     "celebrate": "^9.0.2",

@@ -3,7 +3,7 @@
 /**
  * Export eventAggregates data to Biquery
  */
-
+const BN = require('bignumber.js')
 const {
 	createDatasetIfNotExists,
 	createTableIfNotExists,
@@ -20,8 +20,8 @@ const schema = [
 	{ name: 'created', type: 'TIMESTAMP', mode: 'REQUIRED' },
 	{ name: 'event_type', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'earner', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'count', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'payout', type: 'STRING', mode: 'REQUIRED' }
+	{ name: 'count', type: 'NUMERIC', mode: 'REQUIRED' },
+	{ name: 'payout', type: 'NUMERIC', mode: 'REQUIRED' }
 ]
 
 async function exportData() {
@@ -70,8 +70,10 @@ function expandDocs(docs) {
 				created: aggr.created,
 				event_type: eventType,
 				earner,
-				count: eventCounts[earner],
-				payout: eventPayouts[earner]
+				count: new BN(eventCounts[earner]).toNumber(),
+				payout: new BN(eventPayouts[earner])
+					.dividedBy(new BN(10).exponentiatedBy(new BN(18)))
+					.toFixed(8)
 			}))
 			result.push(...data)
 		})
