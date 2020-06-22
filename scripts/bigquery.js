@@ -4,8 +4,8 @@ const { getMongo, connect } = require('../db')
 const { collections } = require('../services/constants')
 const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 
-const REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME = 'reportPublisherToAdUnit7'
-const REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME = 'reportPublisherToCountry7'
+const REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME = 'reportPublisherToAdUnit'
+const REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME = 'reportPublisherToCountry'
 const BIGQUERY_RATE_LIMIT = 10 // There is a limit of ~ 2-10 min between delete and insert or changing schema
 const DATASET_NAME = process.env.DATASET_NAME || 'development'
 const options = {
@@ -246,6 +246,7 @@ function startImport(tableName, stream, map) {
 		}
 	}
 
+	// eslint-disable-next-line consistent-return
 	function checkReady() {
 		console.log(`DONE/${tableName}: ${done}`)
 		if (ready && queue.length) return flush()
@@ -253,7 +254,6 @@ function startImport(tableName, stream, map) {
 			return isReady()
 		}
 		if (found - done < 100) stream.resume()
-		return false
 	}
 
 	function isReady() {
