@@ -84,6 +84,8 @@ async function createReportPublisherToCountryTable() {
 			]
 		}
 	})
+	// NOTE: This uses reportPublisherToCountry:${getEpoch()}:${evType}:${publisher}
+	// so if the epoch is passed and the data is static (not updated) there might not be any imports
 	return startImport(
 		REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME,
 		await getMongo()
