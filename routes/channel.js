@@ -55,7 +55,9 @@ function getEventAggregates(req, res, next) {
 	}
 	return eventsCol
 		.find(query, { projection })
-		.limit(cfg.EVENTS_FIND_LIMIT)
+		.limit(
+			query.segmentByChannel ? cfg.EVENTS_FIND_LIMIT_BY_CHANNEL_SEGMENT : cfg.EVENTS_FIND_LIMIT
+		)
 		.sort({ created: 1 })
 		.toArray()
 		.then(events => res.send({ channel, events }))
