@@ -256,3 +256,16 @@ Example:
 ```
 NODE_ENV=production KEYSTORE_PWD=<pwd> node scripts/distribute-rewards.js ./keystore.json
  ```
+
+#### Export Data to Biquery
+
+To run the BigQuery export script e.g.
+
+```sh
+
+> export GOOGLE_APPLICATION_CREDENTIALS="[PATH]"
+> export PROJECT_ID="[ID]" (default = 'adex-275614')
+> export DATASET="[DATASET]" (default = 'adex')
+> ./scripts/export-adx.js
+
+```
