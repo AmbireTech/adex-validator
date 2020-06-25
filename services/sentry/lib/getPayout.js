@@ -7,10 +7,17 @@ const logger = require('../../logger')('sentry')
 
 function getPayout(channel, ev, session) {
 	if (!ev.publisher) return null
+	let balancesKey = null
+	try {
+		balancesKey = toBalancesKey(ev.publisher)
+	} catch (e) {
+		console.error(e, ev)
+	}
+	if (!balancesKey) return null
 	const targetingRules = channel.targetingRules || channel.spec.targetingRules || []
 	const eventType = ev.type.toUpperCase()
 	const [minPrice, maxPrice] = getPricingBounds(channel, eventType)
-	if (targetingRules.length === 0) return [toBalancesKey(ev.publisher), minPrice]
+	if (targetingRules.length === 0) return [balancesKey, minPrice]
 
 	const adUnit =
 		Array.isArray(channel.spec.adUnits) && channel.spec.adUnits.find(u => u.ipfs === ev.adUnit)
@@ -47,7 +54,7 @@ function getPayout(channel, ev, session) {
 	if (output.show === false) return null
 
 	const price = BN.max(minPrice, BN.min(maxPrice, output[priceKey]))
-	return [toBalancesKey(ev.publisher), price]
+	return [balancesKey, price]
 }
 
 module.exports = getPayout

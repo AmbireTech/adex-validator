@@ -19,7 +19,8 @@ const notCached = fn => (req, res, next) =>
 const validate = celebrate({ query: { ...schemas.eventTimeAggr, segmentByChannel: Joi.string() } })
 
 // Global statistics
-router.get('/', validate, redisCached(400, analytics))
+// WARNING: redisCached can only be used on methods that are called w/o auth
+router.get('/', validate, redisCached(500, analytics))
 router.get('/for-publisher', validate, authRequired, notCached(analytics))
 router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalytics))
 
@@ -27,7 +28,7 @@ router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalyt
 router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 
 // :id is channelId: needs to be named that way cause of channelIfExists
-router.get('/:id', validate, channelIfExists, redisCached(600, analytics))
+router.get('/:id', validate, channelAdvertiserIfOwns, notCached(advertiserChannelAnalytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
 
 const MAX_LIMIT = 500
@@ -137,6 +138,10 @@ async function advertiserAnalytics(req) {
 	return analytics(req, await getAdvertiserChannels(req), true)
 }
 
+async function advertiserChannelAnalytics(req) {
+	return analytics(req, [req.params.id], true)
+}
+
 async function advancedAnalytics(req) {
 	const evType = req.query.eventType
 	const publisher = toBalancesKey(req.session.uid)
@@ -156,10 +161,32 @@ function getAdvertiserChannels(req) {
 	return advChannels
 }
 
+function channelAdvertiserIfOwns(req, res, next) {
+	const channelsCol = db.getMongo().collection('channels')
+	if (!req.session) {
+		res.status(403).json(null)
+		return
+	}
+	const uid = req.session.uid
+	channelsCol
+		.countDocuments({ _id: req.params.id, creator: uid }, { limit: 1 })
+		.then(function(n) {
+			if (!n) {
+				res.status(403).json(null)
+			} else {
+				next()
+			}
+		})
+		.catch(next)
+}
+
 function redisCached(seconds, fn) {
 	return function(req, res, next) {
+		if (req.session) {
+			res.status(500).json(null)
+			return
+		}
 		const key = `CACHE:${req.originalUrl}`
-
 		redisGet(key)
 			.then(cached => {
 				if (cached) {
