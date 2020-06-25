@@ -3,7 +3,7 @@
 /**
  * Export eventAggregates data to Biquery
  */
-const BN = require('bignumber.js')
+const BN = require('bn.js')
 const {
 	createDatasetIfNotExists,
 	createTableIfNotExists,
@@ -74,9 +74,7 @@ function expandDocs(docs) {
 				event_type: eventType,
 				earner,
 				count: new BN(eventCounts[earner]).toNumber(),
-				payout: new BN(eventPayouts[earner])
-					.dividedBy(new BN(10).exponentiatedBy(new BN(18)))
-					.toFixed(8)
+				payout: (new BN(eventPayouts[earner]).toNumber() / 10 ** 18).toFixed(8)
 			}))
 			result.push(...data)
 		})

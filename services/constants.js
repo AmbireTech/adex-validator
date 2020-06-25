@@ -10,6 +10,8 @@ module.exports = Object.freeze({
 		stake: 'stake',
 		volume: 'volume',
 		price: 'price',
-		analytics: 'analytics'
+		analytics: 'analytics',
+		unbond: 'unbond',
+		unbondRequest: 'unbondRequest'
 	}
 })
