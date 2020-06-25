@@ -1,8 +1,8 @@
 const { BigQuery } = require('@google-cloud/bigquery')
 const logger = require('../services/logger')('bigquery')
 
-const DATASET_NAME = process.env.DATASET || 'adex'
-const GOOGLE_CLOUD_PROJECT = process.env.PROJECT_ID || 'adex-275614'
+const DATASET_NAME = process.env.DATASET_NAME || 'adex'
+const GOOGLE_CLOUD_PROJECT = process.env.GOOGLE_CLOUD_PROJECT || 'adex-275614'
 const bigQueryClient = new BigQuery()
 
 async function createDatasetIfNotExists() {

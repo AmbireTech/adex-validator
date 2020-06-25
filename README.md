@@ -264,8 +264,8 @@ To run the BigQuery export script e.g.
 ```sh
 
 > export GOOGLE_APPLICATION_CREDENTIALS="[PATH]"
-> export PROJECT_ID="[ID]" (default = 'adex-275614')
-> export DATASET="[DATASET]" (default = 'adex')
+> export GOOGLE_CLOUD_PROJECT="[ID]" (default = 'adex-275614')
+> export DATASET_NAME="[DATASET]" (default = 'adex')
 > ./scripts/export-adx.js
 
 ```
