@@ -1,4 +1,3 @@
-require('dotenv').config()
 const { BigQuery } = require('@google-cloud/bigquery')
 const { getMongo, connect } = require('../db')
 const { collections } = require('../services/constants')
