@@ -35,7 +35,7 @@ async function createReportPublisherToAdUnitTables() {
 		REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME,
 		await getMongo()
 			.collection(collections.analyticsAggregate)
-			.aggregate([{ $unwind: '$earners' }, { $group: { _id: '$earners' } }])
+			.aggregate([{ $unwind: '$earners' }, { $group: { _id: '$earners' } }], { timeout: false })
 			.sort({ _id: -1 })
 			.stream(),
 		async function(publisher) {
@@ -90,7 +90,7 @@ async function createReportPublisherToCountryTable() {
 		REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME,
 		await getMongo()
 			.collection(collections.analyticsAggregate)
-			.aggregate([{ $unwind: '$earners' }, { $group: { _id: '$earners' } }])
+			.aggregate([{ $unwind: '$earners' }, { $group: { _id: '$earners' } }], { timeout: false })
 			.sort({ _id: -1 })
 			.stream(),
 		async function(publisher) {
