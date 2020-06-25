@@ -8,8 +8,8 @@ const {
 	createDatasetIfNotExists,
 	createTableIfNotExists,
 	getTableClient,
-	DATASET,
-	PROJECT_ID
+	DATASET_NAME,
+	GOOGLE_CLOUD_PROJECT
 } = require('./index')
 const db = require('../db')
 const logger = require('../services/logger')('evAggr')
@@ -29,7 +29,7 @@ async function exportData() {
 	await createTableIfNotExists(bigQueryTables.analytics, schema)
 
 	const table = getTableClient(bigQueryTables.analytics)
-	const query = `SELECT created FROM \`${PROJECT_ID}.${DATASET}.${
+	const query = `SELECT created FROM \`${GOOGLE_CLOUD_PROJECT}.${DATASET_NAME}.${
 		bigQueryTables.analytics
 	}\` ORDER BY created DESC LIMIT 1`
 
@@ -38,9 +38,12 @@ async function exportData() {
 	// fetch data from mongodb
 	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 
-	const cur = analyticsCol.find({
-		created: { $gt: (row.length && new Date(row[0].created.value)) || new Date(0) }
-	})
+	const cur = analyticsCol.find(
+		{
+			created: { $gt: (row.length && new Date(row[0].created.value)) || new Date(0) }
+		},
+		{ timeout: false }
+	)
 
 	let data
 	let total = 0

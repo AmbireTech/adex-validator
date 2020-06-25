@@ -10,8 +10,8 @@ const {
 	createDatasetIfNotExists,
 	createTableIfNotExists,
 	getTableClient,
-	DATASET,
-	PROJECT_ID
+	DATASET_NAME,
+	GOOGLE_CLOUD_PROJECT
 } = require('./index')
 const logger = require('../services/logger')('stake')
 const { bigQueryTables } = require('../services/constants')
@@ -41,7 +41,7 @@ async function stake() {
 	await createTableIfNotExists(bigQueryTables.stake, stakeSchema)
 
 	const table = getTableClient(bigQueryTables.stake)
-	const query = `SELECT lastUpdateTimestamp FROM ${PROJECT_ID}.${DATASET}.${
+	const query = `SELECT lastUpdateTimestamp FROM ${GOOGLE_CLOUD_PROJECT}.${DATASET_NAME}.${
 		bigQueryTables.stake
 	} ORDER BY lastUpdateTimestamp DESC LIMIT 1`
 
@@ -132,7 +132,7 @@ async function stake() {
 		// create update queries
 		const queries = unbonds.map(unbond =>
 			table.query({
-				query: `UPDATE ${PROJECT_ID}.${DATASET}.${
+				query: `UPDATE ${GOOGLE_CLOUD_PROJECT}.${DATASET_NAME}.${
 					bigQueryTables.stake
 				} SET status = "${unbond.__typename.toLowerCase()}", lastUpdateTimestamp = "${new Date(
 					unbond.timestamp * 1000
