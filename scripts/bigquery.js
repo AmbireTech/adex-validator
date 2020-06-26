@@ -5,6 +5,8 @@ const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 
 const REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME = 'reportPublisherToAdUnit'
 const REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME = 'reportPublisherToCountry'
+const REPORT_PUBLISHER_TO_ADSLOT_TABLE_NAME = 'reportPublisherToAdSlot'
+const REPORT_PUBLISHER_TO_HOSTNAME = 'reportPublisherToHostname'
 const BIGQUERY_RATE_LIMIT = 10 // There is a limit of ~ 2-10 min between delete and insert or changing schema
 const DATASET_NAME = process.env.DATASET_NAME || 'development'
 const options = {
@@ -16,77 +18,28 @@ const toNumericLimit = number => Number(number).toFixed(9)
 
 let dataset = null
 
-async function createReportPublisherToAdUnitTables() {
+async function createTable(wantedAggregation, uniqueId, payStatsExists = true) {
 	// Create the dataset
-	await dataset.createTable(REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME, {
+	const schema = {
 		schema: {
 			fields: [
 				{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
-				{ name: 'adUnitId', type: 'STRING', mode: 'NULLABLE' },
+				{ name: uniqueId, type: 'STRING', mode: 'NULLABLE' },
 				{ name: 'impressions', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'impressionsPayout', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'clicks', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'clicksPayout', type: 'NUMERIC', mode: 'NULLABLE' }
+				{ name: 'clicks', type: 'NUMERIC', mode: 'NULLABLE' }
 			]
 		}
-	})
-	return startImport(
-		REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME,
-		await getMongo()
-			.collection(collections.analyticsAggregate)
-			.aggregate([{ $unwind: '$earners' }, { $group: { _id: '$earners' } }], { timeout: false })
-			.sort({ _id: -1 })
-			.stream(),
-		async function(publisher) {
-			if (!publisher) return
-			const { _id } = publisher
-			const [impressions, clicks] = await Promise.all([
-				getAdvancedReports({
-					evType: 'IMPRESSION',
-					publisher: _id
-				}),
-				getAdvancedReports({
-					evType: 'CLICK',
-					publisher: _id
-				})
-			])
-			const results = []
-			Object.entries(impressions.publisherStats.reportPublisherToAdUnit).forEach(([key, value]) => {
-				results.push({
-					id: _id,
-					adUnitId: key,
-					impressions: toNumericLimit(value || 0),
-					impressionsPayout: toNumericLimit(
-						impressions.publisherStats.reportPublisherToAdUnitPay[key] || 0
-					),
-					clicks: toNumericLimit(clicks.publisherStats.reportPublisherToAdUnit[key] || 0),
-					clicksPayout: toNumericLimit(clicks.publisherStats.reportPublisherToAdUnitPay[key] || 0)
-				})
-			})
-			// eslint-disable-next-line consistent-return
-			return results
-		}
-	)
-}
+	}
+	const payStats = [
+		{ name: 'impressionsPayout', type: 'NUMERIC', mode: 'NULLABLE' },
+		{ name: 'clicksPayout', type: 'NUMERIC', mode: 'NULLABLE' }
+	]
+	if (payStatsExists) schema.schema.fields.push(payStats)
 
-async function createReportPublisherToCountryTable() {
-	// Create the dataset
-	await dataset.createTable(REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME, {
-		schema: {
-			fields: [
-				{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
-				{ name: 'countryCode', type: 'STRING', mode: 'NULLABLE' },
-				{ name: 'impressions', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'impressionsPayout', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'clicks', type: 'NUMERIC', mode: 'NULLABLE' },
-				{ name: 'clicksPayout', type: 'NUMERIC', mode: 'NULLABLE' }
-			]
-		}
-	})
-	// NOTE: This uses reportPublisherToCountry:${getEpoch()}:${evType}:${publisher}
-	// so if the epoch is passed and the data is static (not updated) there might not be any imports
+	await dataset.createTable(wantedAggregation, schema)
+
 	return startImport(
-		REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME,
+		wantedAggregation, // table name
 		await getMongo()
 			.collection(collections.analyticsAggregate)
 			.aggregate([{ $unwind: '$earners' }, { $group: { _id: '$earners' } }], { timeout: false })
@@ -106,22 +59,23 @@ async function createReportPublisherToCountryTable() {
 				})
 			])
 			const results = []
-			Object.entries(impressions.publisherStats.reportPublisherToCountry).forEach(
-				([key, value]) => {
-					results.push({
-						id: _id,
-						countryCode: key,
-						impressions: toNumericLimit(value || 0),
-						impressionsPayout: toNumericLimit(
-							impressions.publisherStats.reportPublisherToCountryPay[key] || 0
-						),
-						clicks: toNumericLimit(clicks.publisherStats.reportPublisherToCountry[key] || 0),
-						clicksPayout: toNumericLimit(
-							clicks.publisherStats.reportPublisherToCountryPay[key] || 0
-						)
-					})
+			Object.entries(impressions.publisherStats[wantedAggregation]).forEach(([key, value]) => {
+				let result = {
+					id: _id,
+					[uniqueId]: key,
+					impressions: toNumericLimit(value || 0),
+					clicks: toNumericLimit(clicks.publisherStats[wantedAggregation][key] || 0)
 				}
-			)
+				if (payStatsExists)
+					result = {
+						...result,
+						impressionsPayout: toNumericLimit(
+							impressions.publisherStats[`${wantedAggregation}Pay`][key] || 0
+						),
+						clicksPayout: toNumericLimit(clicks.publisherStats[`${wantedAggregation}Pay`][key] || 0)
+					}
+				results.push(result)
+			})
 			// eslint-disable-next-line consistent-return
 			return results
 		}
@@ -151,13 +105,17 @@ async function deleteTableAndImport(websiteName, createTableFunc) {
 
 function importTables(cb) {
 	Promise.all([
-		deleteTableAndImport(
-			REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME,
-			createReportPublisherToAdUnitTables
+		deleteTableAndImport(REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME, () =>
+			createTable(REPORT_PUBLISHER_TO_ADUNIT_TABLE_NAME, 'adUnitId')
 		),
-		deleteTableAndImport(
-			REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME,
-			createReportPublisherToCountryTable
+		deleteTableAndImport(REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME, () =>
+			createTable(REPORT_PUBLISHER_TO_COUNTRY_TABLE_NAME, 'countryCode')
+		),
+		deleteTableAndImport(REPORT_PUBLISHER_TO_ADSLOT_TABLE_NAME, () =>
+			createTable(REPORT_PUBLISHER_TO_ADSLOT_TABLE_NAME, 'adSlotId')
+		),
+		deleteTableAndImport(REPORT_PUBLISHER_TO_HOSTNAME, () =>
+			createTable(REPORT_PUBLISHER_TO_HOSTNAME, 'hostname', false)
 		)
 	])
 		.then(() => process.exit(0))
