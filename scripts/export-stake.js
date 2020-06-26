@@ -130,7 +130,7 @@ async function stake() {
 		.filter(tx => tx.__typename === 'Bond')
 		.map(({ amount, bondId, id, nonce, owner, poolId, slashedAtStart, timestamp }) => {
 			// convert to number
-			const nAmount = (new BN(amount).toNumber() / 10 ** 18).toFixed(12)
+			const nAmount = (parseInt(new BN(amount).toString(), 10) / 10 ** 18).toFixed(12)
 			return {
 				amount: nAmount,
 				bondId,

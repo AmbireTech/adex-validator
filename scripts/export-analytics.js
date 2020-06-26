@@ -73,8 +73,8 @@ function expandDocs(aggr) {
 			created: aggr.created,
 			event_type: eventType,
 			earner,
-			count: new BN(eventCounts[earner]).toNumber(),
-			payout: (new BN(eventPayouts[earner]).toNumber() / 10 ** 18).toFixed(8)
+			count: parseInt(new BN(eventCounts[earner]).toString(), 10),
+			payout: (parseInt(new BN(eventPayouts[earner]).toString(), 10) / 10 ** 18).toFixed(8)
 		}))
 		result.push(...data)
 	})
