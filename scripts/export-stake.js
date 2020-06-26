@@ -7,6 +7,7 @@
 const BN = require('bn.js')
 const { request } = require('graphql-request')
 const {
+	bigQueryTables,
 	createDatasetIfNotExists,
 	createTableIfNotExists,
 	getTableClient,
@@ -14,7 +15,6 @@ const {
 	GOOGLE_CLOUD_PROJECT
 } = require('./index')
 const logger = require('../services/logger')('stake')
-const { bigQueryTables } = require('../services/constants')
 
 const stakeSchema = [
 	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },

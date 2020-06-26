@@ -6,6 +6,7 @@
 
 const fetch = require('node-fetch')
 const {
+	bigQueryTables,
 	createDatasetIfNotExists,
 	createTableIfNotExists,
 	getTableClient,
@@ -13,7 +14,6 @@ const {
 	GOOGLE_CLOUD_PROJECT
 } = require('./index')
 const logger = require('../services/logger')('adx')
-const { bigQueryTables } = require('../services/constants')
 
 const ADEX_COIN_ID = 'adex'
 

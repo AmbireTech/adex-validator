@@ -5,6 +5,7 @@
  */
 const BN = require('bn.js')
 const {
+	bigQueryTables,
 	createDatasetIfNotExists,
 	createTableIfNotExists,
 	getTableClient,
@@ -13,7 +14,7 @@ const {
 } = require('./index')
 const db = require('../db')
 const logger = require('../services/logger')('evAggr')
-const { bigQueryTables, collections } = require('../services/constants')
+const { collections } = require('../services/constants')
 
 const schema = [
 	{ name: 'channelId', type: 'STRING', mode: 'REQUIRED' },
@@ -50,7 +51,7 @@ async function exportData() {
 	// eslint-disable-next-line no-cond-assign, no-await-in-loop
 	while ((data = await cur.next())) {
 		// insert into BigQuery
-		const rows = expandDocs([data])
+		const rows = expandDocs(data)
 		if (rows.length) {
 			total += rows.length
 			// eslint-disable-next-line no-await-in-loop
@@ -61,24 +62,23 @@ async function exportData() {
 	logger.info(`Inserted ${total} rows`)
 }
 
-function expandDocs(docs) {
+function expandDocs(aggr) {
 	const result = []
-	// eslint-disable-next-line no-restricted-syntax
-	for (const aggr of docs) {
-		const eventTypes = Object.keys(aggr.events)
-		eventTypes.forEach(eventType => {
-			const { eventCounts, eventPayouts } = aggr.events[eventType]
-			const data = Object.keys(eventCounts).map(earner => ({
-				channelId: aggr.channelId,
-				created: aggr.created,
-				event_type: eventType,
-				earner,
-				count: new BN(eventCounts[earner]).toNumber(),
-				payout: (new BN(eventPayouts[earner]).toNumber() / 10 ** 18).toFixed(8)
-			}))
-			result.push(...data)
-		})
-	}
+
+	const eventTypes = Object.keys(aggr.events)
+	eventTypes.forEach(eventType => {
+		const { eventCounts, eventPayouts } = aggr.events[eventType]
+		const data = Object.keys(eventCounts).map(earner => ({
+			channelId: aggr.channelId,
+			created: aggr.created,
+			event_type: eventType,
+			earner,
+			count: new BN(eventCounts[earner]).toNumber(),
+			payout: (new BN(eventPayouts[earner]).toNumber() / 10 ** 18).toFixed(8)
+		}))
+		result.push(...data)
+	})
+
 	return result
 }
 

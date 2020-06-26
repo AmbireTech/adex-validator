@@ -28,6 +28,14 @@ async function createTableIfNotExists(tableId, schema) {
 const getTableClient = tableId => bigQueryClient.dataset(DATASET_NAME).table(tableId)
 
 module.exports = {
+	bigQueryTables: {
+		stake: 'stake',
+		volume: 'volume',
+		price: 'price',
+		analytics: 'analytics',
+		unbond: 'unbond',
+		unbondRequest: 'unbondRequest'
+	},
 	DATASET_NAME,
 	GOOGLE_CLOUD_PROJECT,
 	getTableClient,
