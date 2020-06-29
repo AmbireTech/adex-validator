@@ -38,6 +38,10 @@ const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 const YEAR = 365 * DAY
 const ROUGH_MONTH = Math.floor(YEAR / 12)
+
+// In order to use analytics aggregates, we need the span to be at least an hour
+const ANALYTICS_MIN_SPAN = HOUR
+
 function getTimeframe(timeframe) {
 	// every month in one year
 	if (timeframe === 'year') return { period: YEAR, span: ROUGH_MONTH }
@@ -83,7 +87,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 	const { period, span } = getTimeframe(timeframe)
 
 	const collection =
-		process.env.ANALYTICS_DB && span >= parseInt(process.env.TIME_INTERVAL || 0, 10)
+		process.env.ANALYTICS_DB && span >= ANALYTICS_MIN_SPAN
 			? db.getMongo().collection(collections.analyticsAggregate)
 			: db.getMongo().collection(collections.eventAggregates)
 
