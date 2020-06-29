@@ -26,7 +26,7 @@ async function aggregate() {
 	// created will be set to `end`, so the correct start is the last aggr's .created (end)
 	const start = (lastAggr
 		? lastAggr.created
-		: floorToInterval((await eventsCol.findOne()).created)
+		: floorToInterval((await eventsCol.findOne({}, { sort: { created: 1 } })).created)
 	).getTime()
 	const end = floorToInterval(new Date()).getTime()
 	// This for loop is not inclusive of `end` but that's intentional, since we don't want to produce an aggregate for an ongoing hour
@@ -37,8 +37,6 @@ async function aggregate() {
 
 // produces a separate aggregate per channel
 async function aggregateForPeriod(start, end) {
-	log(`Producing an aggregate starting at ${start}`)
-
 	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 	const eventsCol = db.getMongo().collection(collections.eventAggregates)
 
@@ -60,6 +58,9 @@ async function aggregateForPeriod(start, end) {
 	]
 
 	const data = await eventsCol.aggregate(pipeline).toArray()
+	if (data.length) {
+		log(`Producing an aggregate starting at ${start}`)
+	}
 
 	await Promise.all(
 		data.map(async ({ aggr, _id }) => {
