@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable no-underscore-dangle */
+/* eslint-disable no-await-in-loop */
 
 // const BN = require('bn.js')
 const db = require('../db')
@@ -11,11 +12,22 @@ const TIME_INTERVAL = 60 * 60 * 1000
 // eslint-disable-next-line no-console
 const { log } = console
 
+// sumBNValues and toTotals are borrowed from addGlobalAccounting,
+// but duplication is OK cause we're going to delete addGlobalAccounting
 /*
 function sumBNValues(obj = {}) {
 	return Object.values(obj)
 		.map(x => new BN(x, 10))
 		.reduce((a, b) => a.add(b), new BN(0))
+}
+
+function toTotals(map) {
+	if (!map) return null
+	const { eventPayouts, eventCounts } = map
+	return {
+		eventCounts: sumBNValues(eventCounts).toString(10),
+		eventPayouts: sumBNValues(eventPayouts).toString(10)
+	}
 }
 */
 
@@ -37,26 +49,30 @@ async function aggregate() {
 	const end = floorToInterval(new Date()).getTime()
 	// This for loop is not inclusive of `end` but that's intentional, since we don't want to produce an aggregate for an ongoing hour
 	for (let i = start; i !== end; i += TIME_INTERVAL) {
-		log(new Date(i), new Date(i + TIME_INTERVAL))
+		await aggregateForPeriod(new Date(i), new Date(i + TIME_INTERVAL))
 	}
-	log(new Date())
 }
 
-/*
+// produces a separate aggregate per channel
 async function aggregateForPeriod(start, end) {
-	// produces a separate aggregate per channel
+	log(`Producing an aggregate starting at ${start}`)
+
+	// const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
+	const eventsCol = db.getMongo().collection(collections.eventAggregates)
 
 	const pipeline = [
-		{ $match: { created: {
-			$gte: start,
-			$lt: end
-		} } },
+		{
+			$match: {
+				created: {
+					$gte: start,
+					$lt: end
+				}
+			}
+		},
 		{
 			$group: {
-				_id: {
-					channelId: '$channelId'
-				},
-				aggr: { $push: '$events' },
+				_id: '$channelId',
+				aggr: { $push: '$events' }
 			}
 		}
 	]
@@ -65,31 +81,21 @@ async function aggregateForPeriod(start, end) {
 
 	await Promise.all(
 		data.map(async ({ aggr, _id }) => {
+			/*
 			const analyticDoc = {
-				channelId: _id.channelId,
+				channelId: _id,
 				created: end,
 				events: {},
 				earners: [],
 				totals: {}
-			}
+			} */
 
 			aggr.forEach(evAggr => {
 				Object.keys(evAggr).forEach(evType => {
 					const { eventCounts, eventPayouts } = evAggr[evType]
 
-					analyticDoc.totals[evType] = {
-						eventCounts: new BN(
-							(analyticDoc.totals[evType] && analyticDoc.totals[evType].eventCounts) || '0'
-						)
-							.add(sumBNValues(eventCounts))
-							.toString(),
-						eventPayouts: new BN(
-							(analyticDoc.totals[evType] && analyticDoc.totals[evType].eventPayouts) || '0'
-						)
-							.add(sumBNValues(eventPayouts))
-							.toString()
-					}
-
+					log(_id, evType, eventCounts, eventPayouts)
+					/*
 					Object.keys(eventCounts).forEach(publisher => {
 						// if it exists in eventCounts then it exists in payouts
 						if (analyticDoc.events[evType] && analyticDoc.events[evType].eventCounts[publisher]) {
@@ -112,14 +118,14 @@ async function aggregateForPeriod(start, end) {
 							}
 						}
 					})
+					*/
 				})
 			})
 
-			return analyticsCol.insert(analyticDoc)
+			// return analyticsCol.insert(analyticDoc)
 		})
 	)
 }
-*/
 
 aggregate().then(() => {
 	log(`Finished processing ${new Date()}`)
