@@ -1,53 +1,62 @@
 #!/usr/bin/env node
 /* eslint-disable no-underscore-dangle */
 
-const BN = require('bn.js')
+// const BN = require('bn.js')
 const db = require('../db')
-const { sumBNValues } = require('../services')
 const { collections } = require('../services/constants')
 
-// Default TIME_INTERVAL 5 mins
-const TIME_INTERVAL = parseInt(process.env.TIME_INTERVAL, 10) * 60 * 1000 || 5 * 60 * 1000
-const LIMIT = parseInt(process.env.LIMIT, 10) || 10000
+// Hourly aggregates
+const TIME_INTERVAL = 60 * 60 * 1000
 
 // eslint-disable-next-line no-console
 const { log } = console
 
+/*
+function sumBNValues(obj = {}) {
+	return Object.values(obj)
+		.map(x => new BN(x, 10))
+		.reduce((a, b) => a.add(b), new BN(0))
+}
+*/
+
+function floorToInterval(date) {
+	return new Date(date.getTime() - (date.getTime() % TIME_INTERVAL))
+}
+
 async function aggregate() {
 	await db.connect()
-	// enter the eventAggregates collection
-	// produce a new aggregate per channel
 	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 	const eventsCol = db.getMongo().collection(collections.eventAggregates)
 
-	const lastAggr = await analyticsCol.findOne({}, { sort: ['created', 'desc'] })
-	const start = (lastAggr && lastAggr.lastUpdateTimestamp) || new Date(0)
+	const lastAggr = await analyticsCol.findOne({}, { sort: { created: -1 } })
+	// created will be set to `end`, so the correct start is the last aggr's .created (end)
+	const start = (lastAggr
+		? lastAggr.end
+		: floorToInterval((await eventsCol.findOne()).created)
+	).getTime()
+	const end = floorToInterval(new Date()).getTime()
+	// This for loop is not inclusive of `end` but that's intentional, since we don't want to produce an aggregate for an ongoing hour
+	for (let i = start; i !== end; i += TIME_INTERVAL) {
+		log(new Date(i), new Date(i + TIME_INTERVAL))
+	}
+	log(new Date())
+}
+
+/*
+async function aggregateForPeriod(start, end) {
+	// produces a separate aggregate per channel
 
 	const pipeline = [
-		{ $match: { created: { $gt: start } } },
-		{ $limit: LIMIT },
+		{ $match: { created: {
+			$gte: start,
+			$lt: end
+		} } },
 		{
 			$group: {
 				_id: {
-					time: {
-						$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, TIME_INTERVAL] }]
-					},
 					channelId: '$channelId'
 				},
 				aggr: { $push: '$events' },
-				earners: { $push: '$earners' },
-				lastUpdateTimestamp: { $max: '$created' }
-			}
-		},
-		{
-			$addFields: {
-				earners: {
-					$reduce: {
-						input: '$earners',
-						initialValue: [],
-						in: { $setUnion: ['$$value', '$$this'] }
-					}
-				}
 			}
 		}
 	]
@@ -55,24 +64,14 @@ async function aggregate() {
 	const data = await eventsCol.aggregate(pipeline).toArray()
 
 	await Promise.all(
-		data.map(async ({ aggr, _id, earners, lastUpdateTimestamp }) => {
-			const analyticDoc = (await analyticsCol.findOne({ _id: `${_id.channelId}:${_id.time}` })) || {
-				_id: `${_id.channelId}:${_id.time}`,
+		data.map(async ({ aggr, _id }) => {
+			const analyticDoc = {
 				channelId: _id.channelId,
-				created: new Date(_id.time),
-				earners: [],
+				created: end,
 				events: {},
-				totals: {},
-				lastUpdateTimestamp
+				earners: [],
+				totals: {}
 			}
-
-			// update lastUpdateTimestamp
-			analyticDoc.lastUpdateTimestamp = lastUpdateTimestamp
-			// merge earners and remove duplicates
-			analyticDoc.earners.push(...earners)
-			analyticDoc.earners = analyticDoc.earners.filter(
-				(a, b) => analyticDoc.earners.indexOf(a) === b
-			)
 
 			aggr.forEach(evAggr => {
 				Object.keys(evAggr).forEach(evType => {
@@ -116,20 +115,11 @@ async function aggregate() {
 				})
 			})
 
-			return analyticsCol.updateOne(
-				{
-					_id: `${_id.channelId}:${_id.time}`
-				},
-				{
-					$set: analyticDoc
-				},
-				{
-					upsert: true
-				}
-			)
+			return analyticsCol.insert(analyticDoc)
 		})
 	)
 }
+*/
 
 aggregate().then(() => {
 	log(`Finished processing ${new Date()}`)
