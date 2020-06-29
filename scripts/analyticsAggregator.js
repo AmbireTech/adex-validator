@@ -2,8 +2,9 @@
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable no-await-in-loop */
 
-// const BN = require('bn.js')
+const BN = require('bn.js')
 const db = require('../db')
+const { toBNStringMap } = require('../services/validatorWorker/lib')
 const { collections } = require('../services/constants')
 
 // Hourly aggregates
@@ -11,25 +12,6 @@ const TIME_INTERVAL = 60 * 60 * 1000
 
 // eslint-disable-next-line no-console
 const { log } = console
-
-// sumBNValues and toTotals are borrowed from addGlobalAccounting,
-// but duplication is OK cause we're going to delete addGlobalAccounting
-/*
-function sumBNValues(obj = {}) {
-	return Object.values(obj)
-		.map(x => new BN(x, 10))
-		.reduce((a, b) => a.add(b), new BN(0))
-}
-
-function toTotals(map) {
-	if (!map) return null
-	const { eventPayouts, eventCounts } = map
-	return {
-		eventCounts: sumBNValues(eventCounts).toString(10),
-		eventPayouts: sumBNValues(eventPayouts).toString(10)
-	}
-}
-*/
 
 function floorToInterval(date) {
 	return new Date(date.getTime() - (date.getTime() % TIME_INTERVAL))
@@ -57,7 +39,7 @@ async function aggregate() {
 async function aggregateForPeriod(start, end) {
 	log(`Producing an aggregate starting at ${start}`)
 
-	// const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
+	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 	const eventsCol = db.getMongo().collection(collections.eventAggregates)
 
 	const pipeline = [
@@ -81,48 +63,52 @@ async function aggregateForPeriod(start, end) {
 
 	await Promise.all(
 		data.map(async ({ aggr, _id }) => {
-			/*
-			const analyticDoc = {
-				channelId: _id,
-				created: end,
-				events: {},
-				earners: [],
-				totals: {}
-			} */
+			const events = {}
+			const earners = []
+			const totals = {}
 
 			aggr.forEach(evAggr => {
 				Object.keys(evAggr).forEach(evType => {
 					const { eventCounts, eventPayouts } = evAggr[evType]
 
-					log(_id, evType, eventCounts, eventPayouts)
-					/*
+					if (!events[evType]) events[evType] = { eventCounts: {}, eventPayouts: {} }
+					if (!totals[evType]) totals[evType] = { eventCounts: new BN(0), eventPayouts: new BN(0) }
 					Object.keys(eventCounts).forEach(publisher => {
-						// if it exists in eventCounts then it exists in payouts
-						if (analyticDoc.events[evType] && analyticDoc.events[evType].eventCounts[publisher]) {
-							analyticDoc.events[evType].eventCounts[publisher] = new BN(eventCounts[publisher])
-								.add(new BN(analyticDoc.events[evType].eventCounts[publisher]))
-								.toString()
-							analyticDoc.events[evType].eventPayouts[publisher] = new BN(eventPayouts[publisher])
-								.add(new BN(analyticDoc.events[evType].eventPayouts[publisher]))
-								.toString()
-						} else {
-							analyticDoc.events[evType] = {
-								eventCounts: {
-									...(analyticDoc.events[evType] && analyticDoc.events[evType].eventCounts),
-									[publisher]: eventCounts[publisher]
-								},
-								eventPayouts: {
-									...(analyticDoc.events[evType] && analyticDoc.events[evType].eventPayouts),
-									[publisher]: eventPayouts[publisher]
-								}
-							}
+						// if it exists in eventCounts then it may exists in payouts, but not vice versa
+						const count = new BN(eventCounts[publisher])
+						events[evType].eventCounts[publisher] = (
+							events[evType].eventCounts[publisher] || new BN(0)
+						).add(count)
+						totals[evType].eventCounts = totals[evType].eventCounts.add(count)
+						if (eventPayouts[publisher]) {
+							const payout = new BN(eventPayouts[publisher])
+							events[evType].eventPayouts[publisher] = (
+								events[evType].eventPayouts[publisher] || new BN(0)
+							).add(payout)
+							totals[evType].eventPayouts = totals[evType].eventPayouts.add(payout)
+							if (!earners.includes(publisher)) earners.push(publisher)
 						}
 					})
-					*/
 				})
 			})
 
-			// return analyticsCol.insert(analyticDoc)
+			const analyticsDoc = {
+				channelId: _id,
+				created: end,
+				events: Object.fromEntries(
+					Object.entries(events).map(([evType, { eventCounts, eventPayouts }]) => [
+						evType,
+						{
+							eventCounts: toBNStringMap(eventCounts),
+							eventPayouts: toBNStringMap(eventPayouts)
+						}
+					])
+				),
+				earners,
+				totals: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, toBNStringMap(v)]))
+			}
+			// console.log(JSON.stringify(analyticsDoc, null, 4))
+			return analyticsCol.insert(analyticsDoc)
 		})
 	)
 }
