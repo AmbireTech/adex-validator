@@ -73,20 +73,20 @@ async function aggregateForPeriod(start, end) {
 
 					if (!events[evType]) events[evType] = { eventCounts: {}, eventPayouts: {} }
 					if (!totals[evType]) totals[evType] = { eventCounts: new BN(0), eventPayouts: new BN(0) }
-					Object.keys(eventCounts).forEach(publisher => {
+					Object.keys(eventCounts).forEach(earner => {
 						// if it exists in eventCounts then it may exists in payouts, but not vice versa
-						const count = new BN(eventCounts[publisher])
-						events[evType].eventCounts[publisher] = (
-							events[evType].eventCounts[publisher] || new BN(0)
+						const count = new BN(eventCounts[earner])
+						events[evType].eventCounts[earner] = (
+							events[evType].eventCounts[earner] || new BN(0)
 						).add(count)
 						totals[evType].eventCounts = totals[evType].eventCounts.add(count)
-						if (eventPayouts[publisher]) {
-							const payout = new BN(eventPayouts[publisher])
-							events[evType].eventPayouts[publisher] = (
-								events[evType].eventPayouts[publisher] || new BN(0)
+						if (eventPayouts[earner]) {
+							const payout = new BN(eventPayouts[earner])
+							events[evType].eventPayouts[earner] = (
+								events[evType].eventPayouts[earner] || new BN(0)
 							).add(payout)
 							totals[evType].eventPayouts = totals[evType].eventPayouts.add(payout)
-							if (!earners.includes(publisher)) earners.push(publisher)
+							if (!earners.includes(earner)) earners.push(earner)
 						}
 					})
 				})
