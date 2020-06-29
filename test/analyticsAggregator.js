@@ -69,7 +69,7 @@ const fixtures = [
 const result = {
 	_id: '0x0b341e6959d61f3d9fbc22f5d9983820c661b51ecc059c15dbf5f19f94823b7e:1587654900000',
 	channelId: '0x0b341e6959d61f3d9fbc22f5d9983820c661b51ecc059c15dbf5f19f94823b7e',
-	created: '2020-04-23T15:15:00.000Z',
+	created: new Date('2020-04-23T16:00:00.000Z'),
 	earners: [
 		'0x1bfe15ac2930bd02fea242f4a4b3ead2f37ed1a2',
 		'0x404758cc2673afc59c79fee00bb2d554b1a34fa1',
@@ -107,16 +107,14 @@ tape('analyticsAggregator: aggregate', async t => {
 		.collection(collections.eventAggregates)
 		.insertMany(fixtures)
 
-	// testing for multiple page data
-	await exec(`LIMIT=2 DB_MONGO_NAME='${DB_MONGO_NAME}' ./scripts/analyticsAggregator.js`)
-	await exec(`LIMIT=2 DB_MONGO_NAME='${DB_MONGO_NAME}' ./scripts/analyticsAggregator.js`)
+	await exec(`DB_MONGO_NAME='${DB_MONGO_NAME}' ./scripts/analyticsAggregator.js`)
 
-	const eventCol = await db
+	const eventCount = await db
 		.getMongo()
 		.collection(collections.eventAggregates)
 		.countDocuments()
 
-	const aggrCol = await db
+	const aggrCount = await db
 		.getMongo()
 		.collection(collections.analyticsAggregate)
 		.countDocuments()
@@ -134,14 +132,12 @@ tape('analyticsAggregator: aggregate', async t => {
 	t.deepEqual(result.events, analyticAggr.events, 'should perform correct events aggregation')
 	t.deepEqual(result.totals, analyticAggr.totals, 'should perform correct totals aggregation')
 
-	eventAggr.lastUpdateTimestamp = new Date(0)
-
 	t.deepEquals(
 		Object.keys(eventAggr).sort(),
 		Object.keys(analyticAggr).sort(),
 		'should have the same db structure'
 	)
-	t.ok(eventCol > aggrCol, 'should perform reduce aggregation')
+	t.ok(eventCount > aggrCount, 'should perform reduce aggregation')
 	t.end()
 })
 
