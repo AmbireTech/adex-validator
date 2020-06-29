@@ -1,6 +1,6 @@
 {
   "name": "adex-validator-stack",
-  "version": "0.10.1",
+  "version": "0.11.3",
   "description": "AdEx Validator stack (sentry, validator worker, watcher)",
   "main": "bin/sentry.js",
   "scripts": {
@@ -52,7 +52,6 @@
     "adex-adview-manager": "^2.0.1",
     "adex-protocol-eth": "^4.1.3",
     "base64url": "^3.0.1",
-    "bignumber.js": "^9.0.0",
     "bn.js": "^4.11.8",
     "body-parser": "^1.18.3",
     "celebrate": "^9.0.2",

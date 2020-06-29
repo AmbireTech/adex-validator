@@ -6,14 +6,14 @@
 
 const fetch = require('node-fetch')
 const {
+	bigQueryTables,
 	createDatasetIfNotExists,
 	createTableIfNotExists,
 	getTableClient,
-	DATASET,
-	PROJECT_ID
+	DATASET_NAME,
+	GOOGLE_CLOUD_PROJECT
 } = require('./index')
 const logger = require('../services/logger')('adx')
-const { bigQueryTables } = require('../services/constants')
 
 const ADEX_COIN_ID = 'adex'
 
@@ -57,7 +57,7 @@ async function exportADXPriceAndVolume() {
 	const priceTable = getTableClient(bigQueryTables.price)
 	const volumeTable = getTableClient(bigQueryTables.volume)
 
-	const query = `SELECT timestamp FROM ${PROJECT_ID}.${DATASET}.${
+	const query = `SELECT timestamp FROM ${GOOGLE_CLOUD_PROJECT}.${DATASET_NAME}.${
 		bigQueryTables.price
 	} ORDER BY timestamp DESC LIMIT 1`
 

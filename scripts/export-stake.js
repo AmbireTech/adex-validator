@@ -4,17 +4,17 @@
 /**
  * Export stake data to Biquery
  */
-const BN = require('bignumber.js')
+const BN = require('bn.js')
 const { request } = require('graphql-request')
 const {
+	bigQueryTables,
 	createDatasetIfNotExists,
 	createTableIfNotExists,
 	getTableClient,
-	DATASET,
-	PROJECT_ID
+	DATASET_NAME,
+	GOOGLE_CLOUD_PROJECT
 } = require('./index')
 const logger = require('../services/logger')('stake')
-const { bigQueryTables } = require('../services/constants')
 
 const stakeSchema = [
 	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
@@ -26,32 +26,53 @@ const stakeSchema = [
 	{ name: 'poolId', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'bondId', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'nonce', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'status', type: 'STRING', mode: 'REQUIRED' },
 	{ name: 'slashedAtStart', type: 'STRING', mode: 'REQUIRED' },
-	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' },
-	{ name: 'lastUpdateTimestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
+	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
+]
+
+const unbondSchema = [
+	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'owner', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'bondId', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
+]
+
+const unbondRequestSchema = [
+	{ name: 'id', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'owner', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'bondId', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'willunlock', type: 'STRING', mode: 'REQUIRED' },
+	{ name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED' }
 ]
 
 const THEGRAPH_API_URL =
 	process.env.THEGRAPH_API_URL ||
 	'https://api.thegraph.com/subgraphs/name/adexnetwork/adex-protocol'
 
+async function getLastInsertTimestamp(tableId) {
+	const table = getTableClient(bigQueryTables.stake)
+	const query = `SELECT timestamp FROM ${GOOGLE_CLOUD_PROJECT}.${DATASET_NAME}.${tableId} ORDER BY timestamp DESC LIMIT 1`
+	const [row] = await table.query({ query })
+	return (
+		(row.length && Math.floor(new Date(row[0].timestamp.value).getTime() / 1000)) ||
+		Math.floor(new Date(0).getTime() / 1000)
+	)
+}
+
 async function stake() {
 	await createDatasetIfNotExists()
 	await createTableIfNotExists(bigQueryTables.stake, stakeSchema)
+	await createTableIfNotExists(bigQueryTables.unbond, unbondSchema)
+	await createTableIfNotExists(bigQueryTables.unbondRequest, unbondRequestSchema)
 
-	const table = getTableClient(bigQueryTables.stake)
-	const query = `SELECT lastUpdateTimestamp FROM ${PROJECT_ID}.${DATASET}.${
-		bigQueryTables.stake
-	} ORDER BY lastUpdateTimestamp DESC LIMIT 1`
+	const stakeTimestamp = await getLastInsertTimestamp(bigQueryTables.stake)
+	const unbondTimestamp = await getLastInsertTimestamp(bigQueryTables.unbond)
+	const unbondRequestTimestamp = await getLastInsertTimestamp(bigQueryTables.unbondRequest)
 
-	const [row] = await table.query({ query })
-
-	// connect to
-	// get last insert into db
 	const lastFetchTimestamp =
-		(row.length && Math.floor(new Date(row[0].lastUpdateTimestamp.value).getTime() / 1000)) ||
-		Math.floor(new Date(0).getTime() / 1000)
+		stakeTimestamp > unbondTimestamp
+			? Math.max(stakeTimestamp, unbondRequestTimestamp)
+			: Math.max(unbondRequestTimestamp, unbondTimestamp)
 
 	const bondQuery = `
       query {
@@ -78,6 +99,7 @@ async function stake() {
 			  ... on UnbondRequest {
 				id
 				owner
+				willUnlock
 				bondId
 			  }
 		  }
@@ -85,31 +107,30 @@ async function stake() {
     `
 	const { stakingTransactions } = await request(THEGRAPH_API_URL, bondQuery)
 
-	let unbonds = stakingTransactions.filter(
-		tx => tx.__typename === 'UnBond' || tx.__typename === 'UnbondRequest'
-	)
+	const unbonds = stakingTransactions
+		.filter(tx => tx.__typename === 'Unbond')
+		.map(({ bondId, id, owner, timestamp }) => ({
+			bondId,
+			id,
+			owner,
+			timestamp
+		}))
+
+	const unbondRequest = stakingTransactions
+		.filter(tx => tx.__typename === 'UnbondRequest')
+		.map(({ bondId, id, owner, timestamp, willUnlock }) => ({
+			bondId,
+			id,
+			owner,
+			timestamp,
+			willunlock: willUnlock
+		}))
+
 	const bonds = stakingTransactions
 		.filter(tx => tx.__typename === 'Bond')
-		.map(({ amount, bondId, id, nonce, owner, poolId, slashedAtStart, timestamp, __typename }) => {
-			let status = __typename.toLowerCase()
-			let lastUpdateTimestamp = timestamp
+		.map(({ amount, bondId, id, nonce, owner, poolId, slashedAtStart, timestamp }) => {
 			// convert to number
-			const nAmount = new BN(amount).dividedBy(new BN(10).exponentiatedBy(new BN(18))).toFixed(12)
-			// Find if any transactions in unbonds interact with this bondId
-			// and apply the tx before inserting
-			// this is due to restriction by BigQuery to not
-			// modify recently inserted data when the table is streaming
-			const modifyingTx = unbonds.filter(tx => tx.bondId === bondId)
-
-			if (modifyingTx.length > 0) {
-				unbonds = unbonds.filter(tx => tx.bondId !== bondId)
-
-				modifyingTx.forEach(tx => {
-					status = tx.__typename.toLowerCase()
-					lastUpdateTimestamp = tx.timestamp
-				})
-			}
-
+			const nAmount = (parseInt(new BN(amount).toString(), 10) / 10 ** 18).toFixed(12)
 			return {
 				amount: nAmount,
 				bondId,
@@ -118,28 +139,26 @@ async function stake() {
 				owner,
 				poolId,
 				slashedAtStart,
-				status,
-				timestamp,
-				lastUpdateTimestamp
+				timestamp
 			}
 		})
 
 	if (bonds.length > 0) {
-		await table.insert(bonds).catch(e => logger.error(e.errors[0]))
+		await getTableClient(bigQueryTables.stake)
+			.insert(bonds)
+			.catch(e => logger.error(e.errors[0]))
 	}
 
 	if (unbonds.length > 0) {
-		// create update queries
-		const queries = unbonds.map(unbond =>
-			table.query({
-				query: `UPDATE ${PROJECT_ID}.${DATASET}.${
-					bigQueryTables.stake
-				} SET status = "${unbond.__typename.toLowerCase()}", lastUpdateTimestamp = "${new Date(
-					unbond.timestamp * 1000
-				).toJSON()}"  WHERE bondId = "${unbond.bondId}"  `
-			})
-		)
-		await Promise.all(queries)
+		await getTableClient(bigQueryTables.unbond)
+			.insert(unbonds)
+			.catch(e => logger.error(e.errors[0]))
+	}
+
+	if (unbondRequest.length > 0) {
+		await getTableClient(bigQueryTables.unbondRequest)
+			.insert(unbondRequest)
+			.catch(e => logger.error(e.errors[0]))
 	}
 
 	logger.info(`Inserted ${stakingTransactions.length} rows`)

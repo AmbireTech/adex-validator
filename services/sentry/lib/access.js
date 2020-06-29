@@ -24,6 +24,9 @@ async function checkAccess(channel, session, events) {
 	if (events.every(e => e.type === 'CLOSE') && (isCreator || isInWithdrawPeriod)) {
 		return { success: true }
 	}
+	if (events.every(e => e.type === eventTypes.update_targeting) && isCreator) {
+		return { success: true }
+	}
 	// Only the creator can send a CLOSE & UPDATE_TARGETING
 	if (
 		!isCreator &&
