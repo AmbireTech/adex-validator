@@ -25,7 +25,7 @@ async function aggregate() {
 	const lastAggr = await analyticsCol.findOne({}, { sort: { created: -1 } })
 	// created will be set to `end`, so the correct start is the last aggr's .created (end)
 	const start = (lastAggr
-		? lastAggr.end
+		? lastAggr.created
 		: floorToInterval((await eventsCol.findOne()).created)
 	).getTime()
 	const end = floorToInterval(new Date()).getTime()
