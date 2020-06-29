@@ -11,7 +11,7 @@ function getPayout(channel, ev, session) {
 	try {
 		balancesKey = toBalancesKey(ev.publisher)
 	} catch (e) {
-		console.error(e, ev)
+		logger.error(`WARNING: toBalancesKey is failing with ${e.message} on ${JSON.stringify(ev)}`)
 	}
 	if (!balancesKey) return null
 	const targetingRules = channel.targetingRules || channel.spec.targetingRules || []
