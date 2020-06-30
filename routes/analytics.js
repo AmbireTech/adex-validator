@@ -6,6 +6,7 @@ const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
+const cfg = require('../cfg')
 const { collections } = require('../services/constants')
 
 const router = express.Router()
@@ -30,8 +31,6 @@ router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelAdvertiserIfOwns, notCached(advertiserChannelAnalytics))
 router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
-
-const MAX_LIMIT = 500
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
@@ -101,7 +100,10 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		metric,
 		skipPublisherFiltering
 	)
-	const appliedLimit = Math.min(MAX_LIMIT, limit)
+	const maxLimit = segmentByChannel
+		? cfg.ANALYTICS_FIND_LIMIT_BY_CHANNEL_SEGMENT
+		: cfg.ANALYTICS_FIND_LIMIT
+	const appliedLimit = Math.min(maxLimit, limit)
 	const timeGroup = {
 		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
 	}
