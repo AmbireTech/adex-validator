@@ -12,7 +12,6 @@
     "test-integration-external": "./test/run-integration-tests.sh external",
     "analytics-aggr": "./scripts/analyticsAggregator.js",
     "export-stake": "./scripts/export-stake.js",
-    "export-adx": "./scripts/export-adx.js",
     "export-analytics": "./scripts/export-analytics.js",
     "benchmark": "./test/run-integration-tests.sh benchmark",
     "benchmark-docker": "./test/benchmark/benchmark.sh",
