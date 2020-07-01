@@ -9,6 +9,10 @@ function getEpoch() {
 	return Math.floor(Date.now() / 2628000000)
 }
 
+function getHourEpoch() {
+	return Math.floor(Date.now() / 3600000)
+}
+
 function record(channel, session, events, payouts) {
 	const batch = events
 		.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
@@ -39,6 +43,12 @@ function record(channel, session, events, payouts) {
 						[
 							'zincrby',
 							`reportPublisherToAdSlotEpoch:${getEpoch()}:${ev.type}:${publisher}`,
+							1,
+							ev.adSlot
+						],
+						[
+							'zincrby',
+							`reportHourChannelToAdSlot:${getHourEpoch()}:${ev.type}:${channel.id}`,
 							1,
 							ev.adSlot
 						],
