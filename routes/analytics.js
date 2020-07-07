@@ -71,8 +71,8 @@ function getProjAndMatch(
 	const filteredMatch = publisherId ? { earners: publisherId, ...timeMatch } : timeMatch
 	const match = channelMatch ? { channelId: channelMatch, ...filteredMatch } : filteredMatch
 	const projectValue = publisherId
-		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
-		: { $toLong: `$totals.${eventType}.${metric}` }
+		? { $toDecimal: `$events.${eventType}.${metric}.${publisherId}` }
+		: { $toDecimal: `$totals.${eventType}.${metric}` }
 	const project = {
 		created: 1,
 		channelId: 1,
@@ -112,7 +112,8 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		value: { $sum: '$value' }
 	}
 	const resultProjection = {
-		value: '$value',
+		// NOTE: the toString will work fine w/o scientific notation for numbers up to 34 digits long
+		value: { $toString: '$value' },
 		time: '$_id.time',
 		channelId: '$_id.channelId',
 		_id: 0
@@ -133,10 +134,7 @@ function analytics(req, advertiserChannels, skipPublisherFiltering) {
 		.toArray()
 		.then(aggr => ({
 			limit: appliedLimit,
-			aggr: aggr.map(x => ({
-				...x,
-				value: x.value.toLocaleString('fullwide', { useGrouping: false })
-			}))
+			aggr
 		}))
 }
 
