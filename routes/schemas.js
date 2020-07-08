@@ -32,7 +32,8 @@ const validatorMessage = Joi.object({
 			is: ['NewState', 'Accounting'],
 			then: Joi.object()
 				.keys()
-				.pattern(/./, numericString)
+				.pattern(/./, numericString.required())
+				.min(1)
 				.required()
 		}),
 	timestamp: Joi.string()
@@ -51,6 +52,7 @@ const validatorMessage = Joi.object({
 			then: Joi.object()
 				.keys()
 				.pattern(/./, numericString)
+				.min(1)
 				.required()
 		}),
 	reason: Joi.string().when('type', {
@@ -132,7 +134,9 @@ module.exports = {
 	events: {
 		events: Joi.array().items(
 			Joi.object({
-				type: Joi.string().required(),
+				type: Joi.string()
+					.valid(Object.values(eventTypes))
+					.required(),
 				publisher: Joi.string(),
 				ref: Joi.string().allow(''),
 				adUnit: Joi.string(),
@@ -141,7 +145,7 @@ module.exports = {
 					is: eventTypes.update_targeting,
 					then: Joi.required()
 				})
-			})
+			}).required()
 		)
 	},
 	sentry: {
@@ -187,6 +191,8 @@ module.exports = {
 			.default('hour'),
 		start: Joi.date(),
 		end: Joi.date(),
-		limit: Joi.number().default(100)
+		limit: Joi.number().default(100),
+		channels: Joi.string(),
+		earner: Joi.string()
 	}
 }

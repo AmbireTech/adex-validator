@@ -136,7 +136,11 @@ tape('should validate channel properly', async function(t) {
 
 tape('should not validate channel with invalid id', async function(t) {
 	const { core } = await deployContracts()
-	const ethereumAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
+	const ethereumAdapter = new ethereum.Adapter(
+		opts,
+		{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
+		provider
+	)
 
 	const okChannel = await getValidChannel()
 
@@ -158,12 +162,12 @@ tape('should not validate invalid channels', async function(t) {
 
 	fixtures.invalidChannels(okChannel).forEach(async item => {
 		const [channel, config, err] = item
-
 		const ethAdapter = new ethereum.Adapter(
 			opts,
-			{ ...config, ETHEREUM_CORE_ADDR: core.address },
+			{ ...cfg, ...config, ETHEREUM_CORE_ADDR: core.address },
 			provider
 		)
+		await ethAdapter.init()
 		// ethereum representation
 		const ethChannel = ethereum.toEthereumChannel(channel)
 		channel.id = ethChannel.hashHex(core.address)
@@ -211,7 +215,13 @@ tape('EWT: should verify message', async function(t) {
 async function getValidChannel() {
 	if (validChannel) return validChannel
 	const { core } = await deployContracts()
-	const ethereumAdapter = new ethereum.Adapter(opts, { ETHEREUM_CORE_ADDR: core.address }, provider)
+	const ethereumAdapter = new ethereum.Adapter(
+		opts,
+		{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
+		provider
+	)
+
+	await ethereumAdapter.init()
 
 	// get a sample valid channel
 	const channel = await sampleChannel()

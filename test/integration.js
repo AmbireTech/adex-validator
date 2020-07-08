@@ -551,6 +551,18 @@ tape('analytics routes return correct values', async function(t) {
 			'/advanced',
 			dummyVals.auth.creator,
 			resp => Object.keys(resp.byChannelStats).includes(channel.id)
+		],
+		[
+			`/for-admin?channels=${channel.id}&earner=${
+				dummyVals.ids.publisher
+			}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumValues(resp.aggr) === 10
+		],
+		[
+			`/for-admin?channels=${channel.id}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumValues(resp.aggr) >= 20
 		]
 	]
 
@@ -736,6 +748,98 @@ tape('targetingRules: multiple rules are applied, pricingBounds are honored', as
 	)
 	t.equal(await getLastAnalytics('CLICK', 'eventPayouts'), '0', 'zero payout amount for CLICK')
 	t.equal(await getLastAnalytics('CLICK', 'eventCounts'), '2', 'proper count for CLICK')
+
+	t.end()
+})
+
+tape('validatorWorker: does not apply empty aggr', async function(t) {
+	const channel = getValidEthChannel()
+	channel.spec = {
+		...channel.spec,
+		targetingRules: []
+	}
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	// update targetingRules
+	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
+		events: [
+			{
+				type: constants.eventTypes.update_targeting,
+				targetingRules: []
+			}
+		]
+	})
+
+	// sleep to give some time for the channel to be updated
+	await wait(cfg.CHANNEL_REFRESH_INTERVAL)
+
+	// wait for the events to be aggregated and new states to be issued
+	await aggrAndTick()
+	await forceTick()
+
+	const sentry = new SentryInterface(dummyAdapter, channel, { logging: false })
+	const data = await sentry.getLatestMsg(dummyVals.ids.leader, 'Accounting')
+
+	t.equal(data, null, 'shoud not produce new Accounting aggregate with empty event aggregate')
+
+	t.end()
+})
+
+tape('/validator-messages: reject Accounting/NewState messages with empty balances', async function(
+	t
+) {
+	const channel = getValidEthChannel()
+	channel.spec = {
+		...channel.spec,
+		targetingRules: []
+	}
+
+	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+	await Promise.all([
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+	])
+
+	await Promise.all(
+		[
+			[
+				{
+					type: 'Accounting',
+					balancesBeforeFees: {},
+					balances: {},
+					lastEvAggr: new Date().toISOString()
+				}
+			],
+			[
+				{
+					type: 'NewState',
+					balancesBeforeFees: {},
+					balances: {},
+					stateRoot: '1648231285e69677531ffe70719f67a07f3d4393b8425a5a1c84b0c72434c77b',
+					signature:
+						'0x0583e008087dbe1f8162ffa6d8da3663ae8e044c7ef4defe007ec237c0a016cc2a8054c391087b9970c155b8711f01422709cfb3c48595ed66c8823be4f6c3391c'
+				}
+			]
+		].map(async messages => {
+			const result = await (await fetchPost(
+				`${followerUrl}/channel/${channel.id}/validator-messages`,
+				dummyVals.auth.leader,
+				{ messages }
+			)).json()
+			const { type } = messages[0]
+			t.equal(result.statusCode, 400, `should reject ${type} with empty balances`)
+			t.deepEqual(
+				result.validation.keys,
+				['messages.0.balances'],
+				`should reject empty ${type} with [required keys] message`
+			)
+		})
+	)
 
 	t.end()
 })
