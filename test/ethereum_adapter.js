@@ -162,7 +162,6 @@ tape('should not validate invalid channels', async function(t) {
 
 	fixtures.invalidChannels(okChannel).forEach(async item => {
 		const [channel, config, err] = item
-		// console.log(channel)
 		const ethAdapter = new ethereum.Adapter(
 			opts,
 			{ ...cfg, ...config, ETHEREUM_CORE_ADDR: core.address },

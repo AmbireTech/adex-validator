@@ -6,7 +6,6 @@ const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
-const cfg = require('../cfg')
 const { collections } = require('../services/constants')
 const cfg = require('../cfg')
 
