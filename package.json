@@ -1,6 +1,6 @@
 {
   "name": "adex-validator-stack",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "description": "AdEx Validator stack (sentry, validator worker, watcher)",
   "main": "bin/sentry.js",
   "scripts": {
@@ -12,10 +12,10 @@
     "test-integration-external": "./test/run-integration-tests.sh external",
     "analytics-aggr": "./scripts/analyticsAggregator.js",
     "export-stake": "./scripts/export-stake.js",
-    "export-adx": "./scripts/export-adx.js",
     "export-analytics": "./scripts/export-analytics.js",
     "benchmark": "./test/run-integration-tests.sh benchmark",
-    "benchmark-docker": "./test/benchmark/benchmark.sh"
+    "benchmark-docker": "./test/benchmark/benchmark.sh",
+    "bq": "node ./scripts/bigquery.js"
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
