@@ -1,132 +1,115 @@
 #!/usr/bin/env node
 /* eslint-disable no-underscore-dangle */
+/* eslint-disable no-await-in-loop */
 
 const BN = require('bn.js')
 const db = require('../db')
-const { sumBNValues } = require('../services')
+const { toBNStringMap } = require('../services/validatorWorker/lib')
 const { collections } = require('../services/constants')
 
-// Default TIME_INTERVAL 5 mins
-const TIME_INTERVAL = parseInt(process.env.TIME_INTERVAL, 10) * 60 * 1000 || 5 * 60 * 1000
-const LIMIT = parseInt(process.env.LIMIT, 10) || 10000
+// Hourly aggregates
+const TIME_INTERVAL = 60 * 60 * 1000
 
 // eslint-disable-next-line no-console
 const { log } = console
 
+function floorToInterval(date) {
+	return new Date(date.getTime() - (date.getTime() % TIME_INTERVAL))
+}
+
 async function aggregate() {
 	await db.connect()
-	// enter the eventAggregates collection
-	// produce a new aggregate per channel
 	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
 	const eventsCol = db.getMongo().collection(collections.eventAggregates)
 
-	const lastAggr = await analyticsCol.findOne({}, { sort: ['created', 'desc'] })
-	const start = (lastAggr && lastAggr.lastUpdateTimestamp) || new Date(0)
+	const lastAggr = await analyticsCol.findOne({}, { sort: { created: -1 } })
+	// created will be set to `end`, so the correct start is the last aggr's .created (end)
+	const start = (lastAggr
+		? lastAggr.created
+		: floorToInterval((await eventsCol.findOne({}, { sort: { created: 1 } })).created)
+	).getTime()
+	const end = floorToInterval(new Date()).getTime()
+	// This for loop is not inclusive of `end` but that's intentional, since we don't want to produce an aggregate for an ongoing hour
+	for (let i = start; i !== end; i += TIME_INTERVAL) {
+		await aggregateForPeriod(new Date(i), new Date(i + TIME_INTERVAL))
+	}
+}
+
+// produces a separate aggregate per channel
+async function aggregateForPeriod(start, end) {
+	const analyticsCol = db.getMongo().collection(collections.analyticsAggregate)
+	const eventsCol = db.getMongo().collection(collections.eventAggregates)
 
 	const pipeline = [
-		{ $match: { created: { $gt: start } } },
-		{ $limit: LIMIT },
 		{
-			$group: {
-				_id: {
-					time: {
-						$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, TIME_INTERVAL] }]
-					},
-					channelId: '$channelId'
-				},
-				aggr: { $push: '$events' },
-				earners: { $push: '$earners' },
-				lastUpdateTimestamp: { $max: '$created' }
+			$match: {
+				created: {
+					$gte: start,
+					$lt: end
+				}
 			}
 		},
 		{
-			$addFields: {
-				earners: {
-					$reduce: {
-						input: '$earners',
-						initialValue: [],
-						in: { $setUnion: ['$$value', '$$this'] }
-					}
-				}
+			$group: {
+				_id: '$channelId',
+				aggr: { $push: '$events' }
 			}
 		}
 	]
 
 	const data = await eventsCol.aggregate(pipeline).toArray()
+	if (data.length) {
+		log(`Producing an aggregate starting at ${start}`)
+	}
 
 	await Promise.all(
-		data.map(async ({ aggr, _id, earners, lastUpdateTimestamp }) => {
-			const analyticDoc = (await analyticsCol.findOne({ _id: `${_id.channelId}:${_id.time}` })) || {
-				_id: `${_id.channelId}:${_id.time}`,
-				channelId: _id.channelId,
-				created: new Date(_id.time),
-				earners: [],
-				events: {},
-				totals: {},
-				lastUpdateTimestamp
-			}
-
-			// update lastUpdateTimestamp
-			analyticDoc.lastUpdateTimestamp = lastUpdateTimestamp
-			// merge earners and remove duplicates
-			analyticDoc.earners.push(...earners)
-			analyticDoc.earners = analyticDoc.earners.filter(
-				(a, b) => analyticDoc.earners.indexOf(a) === b
-			)
+		data.map(async ({ aggr, _id }) => {
+			const events = {}
+			const earners = []
+			const totals = {}
 
 			aggr.forEach(evAggr => {
 				Object.keys(evAggr).forEach(evType => {
 					const { eventCounts, eventPayouts } = evAggr[evType]
 
-					analyticDoc.totals[evType] = {
-						eventCounts: new BN(
-							(analyticDoc.totals[evType] && analyticDoc.totals[evType].eventCounts) || '0'
-						)
-							.add(sumBNValues(eventCounts))
-							.toString(),
-						eventPayouts: new BN(
-							(analyticDoc.totals[evType] && analyticDoc.totals[evType].eventPayouts) || '0'
-						)
-							.add(sumBNValues(eventPayouts))
-							.toString()
-					}
-
-					Object.keys(eventCounts).forEach(publisher => {
-						// if it exists in eventCounts then it exists in payouts
-						if (analyticDoc.events[evType] && analyticDoc.events[evType].eventCounts[publisher]) {
-							analyticDoc.events[evType].eventCounts[publisher] = new BN(eventCounts[publisher])
-								.add(new BN(analyticDoc.events[evType].eventCounts[publisher]))
-								.toString()
-							analyticDoc.events[evType].eventPayouts[publisher] = new BN(eventPayouts[publisher])
-								.add(new BN(analyticDoc.events[evType].eventPayouts[publisher]))
-								.toString()
-						} else {
-							analyticDoc.events[evType] = {
-								eventCounts: {
-									...(analyticDoc.events[evType] && analyticDoc.events[evType].eventCounts),
-									[publisher]: eventCounts[publisher]
-								},
-								eventPayouts: {
-									...(analyticDoc.events[evType] && analyticDoc.events[evType].eventPayouts),
-									[publisher]: eventPayouts[publisher]
-								}
-							}
+					if (!events[evType]) events[evType] = { eventCounts: {}, eventPayouts: {} }
+					if (!totals[evType]) totals[evType] = { eventCounts: new BN(0), eventPayouts: new BN(0) }
+					Object.keys(eventCounts).forEach(earner => {
+						// if it exists in eventCounts then it may exists in payouts, but not vice versa
+						const count = new BN(eventCounts[earner])
+						events[evType].eventCounts[earner] = (
+							events[evType].eventCounts[earner] || new BN(0)
+						).add(count)
+						totals[evType].eventCounts = totals[evType].eventCounts.add(count)
+						if (eventPayouts[earner]) {
+							const payout = new BN(eventPayouts[earner])
+							events[evType].eventPayouts[earner] = (
+								events[evType].eventPayouts[earner] || new BN(0)
+							).add(payout)
+							totals[evType].eventPayouts = totals[evType].eventPayouts.add(payout)
+							if (!earners.includes(earner)) earners.push(earner)
 						}
 					})
 				})
 			})
 
-			return analyticsCol.updateOne(
-				{
-					_id: `${_id.channelId}:${_id.time}`
-				},
-				{
-					$set: analyticDoc
-				},
-				{
-					upsert: true
-				}
-			)
+			const analyticsDoc = {
+				channelId: _id,
+				created: end,
+				events: Object.fromEntries(
+					Object.entries(events).map(([evType, { eventCounts, eventPayouts }]) => [
+						evType,
+						{
+							eventCounts: toBNStringMap(eventCounts),
+							eventPayouts: toBNStringMap(eventPayouts)
+						}
+					])
+				),
+				earners,
+				totals: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, toBNStringMap(v)]))
+			}
+			// console.log(JSON.stringify(analyticsDoc, null, 4))
+			return analyticsCol.insert(analyticsDoc)
 		})
 	)
 }

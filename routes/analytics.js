@@ -6,6 +6,7 @@ const { getAdvancedReports } = require('../services/sentry/analyticsRecorder')
 const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
+const cfg = require('../cfg')
 const { collections } = require('../services/constants')
 const cfg = require('../cfg')
 
@@ -46,13 +47,15 @@ router.get('/for-admin', validate, authRequired, isAdmin, notCached(adminAnalyti
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelAdvertiserIfOwns, notCached(advertiserChannelAnalytics))
 
-const MAX_LIMIT = 500
-
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 const YEAR = 365 * DAY
 const ROUGH_MONTH = Math.floor(YEAR / 12)
+
+// In order to use analytics aggregates, we need the span to be at least an hour
+const ANALYTICS_MIN_SPAN = HOUR
+
 function getTimeframe(timeframe) {
 	// every month in one year
 	if (timeframe === 'year') return { period: YEAR, span: ROUGH_MONTH }
@@ -78,8 +81,8 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 	const filteredMatch = publisherId ? { earners: publisherId, ...timeMatch } : timeMatch
 	const match = channelMatch ? { channelId: channelMatch, ...filteredMatch } : filteredMatch
 	const projectValue = publisherId
-		? { $toLong: `$events.${eventType}.${metric}.${publisherId}` }
-		: { $toLong: `$totals.${eventType}.${metric}` }
+		? { $toDecimal: `$events.${eventType}.${metric}.${publisherId}` }
+		: { $toDecimal: `$totals.${eventType}.${metric}` }
 	const project = {
 		created: 1,
 		channelId: 1,
@@ -95,7 +98,7 @@ function analytics(req, advertiserChannels, earner) {
 	const { period, span } = getTimeframe(timeframe)
 
 	const collection =
-		process.env.ANALYTICS_DB && span >= parseInt(process.env.TIME_INTERVAL || 0, 10)
+		process.env.ANALYTICS_DB && span >= ANALYTICS_MIN_SPAN
 			? db.getMongo().collection(collections.analyticsAggregate)
 			: db.getMongo().collection(collections.eventAggregates)
 
@@ -108,7 +111,10 @@ function analytics(req, advertiserChannels, earner) {
 		metric,
 		earner
 	)
-	const appliedLimit = Math.min(MAX_LIMIT, limit)
+	const maxLimit = segmentByChannel
+		? cfg.ANALYTICS_FIND_LIMIT_BY_CHANNEL_SEGMENT
+		: cfg.ANALYTICS_FIND_LIMIT
+	const appliedLimit = Math.min(maxLimit, limit)
 	const timeGroup = {
 		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
 	}
@@ -117,7 +123,8 @@ function analytics(req, advertiserChannels, earner) {
 		value: { $sum: '$value' }
 	}
 	const resultProjection = {
-		value: '$value',
+		// NOTE: the toString will work fine w/o scientific notation for numbers up to 34 digits long
+		value: { $toString: '$value' },
 		time: '$_id.time',
 		channelId: '$_id.channelId',
 		_id: 0
@@ -138,10 +145,7 @@ function analytics(req, advertiserChannels, earner) {
 		.toArray()
 		.then(aggr => ({
 			limit: appliedLimit,
-			aggr: aggr.map(x => ({
-				...x,
-				value: x.value.toLocaleString('fullwide', { useGrouping: false })
-			}))
+			aggr
 		}))
 }
 
