@@ -50,8 +50,8 @@ async function isChannelValid(cfg, channel, address) {
 	// non utf8 strings
 	const specByteSize = Buffer.from(formattedSpec).byteLength
 	assert.ok(
-		specByteSize <= cfg.MAX_SPEC_SIZE,
-		`spec byte size exceeds allowed ${cfg.MAX_SPEC_SIZE} bytes size limit`
+		specByteSize <= cfg.MAX_CHANNEL_SPEC_BYTES_SIZE,
+		`spec byte size exceeds allowed ${cfg.MAX_CHANNEL_SPEC_BYTES_SIZE} bytes size limit`
 	)
 
 	const depositAmount = new BN(channel.depositAmount)

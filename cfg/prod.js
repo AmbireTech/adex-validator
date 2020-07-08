@@ -28,6 +28,6 @@ module.exports = {
 	ETHEREUM_ADAPTER_RELAYER: 'https://relayer.adex.network',
 	VALIDATORS_WHITELIST: [],
 	CHANNEL_REFRESH_INTERVAL: 40000,
-	MAX_SPEC_SIZE: 3000, // 3KB
+	MAX_CHANNEL_SPEC_BYTES_SIZE: 15000, // 15KB
 	admins: []
 }

@@ -29,14 +29,20 @@ const isAdmin = (req, res, next) => {
 // Global statistics
 // WARNING: redisCached can only be used on methods that are called w/o auth
 router.get('/', validate, redisCached(500, analytics))
-router.get('/for-publisher', validate, authRequired, notCached(analytics))
+router.get('/for-publisher', validate, authRequired, notCached(publisherAnalytics))
 router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalytics))
 
 // Advanced statistics
 router.get('/advanced', validate, authRequired, notCached(advancedAnalytics))
 
-router.get('/for-publisher/:id', validate, authRequired, channelIfExists, notCached(analytics))
-router.get('/for-admin', validate, authRequired, isAdmin, notCached(adminChanelAnalytics))
+router.get(
+	'/for-publisher/:id',
+	validate,
+	authRequired,
+	channelIfExists,
+	notCached(publisherAnalytics)
+)
+router.get('/for-admin', validate, authRequired, isAdmin, notCached(adminAnalytics))
 // :id is channelId: needs to be named that way cause of channelIfExists
 router.get('/:id', validate, channelAdvertiserIfOwns, notCached(advertiserChannelAnalytics))
 
@@ -63,24 +69,12 @@ function getTimeframe(timeframe) {
 	return { period: DAY, span: HOUR }
 }
 
-function getProjAndMatch(
-	session,
-	channelMatch,
-	start,
-	end,
-	eventType,
-	metric,
-	skipPublisherFiltering,
-	earner
-) {
+function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 	const timeMatch = end ? { created: { $lte: end, $gt: start } } : { created: { $gt: start } }
 	let publisherId = null
-	if (!skipPublisherFiltering && session) {
-		publisherId = toBalancesKey(session.uid)
-	} else if (earner) {
+	if (earner) {
 		publisherId = toBalancesKey(earner)
 	}
-	// const publisherId = ! ?  :
 	const filteredMatch = publisherId ? { earners: publisherId, ...timeMatch } : timeMatch
 	const match = channelMatch ? { channelId: channelMatch, ...filteredMatch } : filteredMatch
 	const projectValue = publisherId
@@ -94,7 +88,7 @@ function getProjAndMatch(
 	return { match, project }
 }
 
-function analytics(req, advertiserChannels, skipPublisherFiltering, earner) {
+function analytics(req, advertiserChannels, earner) {
 	// default is applied via validation schema
 	const { limit, timeframe, eventType, metric, start, end, segmentByChannel } = req.query
 
@@ -107,13 +101,11 @@ function analytics(req, advertiserChannels, skipPublisherFiltering, earner) {
 
 	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
 	const { project, match } = getProjAndMatch(
-		req.session,
 		channelMatch,
 		start && !Number.isNaN(new Date(start)) ? new Date(start) : new Date(Date.now() - period),
 		end && !Number.isNaN(new Date(end)) ? new Date(end) : null,
 		eventType,
 		metric,
-		skipPublisherFiltering,
 		earner
 	)
 	const appliedLimit = Math.min(MAX_LIMIT, limit)
@@ -153,12 +145,17 @@ function analytics(req, advertiserChannels, skipPublisherFiltering, earner) {
 		}))
 }
 
+async function publisherAnalytics(req) {
+	const earner = req.session.uid
+	return analytics(req, null, earner)
+}
+
 async function advertiserAnalytics(req) {
-	return analytics(req, await getAdvertiserChannels(req), true)
+	return analytics(req, await getAdvertiserChannels(req), null)
 }
 
 async function advertiserChannelAnalytics(req) {
-	return analytics(req, [req.params.id], true)
+	return analytics(req, [req.params.id], null)
 }
 
 async function advancedAnalytics(req) {
@@ -168,10 +165,10 @@ async function advancedAnalytics(req) {
 	return getAdvancedReports({ evType, publisher, channels })
 }
 
-async function adminChanelAnalytics(req) {
+async function adminAnalytics(req) {
 	const { channels, earner } = req.query
 	if (!channels) throw new Error('please provide channels query param')
-	return analytics(req, channels.split('+'), true, earner)
+	return analytics(req, channels.split('+'), earner)
 }
 
 function getAdvertiserChannels(req) {

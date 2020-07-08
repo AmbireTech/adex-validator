@@ -4,6 +4,9 @@ module.exports = Object.freeze({
 		analyticsAggregate: 'analyticsAggregate'
 	},
 	eventTypes: {
-		update_targeting: 'UPDATE_TARGETING'
+		update_targeting: 'UPDATE_TARGETING',
+		impression: 'IMPRESSION',
+		click: 'CLICK',
+		close: 'CLOSE'
 	}
 })

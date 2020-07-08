@@ -72,4 +72,8 @@ function addAndToString(first, second) {
 	return first.add(second).toString(10)
 }
 
-module.exports = { newAggr, reduce }
+function isEmpty(aggr) {
+	return aggr.earners.length === 0
+}
+
+module.exports = { newAggr, reduce, isEmpty }

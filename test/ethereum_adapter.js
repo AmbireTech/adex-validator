@@ -162,12 +162,13 @@ tape('should not validate invalid channels', async function(t) {
 
 	fixtures.invalidChannels(okChannel).forEach(async item => {
 		const [channel, config, err] = item
-
+		// console.log(channel)
 		const ethAdapter = new ethereum.Adapter(
 			opts,
-			{ ...config, ...cfg, ETHEREUM_CORE_ADDR: core.address },
+			{ ...cfg, ...config, ETHEREUM_CORE_ADDR: core.address },
 			provider
 		)
+		await ethAdapter.init()
 		// ethereum representation
 		const ethChannel = ethereum.toEthereumChannel(channel)
 		channel.id = ethChannel.hashHex(core.address)
@@ -220,6 +221,8 @@ async function getValidChannel() {
 		{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
 		provider
 	)
+
+	await ethereumAdapter.init()
 
 	// get a sample valid channel
 	const channel = await sampleChannel()
