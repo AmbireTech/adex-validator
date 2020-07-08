@@ -27,5 +27,7 @@ module.exports = {
 	ETHEREUM_NETWORK: 'homestead',
 	ETHEREUM_ADAPTER_RELAYER: 'https://relayer.adex.network',
 	VALIDATORS_WHITELIST: [],
-	CHANNEL_REFRESH_INTERVAL: 40000
+	CHANNEL_REFRESH_INTERVAL: 40000,
+	MAX_SPEC_SIZE: 3000, // 3KB
+	admins: []
 }

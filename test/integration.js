@@ -551,6 +551,18 @@ tape('analytics routes return correct values', async function(t) {
 			'/advanced',
 			dummyVals.auth.creator,
 			resp => Object.keys(resp.byChannelStats).includes(channel.id)
+		],
+		[
+			`/for-admin?channels=${channel.id}&earner=${
+				dummyVals.ids.publisher
+			}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumValues(resp.aggr) === 10
+		],
+		[
+			`/for-admin?channels=${channel.id}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumValues(resp.aggr) >= 20
 		]
 	]
 

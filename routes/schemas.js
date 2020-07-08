@@ -141,7 +141,7 @@ module.exports = {
 					is: eventTypes.update_targeting,
 					then: Joi.required()
 				})
-			})
+			}).required()
 		)
 	},
 	sentry: {
@@ -187,6 +187,8 @@ module.exports = {
 			.default('hour'),
 		start: Joi.date(),
 		end: Joi.date(),
-		limit: Joi.number().default(100)
+		limit: Joi.number().default(100),
+		channels: Joi.string(),
+		earner: Joi.string()
 	}
 }

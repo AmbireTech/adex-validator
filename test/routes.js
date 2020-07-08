@@ -64,7 +64,7 @@ tape('/channel/{id}/{status,validator-messages}: non existant channel', async fu
 })
 
 tape('POST /channel/{id}/events: non existant channel', async function(t) {
-	const resp = await postEvsAsCreator(leaderUrl, 'xxxtentacion', [])
+	const resp = await postEvsAsCreator(leaderUrl, 'xxxtentacion', [{ type: 'IMPRESSION' }])
 	t.equal(resp.status, 404, 'status should be 404')
 	t.end()
 })
@@ -113,6 +113,15 @@ tape('POST /channel/{id}/events: malformed events', async function(t) {
 		)
 	)
 	t.end()
+})
+
+tape('POST /channel/{id}/events: should reject empty array events', async function(t) {
+	fetchPost(`${leaderUrl}/channel/${dummyVals.channel.id}/events`, dummyVals.auth.user, {
+		events: []
+	}).then(function(resp) {
+		t.equal(resp.status, 400, 'status is BadRequest')
+		t.end()
+	})
 })
 
 tape('POST /channel/{id}/validator-messages: wrong authentication', async function(t) {
