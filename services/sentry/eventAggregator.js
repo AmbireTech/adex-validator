@@ -99,6 +99,9 @@ function makeRecorder(channelId) {
 			(acc, ev, i) => eventReducer.reduce(channel, acc, ev.type, payouts[i]),
 			aggr
 		)
+		if (eventReducer.isEmpty(aggr)) {
+			return { success: true }
+		}
 		if (cfg.AGGR_THROTTLE) {
 			throttledPersistAndReset()
 			return { success: true }

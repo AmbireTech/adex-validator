@@ -5,6 +5,10 @@ function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {}, totals: {}, earners: [] }
 }
 
+function isEmpty(aggr) {
+	return aggr.earners.length === 0
+}
+
 function reduce(channel, initialAggr, evType, payout) {
 	let aggr = { ...initialAggr }
 	if (payout) {
@@ -72,4 +76,4 @@ function addAndToString(first, second) {
 	return first.add(second).toString(10)
 }
 
-module.exports = { newAggr, reduce }
+module.exports = { newAggr, isEmpty, reduce }
