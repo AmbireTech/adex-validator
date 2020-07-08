@@ -41,14 +41,10 @@ async function isChannelValid(cfg, channel, address) {
 			'channel.depositAsset is not whitelisted'
 		)
 	}
-	// we split to remove space JSON.stringify adds
-	// between keys
-	const formattedSpec = JSON.stringify(channel.spec)
-		.split(' ')
-		.join('')
+
 	// we use buffer instead of string length to cater for
 	// non utf8 strings
-	const specByteSize = Buffer.from(formattedSpec).byteLength
+	const specByteSize = Buffer.from(JSON.stringify(channel.spec)).byteLength
 	assert.ok(
 		specByteSize <= cfg.MAX_CHANNEL_SPEC_BYTES_SIZE,
 		`spec byte size exceeds allowed ${cfg.MAX_CHANNEL_SPEC_BYTES_SIZE} bytes size limit`

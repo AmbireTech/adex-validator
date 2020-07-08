@@ -770,9 +770,7 @@ tape('validatorWorker: does not apply empty aggr', async function(t) {
 		events: [
 			{
 				type: constants.eventTypes.update_targeting,
-				targetingRules: [
-					{ if: [{ eq: [{ get: 'country' }, 'US'] }, { set: ['price.IMPRESSION', { bn: '30' }] }] }
-				]
+				targetingRules: []
 			}
 		]
 	})
@@ -833,12 +831,12 @@ tape('/validator-messages: reject Accounting/NewState messages with empty balanc
 				dummyVals.auth.leader,
 				{ messages }
 			)).json()
-
-			t.equal(result.statusCode, 400, 'should reject accounting with empty balances')
+			const { type } = messages[0]
+			t.equal(result.statusCode, 400, `should reject ${type} with empty balances`)
 			t.deepEqual(
 				result.validation.keys,
 				['messages.0.balances'],
-				'should reject empty accounting with required keys messages'
+				`should reject empty ${type} with [required keys] message`
 			)
 		})
 	)
