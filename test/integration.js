@@ -783,8 +783,11 @@ tape('validatorWorker: does not apply empty aggr', async function(t) {
 	await forceTick()
 
 	const sentry = new SentryInterface(dummyAdapter, channel, { logging: false })
-	const data = await sentry.getLatestMsg(dummyVals.ids.leader, 'Accounting')
 
+	const aggrs = await sentry.getEventAggrs()
+	t.equal(aggrs.length, 0, 'no aggrs were produced')
+
+	const data = await sentry.getLatestMsg(dummyVals.ids.leader, 'Accounting')
 	t.equal(data, null, 'shoud not produce new Accounting aggregate with empty event aggregate')
 
 	t.end()
