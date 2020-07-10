@@ -847,5 +847,28 @@ tape('/validator-messages: reject Accounting/NewState messages with empty balanc
 	t.end()
 })
 
+tape(
+	`/channel: reject channel spec greater than ${cfg.MAX_CHANNEL_SPEC_BYTES_SIZE}`,
+	async function(t) {
+		const channel = getValidEthChannel()
+		// eslint-disable-next-line global-require
+		Object.assign(channel.spec, require('./resources/invalid_spec.json'))
+
+		const res = await fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel)
+		t.equal(
+			res.status,
+			400,
+			`should reject channel spec greater than ${cfg.MAX_CHANNEL_SPEC_BYTES_SIZE}`
+		)
+		const errMsg = await res.json()
+		t.equal(
+			errMsg.message,
+			`spec byte size exceeds allowed ${cfg.MAX_CHANNEL_SPEC_BYTES_SIZE} bytes size limit`,
+			`should reject channel spec greater than ${cfg.MAX_CHANNEL_SPEC_BYTES_SIZE}`
+		)
+		t.end()
+	}
+)
+
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
