@@ -9,8 +9,8 @@
 | CHANNELS_FIND_LIMIT | Limit on number of channels to return | 100 |
 | EVENTS_FIND_LIMIT | Limit on number of events to return | 100 |
 | MSGS_FIND_LIMIT | Limit on number of validator messages to return | 10 |
-| HEALTH_THRESHOLD_PROMILLES | Threshold of correctness allowed before a channel is marked unhealthy | 950 |
-| HEALTH_UNSIGNABLE_PROMILLES | Threshold of correctness before a state is rejected | 750/770 |
+| HEALTH_THRESHOLD_PROMILLES | Threshold of correctness allowed before a channel is marked unhealthy | dev: 950 / prod: 970 |
+| HEALTH_UNSIGNABLE_PROMILLES | Threshold of correctness before a state is rejected | dev: 750 / prod: 770 |
 | PROPAGATION_TIMEOUT | HTTP request propagation timeout | 3000 |
 | FETCH_TIMEOUT | Validator stack request timeout | 3000 |
 | LIST_TIMEOUT | Validator stack channel request timeout | 3000 |

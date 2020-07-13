@@ -17,6 +17,8 @@ function isValidTransition(channel, prev, next) {
 	)
 }
 
+// Take the revenues we both agreed on, and ensure their sum is within 95% of my accounting (assuming 950 promilles as health threshold)
+// `sum(min(ours[k], approved[k]) for k in intersection(keys(ours), keys(approved)))`
 function getHealthPromilles(channel, our, approved) {
 	const sumOur = sumMap(our)
 	const sumApprovedMins = sumMins(our, approved)
