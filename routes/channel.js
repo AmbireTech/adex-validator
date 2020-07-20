@@ -185,21 +185,23 @@ async function retreiveLastHeartbeats(channel) {
 	)
 }
 
-async function postValidatorMessages(req, res, next) {
+async function updateChannelIfExhausted(isChannelExhausted, channelId) {
+	if (isChannelExhausted) {
+		const channelCol = db.getMongo().collection('channels')
+		await channelCol.updateOne({ id: channelId }, { $set: { exhausted: true } })
+	}
+}
+
+function postValidatorMessages(req, res, next) {
 	if (!req.channel.spec.validators.find(v => v.id === req.session.uid)) {
 		res.sendStatus(401)
 		return
 	}
 
 	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	const channelCol = db.getMongo().collection('channels')
 
 	const { messages } = req.body
 	const startTime = Date.now()
-
-	if (req.session.uid === req.whoami && messages.find(message => message.exhausted === true)) {
-		await channelCol.updateOne({ id: req.channel.id }, { $set: { exhausted: true } })
-	}
 
 	const toInsert = messages.map((msg, idx) =>
 		validatorMsgCol.insertOne({
@@ -212,7 +214,10 @@ async function postValidatorMessages(req, res, next) {
 			received: new Date(startTime + idx)
 		})
 	)
-	Promise.all(toInsert)
+	const isChannelExhausted =
+		req.session.uid === req.whoami && messages.find(message => message.exhausted === true)
+
+	Promise.all([...toInsert, updateChannelIfExhausted(isChannelExhausted, req.channel.id)])
 		.then(function() {
 			res.send({ success: true })
 		})
