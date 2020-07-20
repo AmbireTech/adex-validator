@@ -185,15 +185,22 @@ async function retreiveLastHeartbeats(channel) {
 	)
 }
 
-function postValidatorMessages(req, res, next) {
+async function postValidatorMessages(req, res, next) {
 	if (!req.channel.spec.validators.find(v => v.id === req.session.uid)) {
 		res.sendStatus(401)
 		return
 	}
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	const { messages } = req.body
 
+	const validatorMsgCol = db.getMongo().collection('validatorMessages')
+	const channelCol = db.getMongo().collection('channels')
+
+	const { messages } = req.body
 	const startTime = Date.now()
+
+	if (req.session.uid === req.whoami && messages.find(message => message.exhausted === true)) {
+		await channelCol.updateOne({ id: req.channel.id }, { $set: { exhausted: true } })
+	}
+
 	const toInsert = messages.map((msg, idx) =>
 		validatorMsgCol.insertOne({
 			channelId: req.channel.id,

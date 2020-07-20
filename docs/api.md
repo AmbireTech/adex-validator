@@ -399,7 +399,7 @@ Get global publisher analytics
     
     `authorization [ eg. 'Bearer xxx']`
 
-- Reponse 
+- Response 
 
     * Success
         ```js
@@ -431,7 +431,7 @@ Get publisher analytics
     
     `authorization [ eg. 'Bearer xxx']`
 
-- Reponse 
+- Response 
 
     * Success
         ```js
@@ -459,7 +459,42 @@ Get a specific advertiser analytics
     
     `authorization [ eg. 'Bearer xxx']`
 
-- Reponse 
+- Response 
+
+    * Success
+        ```js
+        [ 
+            {
+                time: 4102444800
+                value: "10"
+            }
+        ]
+        ```
+
+#### Admin Analytics
+
+Get analytics for any earner, channel or advertiser only for users with
+admin allowed authentication capabilities
+
+- URL
+
+/analytics/for-admin
+
+- METHOD
+
+`GET`
+
+
+- HEADERS
+    
+    `authorization [ eg. 'Bearer xxx']`
+
+- Query Params
+
+    `channels=[string] (comma separated channel ids e.g. 0x1,0x2)`
+    `earner=[string] (earner id e.g. 0x1)`
+
+- Response 
 
     * Success
         ```js

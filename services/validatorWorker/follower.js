@@ -1,5 +1,5 @@
 const BN = require('bn.js')
-const { getStateRootHash, onError, toBNMap } = require('./lib')
+const { getStateRootHash, onError, toBNMap, sumMap } = require('./lib')
 const { isValidTransition, getHealthPromilles } = require('./lib/followerRules')
 const producer = require('./producer')
 const { heartbeat } = require('./heartbeat')
@@ -54,13 +54,17 @@ async function onNewState(adapter, iface, channel, ourLatestAccounting, newMsg) 
 		return onError(iface, { reason: 'TooLowHealth', newMsg })
 	}
 
+	// exhausted if the channel balances is equal to depositAmount
+	const channelExhausted = sumMap(proposedBalances).eq(new BN(channel.depositAmount))
+
 	const signature = await adapter.sign(stateRootRaw)
 	return iface.propagate([
 		{
 			type: 'ApproveState',
 			stateRoot,
 			isHealthy: healthPromilles.gte(new BN(cfg.HEALTH_THRESHOLD_PROMILLES)),
-			signature
+			signature,
+			exhausted: channelExhausted
 		}
 	])
 }
