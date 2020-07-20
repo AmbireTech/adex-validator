@@ -41,9 +41,19 @@ function onError(iface, { reason, newMsg }) {
 	])
 }
 
+function sumBNs(bns) {
+	return bns.reduce((a, b) => a.add(b), new BN(0))
+}
+
+function sumMap(all) {
+	return sumBNs(Object.values(all))
+}
+
 module.exports = {
 	getStateRootHash,
 	toBNMap,
 	toBNStringMap,
-	onError
+	onError,
+	sumMap,
+	sumBNs
 }

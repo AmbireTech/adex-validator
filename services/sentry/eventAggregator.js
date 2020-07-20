@@ -66,6 +66,10 @@ function makeRecorder(channelId) {
 	return async function(session, events) {
 		const channel = await channelPromise
 
+		if (channel.exhausted) {
+			return { success: false, statusCode: 410, message: 'channel is exhausted' }
+		}
+
 		const hasAccess = await checkAccess(channel, session, events)
 		if (!hasAccess.success) {
 			return hasAccess

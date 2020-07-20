@@ -1,4 +1,5 @@
 const BN = require('bn.js')
+const { sumBNs, sumMap } = require('./index')
 
 // Implements constraints described at: https://github.com/AdExNetwork/adex-protocol/blob/master/OUTPACE.md#specification
 function isValidTransition(channel, prev, next) {
@@ -17,8 +18,6 @@ function isValidTransition(channel, prev, next) {
 	)
 }
 
-// Take the revenues we both agreed on, and ensure their sum is within 95% of my accounting (assuming 950 promilles as health threshold)
-// `sum(min(ours[k], approved[k]) for k in intersection(keys(ours), keys(approved)))`
 function getHealthPromilles(channel, our, approved) {
 	const sumOur = sumMap(our)
 	const sumApprovedMins = sumMins(our, approved)
@@ -34,14 +33,6 @@ function getHealthPromilles(channel, our, approved) {
 			.mul(new BN(1000))
 			.div(depositAmount)
 	)
-}
-
-function sumBNs(bns) {
-	return bns.reduce((a, b) => a.add(b), new BN(0))
-}
-
-function sumMap(all) {
-	return sumBNs(Object.values(all))
 }
 
 function sumMins(our, approved) {

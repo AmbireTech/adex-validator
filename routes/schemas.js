@@ -62,6 +62,10 @@ const validatorMessage = Joi.object({
 	isHealthy: Joi.boolean().when('type', {
 		is: 'ApproveState',
 		then: Joi.boolean().required()
+	}),
+	exhausted: Joi.boolean().when('type', {
+		is: ['NewState', 'ApproveState'],
+		then: Joi.boolean().required()
 	})
 })
 
