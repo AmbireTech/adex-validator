@@ -71,6 +71,42 @@ function getTimeframe(timeframe) {
 	return { period: DAY, span: HOUR }
 }
 
+function getTimeGroup(timeframe, prefix = '') {
+	if (timeframe === 'month') {
+		return { year: `$${prefix}year`, month: `$${prefix}month` }
+	}
+
+	if (timeframe === 'week') {
+		return { year: `$${prefix}year`, week: `$${prefix}week` }
+	}
+
+	if (timeframe === 'day') {
+		return { year: `$${prefix}year`, month: `$${prefix}month`, day: `$${prefix}day` }
+	}
+
+	if (timeframe === 'hour') {
+		return {
+			year: `$${prefix}year`,
+			month: `$${prefix}month`,
+			day: `$${prefix}day`,
+			hour: `$${prefix}hour`
+		}
+	}
+
+	if (timeframe === 'minute') {
+		return {
+			year: `$${prefix}year`,
+			week: `$${prefix}week`,
+			month: `$${prefix}month`,
+			day: `$${prefix}day`,
+			hour: `$${prefix}hour`,
+			minutes: `$${prefix}minutes`
+		}
+	}
+
+	return { year: '$year' }
+}
+
 function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 	const timeMatch = end ? { created: { $lte: end, $gt: start } } : { created: { $gt: start } }
 	let publisherId = null
@@ -85,7 +121,13 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 	const project = {
 		created: 1,
 		channelId: 1,
-		value: projectValue
+		value: projectValue,
+		year: { $year: '$created' },
+		month: { $month: '$created' },
+		week: { $week: '$created' },
+		day: { $dayOfMonth: '$created' },
+		hour: { $hour: '$created' },
+		minutes: { $minute: '$created' }
 	}
 	return { match, project }
 }
@@ -114,17 +156,28 @@ function analytics(req, advertiserChannels, earner) {
 		? cfg.ANALYTICS_FIND_LIMIT_BY_CHANNEL_SEGMENT
 		: cfg.ANALYTICS_FIND_LIMIT
 	const appliedLimit = Math.min(maxLimit, limit)
-	const timeGroup = {
-		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
-	}
+
+	const timeGroup = getTimeGroup(timeframe)
+
 	const group = {
 		_id: segmentByChannel ? { time: timeGroup, channelId: '$channelId' } : { time: timeGroup },
 		value: { $sum: '$value' }
 	}
+
 	const resultProjection = {
 		// NOTE: the toString will work fine w/o scientific notation for numbers up to 34 digits long
 		value: { $toString: '$value' },
-		time: '$_id.time',
+		time: {
+			$toLong: {
+				$dateFromParts: {
+					year: '$_id.time.year',
+					month: '$_id.time.month',
+					day: '$_id.time.day',
+					hour: '$_id.time.hour',
+					minute: '$_id.time.minute'
+				}
+			}
+		},
 		channelId: '$_id.channelId',
 		_id: 0
 	}
