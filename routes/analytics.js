@@ -73,18 +73,19 @@ function getTimeframe(timeframe) {
 
 function getTimeGroup(timeframe, prefix = '') {
 	if (timeframe === 'month') {
-		return { year: `$${prefix}year`, month: `$${prefix}month` }
-	}
-
-	if (timeframe === 'week') {
-		return { year: `$${prefix}year`, week: `$${prefix}week` }
-	}
-
-	if (timeframe === 'day') {
 		return { year: `$${prefix}year`, month: `$${prefix}month`, day: `$${prefix}day` }
 	}
 
-	if (timeframe === 'hour') {
+	if (timeframe === 'week') {
+		return {
+			year: `$${prefix}year`,
+			month: `$${prefix}month`,
+			day: `$${prefix}day`,
+			hour: { $multiply: [{ $floor: { $divide: [`$${prefix}hour`, 6] } }, 6] }
+		}
+	}
+
+	if (timeframe === 'day') {
 		return {
 			year: `$${prefix}year`,
 			month: `$${prefix}month`,
@@ -93,10 +94,9 @@ function getTimeGroup(timeframe, prefix = '') {
 		}
 	}
 
-	if (timeframe === 'minute') {
+	if (timeframe === 'hour') {
 		return {
 			year: `$${prefix}year`,
-			week: `$${prefix}week`,
 			month: `$${prefix}month`,
 			day: `$${prefix}day`,
 			hour: `$${prefix}hour`,
@@ -104,7 +104,7 @@ function getTimeGroup(timeframe, prefix = '') {
 		}
 	}
 
-	return { year: '$year' }
+	return { year: '$year', month: `$${prefix}month` }
 }
 
 function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
@@ -170,11 +170,11 @@ function analytics(req, advertiserChannels, earner) {
 		time: {
 			$toLong: {
 				$dateFromParts: {
-					year: '$_id.time.year',
-					month: '$_id.time.month',
-					day: '$_id.time.day',
-					hour: '$_id.time.hour',
-					minute: '$_id.time.minute'
+					year: { $ifNull: ['$_id.time.year', 0] },
+					month: { $ifNull: ['$_id.time.month', 0] },
+					day: { $ifNull: ['$_id.time.day', 0] },
+					hour: { $ifNull: ['$_id.time.hour', 0] },
+					minute: { $ifNull: ['$_id.time.minutes', 0] }
 				}
 			}
 		},
