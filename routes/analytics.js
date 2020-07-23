@@ -100,11 +100,15 @@ function getTimeGroup(timeframe, prefix = '') {
 			month: `$${prefix}month`,
 			day: `$${prefix}day`,
 			hour: `$${prefix}hour`,
-			minutes: `$${prefix}minutes`
+			minute: `$${prefix}minute`
 		}
 	}
 
-	return { year: '$year', month: `$${prefix}month` }
+	if (timeframe === 'year') {
+		return { year: `$${prefix}year`, month: `$${prefix}month` }
+	}
+
+	return { year: '$year' }
 }
 
 function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
@@ -122,12 +126,11 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 		created: 1,
 		channelId: 1,
 		value: projectValue,
-		year: { $year: '$created' },
-		month: { $month: '$created' },
-		week: { $week: '$created' },
-		day: { $dayOfMonth: '$created' },
-		hour: { $hour: '$created' },
-		minutes: { $minute: '$created' }
+		year: { $year: { date: '$created', timezone: '+00:00' } },
+		month: { $month: { date: '$created', timezone: '+00:00' } },
+		day: { $dayOfMonth: { date: '$created', timezone: '+00:00' } },
+		hour: { $hour: { date: '$created', timezone: '+00:00' } },
+		minute: { $minute: { date: '$created', timezone: '+00:00' } }
 	}
 	return { match, project }
 }
@@ -171,10 +174,11 @@ function analytics(req, advertiserChannels, earner) {
 			$toLong: {
 				$dateFromParts: {
 					year: { $ifNull: ['$_id.time.year', 0] },
-					month: { $ifNull: ['$_id.time.month', 0] },
-					day: { $ifNull: ['$_id.time.day', 0] },
+					month: { $ifNull: ['$_id.time.month', 1] },
+					day: { $ifNull: ['$_id.time.day', 1] },
 					hour: { $ifNull: ['$_id.time.hour', 0] },
-					minute: { $ifNull: ['$_id.time.minutes', 0] }
+					minute: { $ifNull: ['$_id.time.minute', 0] },
+					timezone: '+00:00'
 				}
 			}
 		},
