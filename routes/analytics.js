@@ -112,7 +112,7 @@ function getTimeGroup(timeframe, prefix = '') {
 }
 
 function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
-	const timeMatch = end ? { created: { $lte: end, $gt: start } } : { created: { $gt: start } }
+	const timeMatch = end ? { created: { $lte: end, $gte: start } } : { created: { $gte: start } }
 	let publisherId = null
 	if (earner) {
 		publisherId = toBalancesKey(earner)
@@ -126,11 +126,11 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 		created: 1,
 		channelId: 1,
 		value: projectValue,
-		year: { $year: { date: '$created', timezone: '+00:00' } },
-		month: { $month: { date: '$created', timezone: '+00:00' } },
-		day: { $dayOfMonth: { date: '$created', timezone: '+00:00' } },
-		hour: { $hour: { date: '$created', timezone: '+00:00' } },
-		minute: { $minute: { date: '$created', timezone: '+00:00' } }
+		year: { $year: '$created' },
+		month: { $month: '$created' },
+		day: { $dayOfMonth: '$created' },
+		hour: { $hour: '$created' },
+		minute: { $minute: '$created' }
 	}
 	return { match, project }
 }
@@ -178,7 +178,7 @@ function analytics(req, advertiserChannels, earner) {
 					day: { $ifNull: ['$_id.time.day', 1] },
 					hour: { $ifNull: ['$_id.time.hour', 0] },
 					minute: { $ifNull: ['$_id.time.minute', 0] },
-					timezone: '+00:00'
+					timezone: 'UTC'
 				}
 			}
 		},
