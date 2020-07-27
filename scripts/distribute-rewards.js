@@ -28,7 +28,7 @@ const POOL_VALIDATOR_URL = 'https://tom.adex.network'
 const REWARD_NUM = bigNumberify(5)
 const REWARD_DEN = bigNumberify(100)
 
-const REWARD_CHANNEL_OPEN_FEE = bigNumberify('150000000000000000')
+const REWARD_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
 
 const provider = getDefaultProvider('homestead')
 const Staking = new Contract(ADDR_STAKING, stakingAbi, provider)
