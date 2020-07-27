@@ -252,9 +252,20 @@ async function advancedAnalytics(req) {
 }
 
 async function adminAnalytics(req) {
-	const { channels, earner } = req.query
+	const { channels, earners } = req.query
+	const earnersList = earners && earners.split(',')
 	if (!channels) throw new Error('please provide channels query param')
-	return analytics(req, channels.split('+'), earner)
+	const channelsList = channels.split(',')
+	if (earnersList && earnersList.length > 1) {
+		const earnersData = await Promise.all(
+			earnersList.map(earner => analytics(req, channelsList, earner))
+		)
+		return earnersData.reduce((acc, curr, index) => {
+			return { ...acc, [earnersList[index]]: curr }
+		}, {})
+	}
+	const earner = earnersList && earnersList.length === 1 ? earnersList[0] : earners
+	return analytics(req, channelsList, earner)
 }
 
 function getAdvertiserChannels(req) {

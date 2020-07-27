@@ -197,6 +197,6 @@ module.exports = {
 		end: Joi.date(),
 		limit: Joi.number().default(100),
 		channels: Joi.string(),
-		earner: Joi.string()
+		earners: Joi.string()
 	}
 }

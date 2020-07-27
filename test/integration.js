@@ -541,53 +541,121 @@ tape('should record: correct payout with targetingRules, consistent with balance
 
 tape('analytics routes return correct values', async function(t) {
 	const channel = getValidEthChannel()
+	await wait(cfg.CHANNEL_REFRESH_INTERVAL)
+	const secondChannel = getValidEthChannel()
 	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
 	await Promise.all([
 		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
-		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel),
+		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, secondChannel),
+		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, secondChannel)
 	])
 	// publisher = defaultPublisher
-	const evs = genEvents(10).concat(genEvents(10, randomAddress()))
+	const secondPublisher = randomAddress()
+	const evs = genEvents(10).concat(genEvents(10, secondPublisher))
 
 	// post events
 	await Promise.all([
 		postEvsAsCreator(leaderUrl, channel.id, evs, { 'cf-ipcountry': 'US' }),
-		postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' })
+		postEvsAsCreator(followerUrl, channel.id, evs, { 'cf-ipcountry': 'US' }),
+		postEvsAsCreator(leaderUrl, secondChannel.id, evs, { 'cf-ipcountry': 'US' }),
+		postEvsAsCreator(followerUrl, secondChannel.id, evs, { 'cf-ipcountry': 'US' })
 	])
 
 	const sumValues = vals => vals.map(x => parseInt(x.value, 10)).reduce((a, b) => a + b, 0)
+	const sumMultiplePublisherValues = val => {
+		const flattenMultiplePublishersdata = [].concat(...Object.values(val)).map(x => x.aggr)
+		return sumValues([].concat(...flattenMultiplePublishersdata))
+	}
+
 	const urls = [
-		['', null, resp => sumValues(resp.aggr) >= 20],
-		[`/${channel.id}`, dummyVals.auth.creator, resp => sumValues(resp.aggr) === 20],
-		['/for-publisher', dummyVals.auth.publisher, resp => sumValues(resp.aggr) >= 10],
-		['/for-advertiser', dummyVals.auth.creator, resp => sumValues(resp.aggr) >= 20],
-		[`/for-publisher/${channel.id}`, dummyVals.auth.publisher, resp => sumValues(resp.aggr) === 10],
+		['test: /analytics', '', null, resp => sumValues(resp.aggr) >= 20],
 		[
+			'test: /analytics/:channelId',
+			`/${channel.id}`,
+			dummyVals.auth.creator,
+			resp => sumValues(resp.aggr) === 20
+		],
+		[
+			'test: /analytics/for-publisher',
+			'/for-publisher',
+			dummyVals.auth.publisher,
+			resp => sumValues(resp.aggr) >= 10
+		],
+		[
+			'test: /analytics/for-advertiser',
+			'/for-advertiser',
+			dummyVals.auth.creator,
+			resp => sumValues(resp.aggr) >= 20
+		],
+		[
+			'test: /analytics/for-publisher/:channelId',
+			`/for-publisher/${channel.id}`,
+			dummyVals.auth.publisher,
+			resp => sumValues(resp.aggr) === 10
+		],
+		[
+			'test: /analytics/for-publisher/:channelId?segmentByChannel=true',
 			`/for-publisher/${channel.id}?segmentByChannel=true`,
 			dummyVals.auth.publisher,
 			resp => sumValues(resp.aggr) === 10 && Object.keys(resp.aggr[0]).includes('channelId')
 		],
 		[
+			'test: /analytics/advanced',
 			'/advanced',
 			dummyVals.auth.creator,
 			resp => Object.keys(resp.byChannelStats).includes(channel.id)
 		],
 		[
-			`/for-admin?channels=${channel.id}&earner=${
+			'test: /analytics/for-admin - single channel and earner',
+			`/for-admin?channels=${channel.id}&earners=${
 				dummyVals.ids.publisher
 			}&eventType=IMPRESSION&metric=eventCounts`,
 			dummyVals.auth.leader,
 			resp => sumValues(resp.aggr) === 10
 		],
 		[
+			'test: /analytics/for-admin - single channel',
 			`/for-admin?channels=${channel.id}&eventType=IMPRESSION&metric=eventCounts`,
 			dummyVals.auth.leader,
 			resp => sumValues(resp.aggr) >= 20
+		],
+		[
+			'test: /analytics/for-admin - single channel, multiple earners',
+			`/for-admin?channels=${channel.id}&earners=${
+				dummyVals.ids.publisher
+			},${secondPublisher}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumMultiplePublisherValues(resp) >= 20
+		],
+		[
+			'test: /analytics/for-admin - multiple channels',
+			`/for-admin?channels=${channel.id},${
+				secondChannel.id
+			}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumValues(resp.aggr) >= 40
+		],
+		[
+			'test: /analytics/for-admin - multiple channels, single earner',
+			`/for-admin?channels=${channel.id},${secondChannel.id}&earners=${
+				dummyVals.ids.publisher
+			}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumValues(resp.aggr) === 20
+		],
+		[
+			'test: /analytics/for-admin - multiple channels, multiple earners',
+			`/for-admin?channels=${channel.id},${secondChannel.id}&earners=${
+				dummyVals.ids.publisher
+			},${secondPublisher}&eventType=IMPRESSION&metric=eventCounts`,
+			dummyVals.auth.leader,
+			resp => sumMultiplePublisherValues(resp) >= 40
 		]
 	]
 
 	await Promise.all(
-		urls.map(([url, auth, testFn]) =>
+		urls.map(([description, url, auth, testFn]) =>
 			fetch(`${leaderUrl}/analytics${url}`, {
 				method: 'GET',
 				headers: {
@@ -597,7 +665,7 @@ tape('analytics routes return correct values', async function(t) {
 			})
 				.then(res => res.json())
 				.then(function(resp) {
-					t.equal(testFn(resp), true, `/analytics${url}`)
+					t.equal(testFn(resp), true, description)
 				})
 		)
 	)
