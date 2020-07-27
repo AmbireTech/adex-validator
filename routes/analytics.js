@@ -17,7 +17,9 @@ const notCached = fn => (req, res, next) =>
 	fn(req)
 		.then(res.json.bind(res))
 		.catch(next)
-const validate = celebrate({ query: { ...schemas.eventTimeAggr, segmentByChannel: Joi.string() } })
+const validate = celebrate({
+	query: { ...schemas.eventTimeAggr, segmentByChannel: Joi.string(), timezone: Joi.string() }
+})
 
 const isAdmin = (req, res, next) => {
 	if (cfg.admins.includes(req.session.uid)) {
@@ -137,7 +139,7 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 
 function analytics(req, advertiserChannels, earner) {
 	// default is applied via validation schema
-	const { limit, timeframe, eventType, metric, start, end, segmentByChannel } = req.query
+	const { limit, timeframe, eventType, metric, start, end, segmentByChannel, timezone } = req.query
 
 	const { period, span } = getTimeframe(timeframe)
 
@@ -178,7 +180,7 @@ function analytics(req, advertiserChannels, earner) {
 					day: { $ifNull: ['$_id.time.day', 1] },
 					hour: { $ifNull: ['$_id.time.hour', 0] },
 					minute: { $ifNull: ['$_id.time.minute', 0] },
-					timezone: 'UTC'
+					timezone: timezone || 'UTC'
 				}
 			}
 		},
