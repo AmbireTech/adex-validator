@@ -25,7 +25,7 @@ const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 const POOL_VALIDATOR_URL = 'https://tom.adex.network'
 
-const REWARD_NUM = bigNumberify(5)
+const REWARD_NUM = bigNumberify(7)
 const REWARD_DEN = bigNumberify(100)
 
 const REWARD_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
