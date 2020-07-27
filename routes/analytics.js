@@ -113,7 +113,7 @@ function getTimeGroup(timeframe, prefix = '') {
 	return { year: '$year' }
 }
 
-function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
+function getProjAndMatch(channelMatch, start, end, eventType, metric, earner, timezone) {
 	const timeMatch = end ? { created: { $lte: end, $gte: start } } : { created: { $gte: start } }
 	let publisherId = null
 	if (earner) {
@@ -128,18 +128,27 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 		created: 1,
 		channelId: 1,
 		value: projectValue,
-		year: { $year: '$created' },
-		month: { $month: '$created' },
-		day: { $dayOfMonth: '$created' },
-		hour: { $hour: '$created' },
-		minute: { $minute: '$created' }
+		year: { $year: { date: '$created', timezone } },
+		month: { $month: { date: '$created', timezone } },
+		day: { $dayOfMonth: { date: '$created', timezone } },
+		hour: { $hour: { date: '$created', timezone } },
+		minute: { $minute: { date: '$created', timezone } }
 	}
 	return { match, project }
 }
 
 function analytics(req, advertiserChannels, earner) {
 	// default is applied via validation schema
-	const { limit, timeframe, eventType, metric, start, end, segmentByChannel, timezone } = req.query
+	const {
+		limit,
+		timeframe,
+		eventType,
+		metric,
+		start,
+		end,
+		segmentByChannel,
+		timezone = 'UTC'
+	} = req.query
 
 	const { period, span } = getTimeframe(timeframe)
 
@@ -155,7 +164,8 @@ function analytics(req, advertiserChannels, earner) {
 		end && !Number.isNaN(new Date(end)) ? new Date(end) : null,
 		eventType,
 		metric,
-		earner
+		earner,
+		timezone
 	)
 	const maxLimit = segmentByChannel
 		? cfg.ANALYTICS_FIND_LIMIT_BY_CHANNEL_SEGMENT
