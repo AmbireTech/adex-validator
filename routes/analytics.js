@@ -63,7 +63,7 @@ function getTimeframe(timeframe) {
 	// every day in one month
 	if (timeframe === 'month') return { period: ROUGH_MONTH, span: DAY }
 	// every 6 hours in a week
-	if (timeframe === 'week') return { period: 7 * DAY, span: 6 * HOUR }
+	if (timeframe === 'week') return { period: 7 * DAY, span: 3 * HOUR }
 	// every hour in one day
 	if (timeframe === 'day') return { period: DAY, span: HOUR }
 	// every minute in an hour
@@ -83,7 +83,7 @@ function getTimeGroup(timeframe, prefix = '') {
 			year: `$${prefix}year`,
 			month: `$${prefix}month`,
 			day: `$${prefix}day`,
-			hour: { $multiply: [{ $floor: { $divide: [`$${prefix}hour`, 6] } }, 6] }
+			hour: { $multiply: [{ $floor: { $divide: [`$${prefix}hour`, 3] } }, 3] }
 		}
 	}
 
