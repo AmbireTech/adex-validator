@@ -73,41 +73,41 @@ function getTimeframe(timeframe) {
 	return { period: DAY, span: HOUR }
 }
 
-function getTimeGroup(timeframe, prefix = '') {
+function getTimeGroup(timeframe) {
 	if (timeframe === 'month') {
-		return { year: `$${prefix}year`, month: `$${prefix}month`, day: `$${prefix}day` }
+		return { year: `$year`, month: `$month`, day: `$day` }
 	}
 
 	if (timeframe === 'week') {
 		return {
-			year: `$${prefix}year`,
-			month: `$${prefix}month`,
-			day: `$${prefix}day`,
-			hour: { $multiply: [{ $floor: { $divide: [`$${prefix}hour`, 3] } }, 3] }
+			year: `$year`,
+			month: `$month`,
+			day: `$day`,
+			hour: { $multiply: [{ $floor: { $divide: [`$hour`, 3] } }, 3] }
 		}
 	}
 
 	if (timeframe === 'day') {
 		return {
-			year: `$${prefix}year`,
-			month: `$${prefix}month`,
-			day: `$${prefix}day`,
-			hour: `$${prefix}hour`
+			year: `$year`,
+			month: `$month`,
+			day: `$day`,
+			hour: `$hour`
 		}
 	}
 
 	if (timeframe === 'hour') {
 		return {
-			year: `$${prefix}year`,
-			month: `$${prefix}month`,
-			day: `$${prefix}day`,
-			hour: `$${prefix}hour`,
-			minute: `$${prefix}minute`
+			year: `$year`,
+			month: `$month`,
+			day: `$day`,
+			hour: `$hour`,
+			minute: `$minute`
 		}
 	}
 
 	if (timeframe === 'year') {
-		return { year: `$${prefix}year`, month: `$${prefix}month` }
+		return { year: `$year`, month: `$month` }
 	}
 
 	return { year: '$year' }
