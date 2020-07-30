@@ -18,7 +18,12 @@ const notCached = fn => (req, res, next) =>
 		.then(res.json.bind(res))
 		.catch(next)
 const validate = celebrate({
-	query: { ...schemas.eventTimeAggr, segmentByChannel: Joi.string(), timezone: Joi.string() }
+	query: {
+		...schemas.eventTimeAggr,
+		segmentByChannel: Joi.string(),
+		timezone: Joi.string(),
+		weekHoursSpan: Joi.string()
+	}
 })
 
 const isAdmin = (req, res, next) => {
@@ -54,16 +59,18 @@ const DAY = 24 * HOUR
 const YEAR = 365 * DAY
 const ROUGH_MONTH = Math.floor(YEAR / 12)
 
+const DEFAULT_WEEK_HOURS_SPAN = 6
+
 // In order to use analytics aggregates, we need the span to be at least an hour
 const ANALYTICS_MIN_SPAN = HOUR
 
-function getTimeframe(timeframe) {
+function getTimeframe(timeframe, weekHoursSpan) {
 	// every month in one year
 	if (timeframe === 'year') return { period: YEAR, span: ROUGH_MONTH }
 	// every day in one month
 	if (timeframe === 'month') return { period: ROUGH_MONTH, span: DAY }
 	// every 6 hours in a week
-	if (timeframe === 'week') return { period: 7 * DAY, span: 3 * HOUR }
+	if (timeframe === 'week') return { period: 7 * DAY, span: weekHoursSpan * HOUR }
 	// every hour in one day
 	if (timeframe === 'day') return { period: DAY, span: HOUR }
 	// every minute in an hour
@@ -73,7 +80,7 @@ function getTimeframe(timeframe) {
 	return { period: DAY, span: HOUR }
 }
 
-function getTimeGroup(timeframe) {
+function getTimeGroup(timeframe, weekHoursSpan) {
 	if (timeframe === 'month') {
 		return { year: `$year`, month: `$month`, day: `$day` }
 	}
@@ -83,7 +90,7 @@ function getTimeGroup(timeframe) {
 			year: `$year`,
 			month: `$month`,
 			day: `$day`,
-			hour: { $multiply: [{ $floor: { $divide: [`$hour`, 3] } }, 3] }
+			hour: { $multiply: [{ $floor: { $divide: [`$hour`, weekHoursSpan] } }, weekHoursSpan] }
 		}
 	}
 
@@ -147,10 +154,13 @@ function analytics(req, advertiserChannels, earner) {
 		start,
 		end,
 		segmentByChannel,
-		timezone = 'UTC'
+		timezone = 'UTC',
+		weekHoursSpan
 	} = req.query
 
-	const { period, span } = getTimeframe(timeframe)
+	const weekSpan = +weekHoursSpan || DEFAULT_WEEK_HOURS_SPAN
+
+	const { period, span } = getTimeframe(timeframe, weekSpan)
 
 	const collection =
 		process.env.ANALYTICS_DB && span >= ANALYTICS_MIN_SPAN
@@ -172,7 +182,7 @@ function analytics(req, advertiserChannels, earner) {
 		: cfg.ANALYTICS_FIND_LIMIT
 	const appliedLimit = Math.min(maxLimit, limit)
 
-	const timeGroup = getTimeGroup(timeframe)
+	const timeGroup = getTimeGroup(timeframe, weekSpan)
 
 	const group = {
 		_id: segmentByChannel ? { time: timeGroup, channelId: '$channelId' } : { time: timeGroup },
