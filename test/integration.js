@@ -870,7 +870,9 @@ tape(
 	}
 )
 
-tape('should reject posting event on an exhausted channel', async function(t) {
+tape('should reject posting event on an exhausted channel and post no heartbeats', async function(
+	t
+) {
 	const channel = getValidEthChannel()
 	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
@@ -906,6 +908,23 @@ tape('should reject posting event on an exhausted channel', async function(t) {
 	)
 	t.equal(postOneResp.statusCode, 410, 'returned proper response statusCode')
 	t.equal(postOneResp.message, 'channel is exhausted', 'returned proper error response')
+
+	await aggrAndTick()
+	await forceTick()
+
+	const leaderHeartbeat = await channelIface.getLastMsgs(dummyVals.ids.leader, 'Heartbeat')
+	const followerHeartbeat = await channelIface.getLastMsgs(dummyVals.ids.follower, 'Heartbeat')
+
+	t.equal(
+		leaderHeartbeat.heartbeats.length,
+		2,
+		'leader: should not post Heartbeat on an exhausted channel'
+	)
+	t.equal(
+		followerHeartbeat.heartbeats.length,
+		2,
+		'follower: should not post Heartbeat on an exhausted channel'
+	)
 
 	t.end()
 })

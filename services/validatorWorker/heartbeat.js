@@ -25,10 +25,11 @@ async function sendHeartbeat(adapter, iface, channel) {
 
 async function heartbeat(adapter, iface, channel) {
 	const heartbeatMsg = await iface.getOurLatestMsg('Heartbeat')
+
 	const shouldSend =
 		!heartbeatMsg || Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME
 
-	if (shouldSend) {
+	if (!channel.exhausted && shouldSend) {
 		await sendHeartbeat(adapter, iface, channel)
 	}
 }
