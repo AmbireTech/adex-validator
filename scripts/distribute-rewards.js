@@ -16,6 +16,7 @@ const adapters = require('../adapters')
 // Staking started on 28-12-2019
 const STAKING_START_MONTH = new Date('01-01-2020')
 const ADDR_STAKING = '0x46ad2d37ceaee1e82b70b867e674b903a4b4ca32'
+const MAX_SLASH = bigNumberify('1000000000000000000')
 // This is set in the staking contract
 const TIME_TO_UNLOCK_SECS = 30 * 24 * 60 * 60
 
@@ -137,7 +138,6 @@ function getBondId({ owner, amount, poolId, nonce }) {
 }
 
 async function getBonds() {
-	// NOTE: Slashing doesn't matter into this calculation, cause we slash the whole pool together so ratios stay unchanged
 	// NOTE: getLogs should not have limits
 	// NOTE: poolId on LogOpen is not indexed, so we have to get everything and filter
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
@@ -147,8 +147,16 @@ async function getBonds() {
 		if (topic === evs.LogBond.topic) {
 			const vals = Staking.interface.parseLog(log).values
 			// NOTE there's also slashedAtStart, but we do not need it cause slashing doesn't matter (whole pool gets slashed, ratios stay the same)
-			const { owner, amount, poolId, nonce } = vals
-			const bond = { owner, amount, poolId, nonce, openedAtBlock: log.blockNumber, end: null }
+			const { owner, amount, poolId, nonce, slashedAtStart } = vals
+			const bond = {
+				owner,
+				amount,
+				poolId,
+				nonce,
+				slashedAtStart,
+				openedAtBlock: log.blockNumber,
+				end: null
+			}
 			bonds.push({
 				id: getBondId(bond),
 				status: 'Active',
@@ -182,21 +190,47 @@ async function getBonds() {
 	)
 }
 
-function calculateDistributionForPeriod(period, bonds) {
+async function getSlashes() {
+	const evs = Staking.interface.events
+	const logs = await provider.getLogs({
+		fromBlock: 0,
+		address: ADDR_STAKING,
+		topics: [evs.LogSlash.topic, POOL_ID]
+	})
+	return Promise.all(
+		logs.map(async log => {
+			return {
+				slashPts: Staking.interface.parseLog(log).newSlashPts,
+				time: new Date((await provider.getBlock(log.blockNumber)).timestamp * 1000)
+			}
+		})
+	)
+}
+
+function calculateDistributionForPeriod(period, bonds, slashes) {
 	const sum = (a, b) => a.add(b)
 	const totalInPeriod = period.toDistribute.map(x => x.value).reduce(sum)
 
 	const all = {}
 	period.toDistribute.forEach(datapoint => {
+		const slashEv = [...slashes].reverse().find(x => datapoint.time > x.time)
+		const slashPts = slashEv ? slashEv.slashPts : bigNumberify(0)
+
 		const activeBonds = bonds.filter(
 			bond => bond.start < datapoint.time && (!bond.end || bond.end > datapoint.time)
 		)
 		if (!activeBonds.length) return
 
-		const total = activeBonds.map(bond => bond.amount).reduce(sum, bigNumberify(0))
-		activeBonds.forEach(bond => {
+		const activeBondAmounts = activeBonds.map(bond => ({
+			effectiveAmount: bond.amount
+				.mul(MAX_SLASH.sub(slashPts))
+				.div(MAX_SLASH.sub(bond.slashedAtStart)),
+			owner: bond.owner
+		}))
+		const total = activeBondAmounts.map(bond => bond.effectiveAmount).reduce(sum, bigNumberify(0))
+		activeBondAmounts.forEach(bond => {
 			if (!all[bond.owner]) all[bond.owner] = bigNumberify(0)
-			all[bond.owner] = all[bond.owner].add(datapoint.value.mul(bond.amount).div(total))
+			all[bond.owner] = all[bond.owner].add(datapoint.value.mul(bond.effectiveAmount).div(total))
 		})
 	})
 
@@ -229,7 +263,11 @@ async function main() {
 		.toArray())[0]
 	const start = lastChannel ? getNextMonth(lastChannel.periodStart) : STAKING_START_MONTH
 
-	const [bonds, periods] = await Promise.all([getBonds(), getPeriodsToDistributeFor(start)])
+	const [slashes, bonds, periods] = await Promise.all([
+		getSlashes(),
+		getBonds(),
+		getPeriodsToDistributeFor(start)
+	])
 	if (periods.length === 0) {
 		console.log('Nothing to do!')
 		process.exit(0)
@@ -237,7 +275,7 @@ async function main() {
 
 	const periodsWithDistribution = periods.map(period => ({
 		...period,
-		...calculateDistributionForPeriod(period, bonds)
+		...calculateDistributionForPeriod(period, bonds, slashes)
 	}))
 
 	// Safety check: whether our funds are sufficient
