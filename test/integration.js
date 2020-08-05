@@ -415,14 +415,19 @@ tape('should close channel', async function(t) {
 	await postEvsAsCreator(leaderUrl, channel.id, genEvents(10))
 
 	// close channel event
+	// Do not use genEvents because it adds default publisher which add event payout
 	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
-		events: genEvents(1, null, 'CLOSE')
+		events: [{ type: constants.eventTypes.close }]
 	})
 
+	// 2 ticks to get last approved state
+	await aggrAndTick()
 	await aggrAndTick()
 
 	// check the creator is awarded the remaining token balance
-	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	const lastApproved = await channelIface.getLastApproved()
+
+	const { balances } = lastApproved.newState.msg
 	t.equal(
 		balances[getAddress(dummyVals.auth.creator)],
 		'792',
