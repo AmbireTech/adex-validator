@@ -440,10 +440,9 @@ tape('should close channel', async function(t) {
 
 	// check the creator is awarded the remaining token balance
 	const lastApproved = await channelIface.getLastApproved()
-
 	const { balances } = lastApproved.newState.msg
 	t.equal(closeCall.status, 200, 'close call should return 200')
-	t.equal(invalidCloseCall.status, 469, 'close call should return 469')
+	t.equal(invalidCloseCall.status, 469, 'invalid close call should return 469')
 	t.equal(
 		balances[getAddress(dummyVals.auth.creator)],
 		'792',
