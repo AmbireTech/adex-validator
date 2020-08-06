@@ -80,6 +80,10 @@ function getTimeframe(timeframe, weekHoursSpan) {
 	return { period: DAY, span: HOUR }
 }
 
+// NOTE: optimized was looking like that `($subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }])`
+// Year timeframe groups (month start) was not correct - leap years + there was no timezones
+// Its slower now - more info at https://github.com/AdExNetwork/adex-validator/pull/312
+// and https://gist.github.com/IvoPaunov/1b23223b558ae4b8b6d2ba4ac408919f
 function getTimeGroup(timeframe, weekHoursSpan) {
 	if (timeframe === 'month') {
 		return { year: `$year`, month: `$month`, day: `$day` }
