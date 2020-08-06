@@ -20,14 +20,16 @@ function reduce(channel, initialAggr, evType, payout) {
 	// This is not what we'd call a payout (and not a result from getPayout); we don't want it reflected in the analytics
 	if (evType === eventTypes.close) {
 		const { creator, depositAmount } = channel
+		const creatorBalanceKey = toBalancesKey(creator)
 		aggr.events[eventTypes.close] = {
 			eventCounts: {
-				[toBalancesKey(creator)]: new BN(1).toString(10)
+				[creatorBalanceKey]: new BN(1).toString(10)
 			},
 			eventPayouts: {
-				[toBalancesKey(creator)]: depositAmount
+				[creatorBalanceKey]: depositAmount
 			}
 		}
+		if (!aggr.earners.includes(creatorBalanceKey)) aggr.earners.push(creatorBalanceKey)
 	}
 
 	return aggr
@@ -74,7 +76,7 @@ function addAndToString(first, second) {
 }
 
 function isEmpty(aggr) {
-	return aggr.earners.length === 0 && !aggr.events[eventTypes.close]
+	return aggr.earners.length === 0
 }
 
 module.exports = { newAggr, reduce, isEmpty }
