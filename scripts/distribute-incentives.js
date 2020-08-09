@@ -134,7 +134,7 @@ async function main() {
 	const now = Math.floor(Date.now() / 1000)
 	const distributionStarts = 1596499200
 	const distributionEnds = 1609372800
-	const earlyBirdEnds = 1599696000
+	const earlyBirdEnds = 1599177600
 	const earlyBirdSubscriptionEnds = 1597190400
 
 	const distribution = getDistributionForPeriod(
@@ -151,14 +151,15 @@ async function main() {
 	)
 	Object.entries(fromEarlyBird).forEach(([addr, amount]) => {
 		if (
-			!parsedLogs.find(
+			parsedLogs.find(
 				l => l.name === 'LogBond' && l.values.time.toNumber() < earlyBirdSubscriptionEnds
 			)
 		)
-			return
-		addToMap(distribution, addr, amount)
+			addToMap(distribution, addr, amount)
 	})
-	Object.entries(distribution).forEach(([addr, tokens]) => console.log(addr, tokens.toString(10)))
+
+	// Distribution with the simple algo
+	// parsedLogs.filter(l => l.name === 'LogBond' && l.values.time.toNumber() < )
 
 	process.exit(0)
 }
