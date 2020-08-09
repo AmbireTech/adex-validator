@@ -131,15 +131,34 @@ async function main() {
 	// NOTE: getLogs should not have limits
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
 	const parsedLogs = logs.map(log => Staking.interface.parseLog(log))
-	const nowSeconds = Math.floor(Date.now() / 1000)
-	Object.entries(
-		getDistributionForPeriod(
-			parsedLogs,
-			1596499200,
-			Math.min(nowSeconds, 1609372800),
-			bigNumberify('478927203065134100')
+	const now = Math.floor(Date.now() / 1000)
+	const distributionStarts = 1596499200
+	const distributionEnds = 1609372800
+	const earlyBirdEnds = 1599696000
+	const earlyBirdSubscriptionEnds = 1597190400
+
+	const distribution = getDistributionForPeriod(
+		parsedLogs,
+		distributionStarts,
+		Math.min(now, distributionEnds),
+		bigNumberify('478927203065134100')
+	)
+	const fromEarlyBird = getDistributionForPeriod(
+		parsedLogs,
+		distributionStarts,
+		Math.min(now, earlyBirdEnds),
+		bigNumberify('373357228195937860')
+	)
+	Object.entries(fromEarlyBird).forEach(([addr, amount]) => {
+		if (
+			!parsedLogs.find(
+				l => l.name === 'LogBond' && l.values.time.toNumber() < earlyBirdSubscriptionEnds
+			)
 		)
-	).forEach(([addr, tokens]) => console.log(addr, tokens.toString(10)))
+			return
+		addToMap(distribution, addr, amount)
+	})
+	Object.entries(distribution).forEach(([addr, tokens]) => console.log(addr, tokens.toString(10)))
 
 	process.exit(0)
 }
