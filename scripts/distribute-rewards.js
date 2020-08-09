@@ -17,7 +17,7 @@ const STAKING_START_MONTH = new Date('01-01-2020')
 const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
 const MAX_SLASH = bigNumberify('1000000000000000000')
 
-const FEE_DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
+const DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 
 const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
@@ -30,7 +30,7 @@ const REWARD_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
 
 const provider = getDefaultProvider('homestead')
 const Staking = new Contract(ADDR_STAKING, stakingAbi, provider)
-const Identity = new Contract(FEE_DISTRIBUTION_IDENTITY, identityAbi, provider)
+const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
 const Token = new Contract(
 	FEE_TOKEN,
 	['function balanceOf(address owner) view returns (uint)'],
@@ -229,16 +229,14 @@ function calculateDistributionForPeriod(period, bonds, slashes) {
 }
 
 async function main() {
-	console.log(`Distribution identity: ${FEE_DISTRIBUTION_IDENTITY}`)
+	console.log(`Distribution identity: ${DISTRIBUTION_IDENTITY}`)
 
 	await adapter.init()
 	await adapter.unlock()
 
 	// Safety check: whether we have sufficient privileges
 	if ((await Identity.privileges(adapter.whoami())) < 2) {
-		console.log(
-			`Insufficient privilege in the distribution identity (${FEE_DISTRIBUTION_IDENTITY})`
-		)
+		console.log(`Insufficient privilege in the distribution identity (${DISTRIBUTION_IDENTITY})`)
 		process.exit(1)
 	}
 
@@ -271,7 +269,7 @@ async function main() {
 		.map(x => x.totalDistributed)
 		.reduce((a, b) => a.add(b), bigNumberify(0))
 	const totalCost = totalAmount.add(REWARD_CHANNEL_OPEN_FEE)
-	const available = await Token.balanceOf(FEE_DISTRIBUTION_IDENTITY)
+	const available = await Token.balanceOf(DISTRIBUTION_IDENTITY)
 	if (totalCost.gt(available)) {
 		console.log(
 			`Insufficient amount in the distribution identity: ${humanReadableToken(available)}` +
@@ -285,7 +283,7 @@ async function main() {
 	/* eslint-disable no-restricted-syntax */
 	for (const period of periodsWithDistribution) {
 		const channelArgs = {
-			creator: FEE_DISTRIBUTION_IDENTITY,
+			creator: DISTRIBUTION_IDENTITY,
 			tokenAddr: Token.address,
 			tokenAmount: period.totalDistributed.toString(10),
 			validUntil: Math.floor(period.start.getTime() / 1000) + 365 * 24 * 60 * 60,
@@ -300,17 +298,17 @@ async function main() {
 
 		// Prepare for opening the channel
 		const openTxRaw = {
-			identityContract: FEE_DISTRIBUTION_IDENTITY,
+			identityContract: DISTRIBUTION_IDENTITY,
 			nonce: (await Identity.nonce()).toNumber(),
 			feeTokenAddr: Token.address,
 			feeAmount: REWARD_CHANNEL_OPEN_FEE.toString(10),
 			// We are calling the channelOpen() on the Identity itself, which calls the Core
-			to: FEE_DISTRIBUTION_IDENTITY,
+			to: DISTRIBUTION_IDENTITY,
 			data: hexlify(idInterface.functions.channelOpen.encode([coreAddr, channel.toSolidityTuple()]))
 		}
 		const openTx = new Transaction(openTxRaw)
 		const txSig = splitSig(await adapter.sign(openTx.hash()))
-		await relayerPost(`/identity/${FEE_DISTRIBUTION_IDENTITY}/execute`, {
+		await relayerPost(`/identity/${DISTRIBUTION_IDENTITY}/execute`, {
 			signatures: [txSig],
 			txnsRaw: [openTxRaw]
 		})
