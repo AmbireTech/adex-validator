@@ -15,7 +15,7 @@ const adapters = require('../adapters')
 
 // Staking started on 28-12-2019
 const STAKING_START_MONTH = new Date('01-01-2020')
-const ADDR_STAKING = '0x46ad2d37ceaee1e82b70b867e674b903a4b4ca32'
+const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
 const MAX_SLASH = bigNumberify('1000000000000000000')
 // This is set in the staking contract
 const TIME_TO_UNLOCK_SECS = 30 * 24 * 60 * 60
@@ -234,7 +234,7 @@ function calculateDistributionForPeriod(period, bonds, slashes) {
 		})
 	})
 
-	const totalDistributed = Object.values(all).reduce(sum)
+	const totalDistributed = Object.values(all).reduce(sum, bigNumberify(0))
 	assert.ok(totalDistributed.lte(totalInPeriod), 'total distributed <= total in the period')
 
 	return { balances: all, totalDistributed }
