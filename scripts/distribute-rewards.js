@@ -13,12 +13,9 @@ const db = require('../db')
 const cfg = require('../cfg')
 const adapters = require('../adapters')
 
-// Staking started on 28-12-2019
 const STAKING_START_MONTH = new Date('01-01-2020')
 const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
 const MAX_SLASH = bigNumberify('1000000000000000000')
-// This is set in the staking contract
-const TIME_TO_UNLOCK_SECS = 30 * 24 * 60 * 60
 
 const FEE_DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
@@ -147,7 +144,7 @@ async function getBonds() {
 		if (topic === evs.LogBond.topic) {
 			const vals = Staking.interface.parseLog(log).values
 			// NOTE there's also slashedAtStart, but we do not need it cause slashing doesn't matter (whole pool gets slashed, ratios stay the same)
-			const { owner, amount, poolId, nonce, slashedAtStart } = vals
+			const { owner, amount, poolId, nonce, slashedAtStart, time } = vals
 			const bond = {
 				owner,
 				amount,
@@ -155,6 +152,7 @@ async function getBonds() {
 				nonce,
 				slashedAtStart,
 				openedAtBlock: log.blockNumber,
+				start: time,
 				end: null
 			}
 			bonds.push({
@@ -164,11 +162,11 @@ async function getBonds() {
 			})
 		} else if (topic === evs.LogUnbondRequested.topic) {
 			// NOTE: assuming that .find() will return something is safe, as long as the logs are properly ordered
-			const { bondId, willUnlock } = Staking.interface.parseLog(log).values
+			const { bondId, willUnlock, time } = Staking.interface.parseLog(log).values
 			const bond = bonds.find(x => x.id === bondId)
 			bond.status = 'UnbondRequested'
 			bond.willUnlock = new Date(willUnlock * 1000)
-			bond.end = new Date((willUnlock - TIME_TO_UNLOCK_SECS) * 1000)
+			bond.end = new Date(time * 1000)
 		} else if (topic === evs.LogUnbonded.topic) {
 			const { bondId } = Staking.interface.parseLog(log).values
 			const bond = bonds.find(x => x.id === bondId)
@@ -177,17 +175,7 @@ async function getBonds() {
 		return bonds
 	}, [])
 
-	const bondsForPool = allBonds.filter(x => x.poolId === POOL_ID)
-
-	// NOTE: Unfortunately, we don't have the proper start date, so we have to calculate it from the block
-	return Promise.all(
-		bondsForPool.map(async bond => {
-			return {
-				...bond,
-				start: new Date((await provider.getBlock(bond.openedAtBlock)).timestamp * 1000)
-			}
-		})
-	)
+	return allBonds.filter(x => x.poolId === POOL_ID)
 }
 
 async function getSlashes() {
