@@ -2,6 +2,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
+/* eslint-disable no-param-reassign */
 // const assert = require('assert')
 const ethers = require('ethers')
 
@@ -37,6 +38,8 @@ const idInterface = new Interface(identityAbi)
 const coreAddr = cfg.ETHEREUM_CORE_ADDR
 */
 
+const ZERO = bigNumberify(0)
+
 const keystoreFile = process.argv[2]
 const keystorePwd = process.env.KEYSTORE_PWD
 if (!(keystoreFile && keystorePwd)) {
@@ -62,6 +65,12 @@ function getBondId({ owner, amount, poolId, nonce }) {
 	)
 }
 
+function addToMap(map, key, val) {
+	if (!map[key]) map[key] = val
+	else map[key] = map[key].add(val)
+	return map
+}
+
 function getDistributionForPeriod(parsedLogs, startSeconds, endSeconds, perSecond) {
 	// @TODO: implement pools
 	// @TODO: implement slashing: currently since there's no slashing, it's all proportional to the total bonded amount
@@ -75,27 +84,17 @@ function getDistributionForPeriod(parsedLogs, startSeconds, endSeconds, perSecon
 		const usedEnd = Math.min(endSeconds, end)
 		const delta = usedEnd - usedStart
 		if (!(delta > 0)) return
-		const totalStake = Object.values(currentStakedByUser).reduce(
-			(a, b) => a.add(b),
-			bigNumberify(0)
-		)
+		const totalStake = Object.values(currentStakedByUser).reduce((a, b) => a.add(b), ZERO)
 		const totalDistribution = perSecond.mul(delta)
 		for (const addr of Object.keys(currentStakedByUser)) {
-			const toAdd = totalDistribution.mul(currentStakedByUser[addr]).div(totalStake)
-			if (!distribution[addr]) distribution[addr] = toAdd
-			else distribution[addr] = distribution[addr].add(toAdd)
+			addToMap(distribution, addr, totalDistribution.mul(currentStakedByUser[addr]).div(totalStake))
 		}
 	}
 
 	for (const log of parsedLogs) {
 		tally(currentTime, log.values.time.toNumber())
 		if (log.name === 'LogBond') {
-			if (!currentStakedByUser[log.values.owner])
-				currentStakedByUser[log.values.owner] = log.values.amount
-			else
-				currentStakedByUser[log.values.owner] = currentStakedByUser[log.values.owner].add(
-					log.values.amount
-				)
+			addToMap(currentStakedByUser, log.values.owner, log.values.amount)
 			bonds[getBondId(log.values)] = log.values
 		}
 		if (log.name === 'LogUnbondRequested') {
