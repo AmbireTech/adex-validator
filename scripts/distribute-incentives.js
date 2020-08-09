@@ -159,8 +159,32 @@ async function main() {
 	})
 
 	// Distribution with the simple algo
-	// parsedLogs.filter(l => l.name === 'LogBond' && l.values.time.toNumber() < )
-
+	const staked = {}
+	for (const log of parsedLogs) {
+		// 11 august when the UI is updated
+		if (log.name === 'LogBond' && log.values.time.toNumber() < 1597104000)
+			addToMap(staked, log.values.owner, log.values.amount)
+	}
+	const total = Object.values(staked).reduce((a, b) => a.add(b), ZERO)
+	const simpleDistributed = bigNumberify('478927203065134100')
+		.add(bigNumberify('373357228195937860'))
+		.mul(now - distributionStarts)
+	Object.entries(distribution).forEach(([addr, amount]) => {
+		const amountSimple = simpleDistributed.mul(staked[addr]).div(total)
+		if (amountSimple.gt(amount))
+			console.log(
+				`${addr}: real amount lower by ${(amountSimple.sub(amount).toString(10) / 10 ** 18).toFixed(
+					4
+				)}`
+			)
+		else
+			console.log(
+				`${addr}: real amount higher by ${(
+					amount.sub(amountSimple).toString(10) /
+					10 ** 18
+				).toFixed(4)}`
+			)
+	})
 	process.exit(0)
 }
 
