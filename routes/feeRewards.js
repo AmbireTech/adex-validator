@@ -7,6 +7,6 @@ module.exports = async (_, res) =>
 			.collection('rewardChannels')
 			.find()
 			.sort({ periodStart: -1 })
-			.limit(12)
+			.limit(40)
 			.toArray()
 	)
