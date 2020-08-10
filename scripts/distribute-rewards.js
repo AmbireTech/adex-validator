@@ -243,7 +243,7 @@ async function main() {
 	await db.connect()
 	const rewardChannels = db.getMongo().collection('rewardChannels')
 	const lastChannel = (await rewardChannels
-		.find()
+		.find({ 'channelArgs.tokenAddr': FEE_TOKEN })
 		.sort({ periodStart: -1 })
 		.limit(1)
 		.toArray())[0]
