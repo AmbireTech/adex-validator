@@ -109,25 +109,7 @@ function getDistributionForPeriod(parsedLogs, startSeconds, endSeconds, perSecon
 	return distribution
 }
 
-async function main() {
-	console.log(`Distribution identity: ${DISTRIBUTION_IDENTITY}`)
-
-	await adapter.init()
-	await adapter.unlock()
-
-	/*
-	// Safety check: whether we have sufficient privileges
-	if ((await Identity.privileges(adapter.whoami())) < 2) {
-		console.log(
-			`Insufficient privilege in the distribution identity (${DISTRIBUTION_IDENTITY})`
-		)
-		process.exit(1)
-	}
-
-	await db.connect()
-	const rewardChannels = db.getMongo().collection('rewardChannels')
-	*/
-
+async function calculateTotalDistribution() {
 	// From infura's docs: https://infura.io/docs/ethereum/json-rpc/eth-getLogs
 	// A max of 10,000 results can be returned by a single query
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
@@ -162,7 +144,7 @@ async function main() {
 			addToMap(distribution, addr, amount)
 	})
 
-	// Distribution with the simple algo
+	// Distribution with the simple algo: ensure user's balances do not go down
 	const staked = {}
 	for (const log of parsedLogs) {
 		// 11 august when the UI is updated
@@ -170,25 +152,36 @@ async function main() {
 			addToMap(staked, log.values.owner, log.values.amount)
 	}
 	const total = Object.values(staked).reduce((a, b) => a.add(b), ZERO)
-	const simpleDistributed = bigNumberify('478927203065134100')
-		.add(bigNumberify('373357228195937860'))
-		.mul(now - distributionStarts)
+	const simpleDistributed = bigNumberify('852284431261071900').mul(now - distributionStarts)
+	let totalDiff = ZERO
 	Object.entries(distribution).forEach(([addr, amount]) => {
 		const amountSimple = simpleDistributed.mul(staked[addr]).div(total)
-		if (amountSimple.gt(amount))
-			console.log(
-				`${addr}: real amount lower by ${(amountSimple.sub(amount).toString(10) / 10 ** 18).toFixed(
-					4
-				)}`
-			)
-		else
-			console.log(
-				`${addr}: real amount higher by ${(
-					amount.sub(amountSimple).toString(10) /
-					10 ** 18
-				).toFixed(4)}`
-			)
+		if (amountSimple.gt(amount)) totalDiff = totalDiff.add(amountSimple.sub(amount))
 	})
+	console.log(totalDiff)
+}
+
+async function main() {
+	console.log(`Distribution identity: ${DISTRIBUTION_IDENTITY}`)
+
+	await adapter.init()
+	await adapter.unlock()
+
+	/*
+	// Safety check: whether we have sufficient privileges
+	if ((await Identity.privileges(adapter.whoami())) < 2) {
+		console.log(
+			`Insufficient privilege in the distribution identity (${DISTRIBUTION_IDENTITY})`
+		)
+		process.exit(1)
+	}
+
+	await db.connect()
+	const rewardChannels = db.getMongo().collection('rewardChannels')
+	*/
+
+	await calculateTotalDistribution()
+
 	process.exit(0)
 }
 
