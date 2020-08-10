@@ -5,8 +5,8 @@ module.exports = async (_, res) =>
 		await db
 			.getMongo()
 			.collection('rewardChannels')
-			.find()
+			.find({ 'channelArgs.validUntil': { $gt: Math.floor(Date.now() / 1000) } })
 			.sort({ periodStart: -1 })
-			.limit(12)
+			.limit(40)
 			.toArray()
 	)
