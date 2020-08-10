@@ -174,6 +174,11 @@ async function main() {
 	}
 
 	const distribution = await calculateTotalDistribution()
+	const distributed = Object.values(distribution).reduce((a, b) => a.add(b), ZERO)
+	if (distributed.gt(INCENTIVE_TO_DISTRIBUTE)) {
+		console.error('Fatal error: calculated amount to distribute is more than the intended maximum!')
+		process.exit(1)
+	}
 
 	await db.connect()
 	const rewardChannels = db.getMongo().collection('rewardChannels')
@@ -235,7 +240,6 @@ async function main() {
 	}
 	await rewardChannels.updateOne({ _id: channelId }, { $set: rewardRecord }, { upsert: true })
 
-	const distributed = Object.values(distribution).reduce((a, b) => a.add(b), ZERO)
 	console.log(
 		`Successfully distributed a total of ${(distributed.toString(10) / 10 ** 18).toFixed(4)} ADX`
 	)
