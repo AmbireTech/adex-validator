@@ -257,6 +257,17 @@ Example:
 NODE_ENV=production KEYSTORE_PWD=<pwd> node scripts/distribute-rewards.js ./keystore.json
  ```
 
+Regarding the incentives [announced in August 2020](https://www.adex.network/blog/new-token-economics-and-staking/), they're distributed with an equivalent script:
+
+```
+NODE_ENV=production KEYSTORE_PWD=<pwd> node scripts/distribute-incentives.js ./keystore.json
+ ```
+
+#### Warning for implementing reward distribution
+
+Rules for distributing rewards: payment channels must be valid for one year, rewards must be distributed for up to 6 month periods to allow for 6 months claim time.
+
+
 #### Export Data to Biquery
 
 To run the BigQuery export script e.g.
