@@ -128,8 +128,12 @@ async function main() {
 	const rewardChannels = db.getMongo().collection('rewardChannels')
 	*/
 
-	// NOTE: getLogs should not have limits
+	// From infura's docs: https://infura.io/docs/ethereum/json-rpc/eth-getLogs
+	// A max of 10,000 results can be returned by a single query
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
+	if (logs.length === 10000)
+		throw new Error('max limit of getLogs reached; we must reimplement the way we get logs')
+
 	const parsedLogs = logs.map(log => Staking.interface.parseLog(log))
 	const now = Math.floor(Date.now() / 1000)
 	const distributionStarts = 1596499200
