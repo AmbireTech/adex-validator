@@ -7,7 +7,7 @@
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
-const { keccak256, defaultAbiCoder, id, bigNumberify, hexlify, Interface } = ethers.utils
+const { keccak256, defaultAbiCoder, bigNumberify, hexlify, Interface } = ethers.utils
 const fetch = require('node-fetch')
 const { Channel, Transaction, MerkleTree, splitSig } = require('adex-protocol-eth/js')
 const stakingAbi = require('adex-protocol-eth/abi/Staking')
@@ -24,7 +24,6 @@ const ADX_TOKEN = '0xADE00C28244d5CE17D72E40330B1c318cD12B7c3'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const DISTRIBUTION_STARTS = new Date('2020-08-04T00:00:00.000Z')
 const DISTRIBUTION_ENDS = new Date('2020-12-31T00:00:00.000Z')
-const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 
 const INCENTIVE_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
 const INCENTIVE_TO_DISTRIBUTE = bigNumberify('7010000000000000000000000')
@@ -189,7 +188,9 @@ async function main() {
 		tokenAmount: INCENTIVE_TO_DISTRIBUTE.toString(10),
 		validUntil: DISTRIBUTION_ENDS.getTime() / 1000 + 2592000,
 		validators: [adapter.whoami(), adapter.whoami()],
-		spec: id(POOL_ID + DISTRIBUTION_STARTS.toString())
+		// This one may produce diff results depending on timezone
+		// spec: id(POOL_ID + DISTRIBUTION_STARTS.toString())
+		spec: '0xf72ffa0786a2d5294679c87728c5df56f1f57910de95e738a0db0e4f9952319b'
 	}
 	const channel = new Channel({
 		...channelArgs,
