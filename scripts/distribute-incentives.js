@@ -142,19 +142,21 @@ async function calculateTotalDistribution() {
 		Math.min(now, distributionEnds),
 		bigNumberify('478927203065134100')
 	)
+	// duplicate entries are not an issue
+	const earlyBirdAllowed = parsedLogs
+		.filter(l => l.name === 'LogBond' && l.values.time.toNumber() < earlyBirdSubscriptionEnds)
+		.map(l => l.values.owner)
+	const earlyBirdLogs = parsedLogs.filter(
+		l => !l.values.owner || earlyBirdAllowed.includes(l.values.owner)
+	)
 	const fromEarlyBird = getDistributionForPeriod(
-		parsedLogs,
+		earlyBirdLogs,
 		distributionStarts,
 		Math.min(now, earlyBirdEnds),
 		bigNumberify('373357228195937860')
 	)
 	Object.entries(fromEarlyBird).forEach(([addr, amount]) => {
-		if (
-			parsedLogs.find(
-				l => l.name === 'LogBond' && l.values.time.toNumber() < earlyBirdSubscriptionEnds
-			)
-		)
-			addToMap(distribution, addr, amount)
+		addToMap(distribution, addr, amount)
 	})
 
 	return distribution
