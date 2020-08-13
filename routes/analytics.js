@@ -17,7 +17,14 @@ const notCached = fn => (req, res, next) =>
 	fn(req)
 		.then(res.json.bind(res))
 		.catch(next)
-const validate = celebrate({ query: { ...schemas.eventTimeAggr, segmentByChannel: Joi.string() } })
+const validate = celebrate({
+	query: {
+		...schemas.eventTimeAggr,
+		segmentByChannel: Joi.string(),
+		timezone: Joi.string(),
+		weekHoursSpan: Joi.string()
+	}
+})
 
 const isAdmin = (req, res, next) => {
 	if (cfg.admins.includes(req.session.uid)) {
@@ -52,16 +59,18 @@ const DAY = 24 * HOUR
 const YEAR = 365 * DAY
 const ROUGH_MONTH = Math.floor(YEAR / 12)
 
+const DEFAULT_WEEK_HOURS_SPAN = 6
+
 // In order to use analytics aggregates, we need the span to be at least an hour
 const ANALYTICS_MIN_SPAN = HOUR
 
-function getTimeframe(timeframe) {
+function getTimeframe(timeframe, weekHoursSpan) {
 	// every month in one year
 	if (timeframe === 'year') return { period: YEAR, span: ROUGH_MONTH }
 	// every day in one month
 	if (timeframe === 'month') return { period: ROUGH_MONTH, span: DAY }
 	// every 6 hours in a week
-	if (timeframe === 'week') return { period: 7 * DAY, span: 6 * HOUR }
+	if (timeframe === 'week') return { period: 7 * DAY, span: weekHoursSpan * HOUR }
 	// every hour in one day
 	if (timeframe === 'day') return { period: DAY, span: HOUR }
 	// every minute in an hour
@@ -71,8 +80,52 @@ function getTimeframe(timeframe) {
 	return { period: DAY, span: HOUR }
 }
 
-function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
-	const timeMatch = end ? { created: { $lte: end, $gt: start } } : { created: { $gt: start } }
+// NOTE: optimized was looking like that `($subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }])`
+// Year timeframe groups (month start) was not correct - leap years + there was no timezones
+// Its slower now - more info at https://github.com/AdExNetwork/adex-validator/pull/312
+// and https://gist.github.com/IvoPaunov/1b23223b558ae4b8b6d2ba4ac408919f
+function getTimeGroup(timeframe, weekHoursSpan) {
+	if (timeframe === 'month') {
+		return { year: `$year`, month: `$month`, day: `$day` }
+	}
+
+	if (timeframe === 'week') {
+		return {
+			year: `$year`,
+			month: `$month`,
+			day: `$day`,
+			hour: { $multiply: [{ $floor: { $divide: [`$hour`, weekHoursSpan] } }, weekHoursSpan] }
+		}
+	}
+
+	if (timeframe === 'day') {
+		return {
+			year: `$year`,
+			month: `$month`,
+			day: `$day`,
+			hour: `$hour`
+		}
+	}
+
+	if (timeframe === 'hour') {
+		return {
+			year: `$year`,
+			month: `$month`,
+			day: `$day`,
+			hour: `$hour`,
+			minute: `$minute`
+		}
+	}
+
+	if (timeframe === 'year') {
+		return { year: `$year`, month: `$month` }
+	}
+
+	return { year: '$year' }
+}
+
+function getProjAndMatch(channelMatch, start, end, eventType, metric, earner, timezone) {
+	const timeMatch = end ? { created: { $lte: end, $gte: start } } : { created: { $gte: start } }
 	let publisherId = null
 	if (earner) {
 		publisherId = toBalancesKey(earner)
@@ -85,16 +138,33 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner) {
 	const project = {
 		created: 1,
 		channelId: 1,
-		value: projectValue
+		value: projectValue,
+		year: { $year: { date: '$created', timezone } },
+		month: { $month: { date: '$created', timezone } },
+		day: { $dayOfMonth: { date: '$created', timezone } },
+		hour: { $hour: { date: '$created', timezone } },
+		minute: { $minute: { date: '$created', timezone } }
 	}
 	return { match, project }
 }
 
 function analytics(req, advertiserChannels, earner) {
 	// default is applied via validation schema
-	const { limit, timeframe, eventType, metric, start, end, segmentByChannel } = req.query
+	const {
+		limit,
+		timeframe,
+		eventType,
+		metric,
+		start,
+		end,
+		segmentByChannel,
+		timezone = 'UTC',
+		weekHoursSpan
+	} = req.query
 
-	const { period, span } = getTimeframe(timeframe)
+	const weekSpan = +weekHoursSpan || DEFAULT_WEEK_HOURS_SPAN
+
+	const { period, span } = getTimeframe(timeframe, weekSpan)
 
 	const collection =
 		process.env.ANALYTICS_DB && span >= ANALYTICS_MIN_SPAN
@@ -108,23 +178,36 @@ function analytics(req, advertiserChannels, earner) {
 		end && !Number.isNaN(new Date(end)) ? new Date(end) : null,
 		eventType,
 		metric,
-		earner
+		earner,
+		timezone
 	)
 	const maxLimit = segmentByChannel
 		? cfg.ANALYTICS_FIND_LIMIT_BY_CHANNEL_SEGMENT
 		: cfg.ANALYTICS_FIND_LIMIT
 	const appliedLimit = Math.min(maxLimit, limit)
-	const timeGroup = {
-		$subtract: [{ $toLong: '$created' }, { $mod: [{ $toLong: '$created' }, span] }]
-	}
+
+	const timeGroup = getTimeGroup(timeframe, weekSpan)
+
 	const group = {
 		_id: segmentByChannel ? { time: timeGroup, channelId: '$channelId' } : { time: timeGroup },
 		value: { $sum: '$value' }
 	}
+
 	const resultProjection = {
 		// NOTE: the toString will work fine w/o scientific notation for numbers up to 34 digits long
 		value: { $toString: '$value' },
-		time: '$_id.time',
+		time: {
+			$toLong: {
+				$dateFromParts: {
+					year: { $ifNull: ['$_id.time.year', 0] },
+					month: { $ifNull: ['$_id.time.month', 1] },
+					day: { $ifNull: ['$_id.time.day', 1] },
+					hour: { $ifNull: ['$_id.time.hour', 0] },
+					minute: { $ifNull: ['$_id.time.minute', 0] },
+					timezone: timezone || 'UTC'
+				}
+			}
+		},
 		channelId: '$_id.channelId',
 		_id: 0
 	}

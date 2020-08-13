@@ -415,14 +415,34 @@ tape('should close channel', async function(t) {
 	await postEvsAsCreator(leaderUrl, channel.id, genEvents(10))
 
 	// close channel event
-	await fetchPost(`${leaderUrl}/channel/${channel.id}/events`, dummyVals.auth.creator, {
-		events: genEvents(1, null, 'CLOSE')
-	})
+	// Do not use genEvents  as it 	adds default publisher to the event
+	// which will result to event with publisher and no payout
+	// That will return return { success: false, statusCode: 469, message: 'no event payout' }
+	const closeCall = await fetchPost(
+		`${leaderUrl}/channel/${channel.id}/events`,
+		dummyVals.auth.creator,
+		{
+			events: [{ type: constants.eventTypes.close }]
+		}
+	)
 
+	const invalidCloseCall = await fetchPost(
+		`${leaderUrl}/channel/${channel.id}/events`,
+		dummyVals.auth.creator,
+		{
+			events: genEvents(1, null, constants.eventTypes.close)
+		}
+	)
+
+	// 2 ticks to get last approved state
+	await aggrAndTick()
 	await aggrAndTick()
 
 	// check the creator is awarded the remaining token balance
-	const { balances } = await channelIface.getOurLatestMsg('Accounting')
+	const lastApproved = await channelIface.getLastApproved()
+	const { balances } = lastApproved.newState.msg
+	t.equal(closeCall.status, 200, 'close call should return 200')
+	t.equal(invalidCloseCall.status, 469, 'invalid close call should return 469')
 	t.equal(
 		balances[getAddress(dummyVals.auth.creator)],
 		'792',

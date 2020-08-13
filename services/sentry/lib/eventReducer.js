@@ -1,5 +1,6 @@
 const BN = require('bn.js')
 const toBalancesKey = require('../toBalancesKey')
+const { eventTypes } = require('../../constants')
 
 function newAggr(channelId) {
 	return { channelId, created: new Date(), events: {}, totals: {}, earners: [] }
@@ -17,16 +18,18 @@ function reduce(channel, initialAggr, evType, payout) {
 	// When the Validator merges aggrs into the balance tree, it ensures it doesn't overflow the total deposit,
 	// therefore only the remaining funds will be distributed back to the channel creator
 	// This is not what we'd call a payout (and not a result from getPayout); we don't want it reflected in the analytics
-	if (evType === 'CLOSE') {
+	if (evType === eventTypes.close) {
 		const { creator, depositAmount } = channel
-		aggr.events.CLOSE = {
+		const creatorBalanceKey = toBalancesKey(creator)
+		aggr.events[eventTypes.close] = {
 			eventCounts: {
-				[toBalancesKey(creator)]: new BN(1).toString(10)
+				[creatorBalanceKey]: new BN(1).toString(10)
 			},
 			eventPayouts: {
-				[toBalancesKey(creator)]: depositAmount
+				[creatorBalanceKey]: depositAmount
 			}
 		}
+		if (!aggr.earners.includes(creatorBalanceKey)) aggr.earners.push(creatorBalanceKey)
 	}
 
 	return aggr
