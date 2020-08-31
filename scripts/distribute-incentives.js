@@ -16,6 +16,7 @@ const identityAbi = require('adex-protocol-eth/abi/Identity')
 const db = require('../db')
 const cfg = require('../cfg')
 const adapters = require('../adapters')
+const loyaltyBonuses = require('./loyaltyBonuses')
 
 const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
 
@@ -161,6 +162,9 @@ async function calculateTotalDistribution() {
 	)
 	Object.entries(fromEarlyBird).forEach(([addr, amount]) => {
 		addToMap(distribution, addr, amount)
+	})
+	Object.entries(loyaltyBonuses).forEach(([addr, amount]) => {
+		addToMap(distribution, addr, bigNumberify(amount))
 	})
 
 	return distribution
