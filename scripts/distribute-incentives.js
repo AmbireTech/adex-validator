@@ -110,10 +110,14 @@ function getDistributionForPeriod(parsedLogs, startSeconds, endSeconds, perSecon
 			addToMap(currentStakedByUser, log.values.owner, log.values.amount)
 			bonds[getBondId(log.values)] = log.values
 		}
-		if (log.name === 'LogUnbondRequested') {
+		if (
+			(log.name === 'LogUnbondRequested' || log.name === 'LogUnbonded') &&
+			bonds[log.values.bondId]
+		) {
 			currentStakedByUser[log.values.owner] = currentStakedByUser[log.values.owner].sub(
 				bonds[log.values.bondId].amount
 			)
+			delete bonds[log.values.bondId]
 		}
 		currentTime = log.values.time.toNumber()
 	}
