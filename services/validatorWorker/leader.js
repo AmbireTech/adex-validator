@@ -6,28 +6,25 @@ const { heartbeat } = require('./heartbeat')
 async function tick(adapter, iface, channel) {
 	const res = await producer.tick(iface, channel)
 
-	let channelExhausted = sumMap(toBNMap(res.accounting.balances)).eq(new BN(channel.depositAmount))
 	if (res.newAccounting) {
-		channelExhausted = sumMap(toBNMap(res.newAccounting.balances)).eq(new BN(channel.depositAmount))
-		await onNewAccounting(adapter, iface, channel, res, channelExhausted)
+		await onNewAccounting(adapter, iface, channel, res)
 	}
 
-	if (!channelExhausted) {
-		await heartbeat(adapter, iface, channel)
-	}
+	await heartbeat(adapter, iface, channel)
 }
 
-async function onNewAccounting(adapter, iface, channel, { newAccounting }, channelExhausted) {
+async function onNewAccounting(adapter, iface, channel, { newAccounting }) {
 	const stateRootRaw = getStateRootHash(adapter, channel, newAccounting.balances)
 	const signature = await adapter.sign(stateRootRaw)
 	const stateRoot = stateRootRaw.toString('hex')
+	const exhausted = sumMap(toBNMap(newAccounting.balances)).eq(new BN(channel.depositAmount))
 	return iface.propagate([
 		{
 			type: 'NewState',
 			balances: newAccounting.balances,
 			stateRoot,
 			signature,
-			exhausted: channelExhausted
+			exhausted
 		}
 	])
 }

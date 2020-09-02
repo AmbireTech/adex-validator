@@ -890,45 +890,68 @@ tape(
 	}
 )
 
-tape('should reject posting event on an exhausted channel', async function(t) {
-	const channel = getValidEthChannel()
-	const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
+tape(
+	'should reject posting event on an exhausted channel and post no additional heartbeats',
+	async function(t) {
+		const channel = getValidEthChannel()
+		const channelIface = new SentryInterface(dummyAdapter, channel, { logging: false })
 
-	// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
-	await Promise.all([
-		fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
-		fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
-	])
+		// Submit a new channel; we submit it to both sentries to avoid 404 when propagating messages
+		await Promise.all([
+			fetchPost(`${leaderUrl}/channel`, dummyVals.auth.leader, channel),
+			fetchPost(`${followerUrl}/channel`, dummyVals.auth.follower, channel)
+		])
 
-	// 1 event pays 1 token for now; we can change that via spec.minPerImpression
-	const expectDeposit = parseInt(channel.depositAmount, 10)
-	const evCount = expectDeposit + 1
-	await postEvsAsCreator(leaderUrl, channel.id, genEvents(evCount))
-	await aggrAndTick()
-	await forceTick()
+		// 1 event pays 1 token for now; we can change that via spec.minPerImpression
+		const expectDeposit = parseInt(channel.depositAmount, 10)
+		const evCount = expectDeposit + 1
+		await postEvsAsCreator(leaderUrl, channel.id, genEvents(evCount))
+		await aggrAndTick()
+		await forceTick()
 
-	const { balances } = await channelIface.getOurLatestMsg('Accounting')
-	const sum = Object.keys(balances)
-		.map(k => parseInt(balances[k], 10))
-		.reduce((a, b) => a + b, 0)
-	t.equal(sum, expectDeposit, 'balance does not exceed the deposit, but equals it')
+		const { balances } = await channelIface.getOurLatestMsg('Accounting')
+		const sum = Object.keys(balances)
+			.map(k => parseInt(balances[k], 10))
+			.reduce((a, b) => a + b, 0)
+		t.equal(sum, expectDeposit, 'balance does not exceed the deposit, but equals it')
 
-	// channel should be marked exhausted
-	const channelStatus = await fetch(`${leaderUrl}/channel/${channel.id}/status`).then(res =>
-		res.json()
-	)
-	t.ok(channelStatus.channel.exhausted, 'channel should be exhausted and have exhausted param set')
-	// sleep to give some time for the channel to be updated
-	await wait(cfg.CHANNEL_REFRESH_INTERVAL)
-	//
-	const postOneResp = await postEvsAsCreator(leaderUrl, channel.id, genEvents(1)).then(res =>
-		res.json()
-	)
-	t.equal(postOneResp.statusCode, 410, 'returned proper response statusCode')
-	t.equal(postOneResp.message, 'channel is exhausted', 'returned proper error response')
+		// channel should be marked exhausted
+		const channelStatus = await fetch(`${leaderUrl}/channel/${channel.id}/status`).then(res =>
+			res.json()
+		)
+		t.ok(
+			channelStatus.channel.exhausted,
+			'channel should be exhausted and have exhausted param set'
+		)
+		// sleep to give some time for the channel to be updated
+		await wait(cfg.CHANNEL_REFRESH_INTERVAL)
+		//
+		const postOneResp = await postEvsAsCreator(leaderUrl, channel.id, genEvents(1)).then(res =>
+			res.json()
+		)
+		t.equal(postOneResp.statusCode, 410, 'returned proper response statusCode')
+		t.equal(postOneResp.message, 'channel is exhausted', 'returned proper error response')
 
-	t.end()
-})
+		await aggrAndTick()
+		await forceTick()
+
+		const leaderHeartbeat = await channelIface.getLastMsgs(dummyVals.ids.leader, 'Heartbeat')
+		const followerHeartbeat = await channelIface.getLastMsgs(dummyVals.ids.follower, 'Heartbeat')
+
+		t.equal(
+			leaderHeartbeat.heartbeats.length,
+			2,
+			'leader: should not post Heartbeat on an exhausted channel'
+		)
+		t.equal(
+			followerHeartbeat.heartbeats.length,
+			2,
+			'follower: should not post Heartbeat on an exhausted channel'
+		)
+
+		t.end()
+	}
+)
 
 // @TODO sentry tests: ensure every middleware case is accounted for: channelIfExists, channelIfActive, auth
 // @TODO tests for the adapters and especially ewt
