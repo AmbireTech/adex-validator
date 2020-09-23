@@ -7,6 +7,7 @@ const getPayout = require('./lib/getPayout')
 const checkAccess = require('./lib/access')
 const logger = require('../logger')('sentry')
 const { eventTypes } = require('../constants')
+const { channelExhausted } = require('./lib')
 
 const recorders = new Map()
 
@@ -66,7 +67,7 @@ function makeRecorder(channelId) {
 	return async function(session, events) {
 		const channel = await channelPromise
 
-		if (channel.exhausted) {
+		if (channelExhausted(channel)) {
 			return { success: false, statusCode: 410, message: 'channel is exhausted' }
 		}
 
