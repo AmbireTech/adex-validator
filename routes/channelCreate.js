@@ -5,9 +5,24 @@ const db = require('../db')
 
 function forAdapter(adapter) {
 	const router = express.Router()
-	router.post('/validate', celebrate({ body: schema.createChannel }), function(_req, res) {
-		res.send({ success: true })
+
+	router.post('/validate', celebrate({ body: schema.createChannel }), function(req, res) {
+		const channel = {
+			...req.body,
+			_id: req.body.id
+		}
+
+		adapter
+			.validateChannel(channel, { preValidation: true })
+			.then(success => {
+				if (!success) throw new Error('adapter validation not successful')
+				res.send({ success: true })
+			})
+			.catch(err => {
+				res.status(400).send({ message: err.message })
+			})
 	})
+
 	router.post('/', celebrate({ body: schema.createChannel }), function(req, res, next) {
 		const channelsCol = db.getMongo().collection('channels')
 		const channel = {
