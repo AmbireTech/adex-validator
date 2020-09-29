@@ -114,7 +114,12 @@ async function aggregateForPeriod(start, end) {
 	)
 }
 
-aggregate().then(() => {
-	log(`Finished processing ${new Date()}`)
-	process.exit()
-})
+aggregate()
+	.then(() => {
+		log(`Finished processing ${new Date()}`)
+		process.exit()
+	})
+	.catch(error => {
+		console.log('Unable to read analytics data: ', error.message)
+		process.exit(1)
+	})
