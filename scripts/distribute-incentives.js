@@ -124,7 +124,9 @@ function getDistributionForPeriod(parsedLogs, startSeconds, endSeconds, perSecon
 	}
 	tally(currentTime, endSeconds)
 
-	return distribution
+	const periodTotalActiveStake = Object.values(currentStakedByUser).reduce((a, b) => a.add(b), ZERO)
+
+	return { distribution, periodTotalActiveStake }
 }
 
 async function calculateTotalDistribution() {
@@ -140,12 +142,13 @@ async function calculateTotalDistribution() {
 	const distributionEnds = DISTRIBUTION_ENDS.getTime() / 1000
 	const earlyBirdEnds = 1599177600
 	const earlyBirdSubscriptionEnds = 1597276800
+	const distributionRewardPerSecond = '478927203065134100'
 
-	const distribution = getDistributionForPeriod(
+	const { distribution, periodTotalActiveStake } = getDistributionForPeriod(
 		parsedLogs,
 		distributionStarts,
 		Math.min(now, distributionEnds),
-		bigNumberify('478927203065134100')
+		bigNumberify(distributionRewardPerSecond)
 	)
 	// duplicate entries are not an issue
 	const earlyBirdAllowed = parsedLogs
@@ -154,7 +157,7 @@ async function calculateTotalDistribution() {
 	const earlyBirdLogs = parsedLogs.filter(
 		l => !l.values.owner || earlyBirdAllowed.includes(l.values.owner)
 	)
-	const fromEarlyBird = getDistributionForPeriod(
+	const { distribution: fromEarlyBird } = getDistributionForPeriod(
 		earlyBirdLogs,
 		distributionStarts,
 		Math.min(now, earlyBirdEnds),
@@ -167,7 +170,11 @@ async function calculateTotalDistribution() {
 		addToMap(distribution, addr, bigNumberify(amount))
 	})
 
-	return distribution
+	return {
+		distribution,
+		currentTotalActiveStake: periodTotalActiveStake.toString(),
+		currentRewardPerSecond: distributionRewardPerSecond
+	}
 }
 
 async function main() {
@@ -182,7 +189,11 @@ async function main() {
 		process.exit(1)
 	}
 
-	const distribution = await calculateTotalDistribution()
+	const {
+		distribution,
+		currentTotalActiveStake,
+		currentRewardPerSecond
+	} = await calculateTotalDistribution()
 	const distributed = Object.values(distribution).reduce((a, b) => a.add(b), ZERO)
 	if (distributed.gt(INCENTIVE_TO_DISTRIBUTE)) {
 		console.error('Fatal error: calculated amount to distribute is more than the intended maximum!')
@@ -247,7 +258,9 @@ async function main() {
 		// The same validator is assigned for both slots
 		signatures: [balancesSig, balancesSig],
 		periodStart: DISTRIBUTION_STARTS,
-		periodEnd: DISTRIBUTION_ENDS
+		periodEnd: DISTRIBUTION_ENDS,
+		currentRewardPerSecond,
+		currentTotalActiveStake
 	}
 	await rewardChannels.updateOne({ _id: channelId }, { $set: rewardRecord }, { upsert: true })
 
