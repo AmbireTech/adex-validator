@@ -259,8 +259,10 @@ async function main() {
 		signatures: [balancesSig, balancesSig],
 		periodStart: DISTRIBUTION_STARTS,
 		periodEnd: DISTRIBUTION_ENDS,
-		currentRewardPerSecond,
-		currentTotalActiveStake
+		stats: {
+			currentRewardPerSecond,
+			currentTotalActiveStake
+		}
 	}
 	await rewardChannels.updateOne({ _id: channelId }, { $set: rewardRecord }, { upsert: true })
 
