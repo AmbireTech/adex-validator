@@ -1,4 +1,5 @@
 const cfg = require('../../cfg')
+const { channelExhausted } = require('../sentry/lib')
 
 async function sendHeartbeat(adapter, iface, channel) {
 	const timestamp = Buffer.alloc(32)
@@ -29,7 +30,7 @@ async function heartbeat(adapter, iface, channel) {
 	const shouldSend =
 		!heartbeatMsg || Date.now() - new Date(heartbeatMsg.timestamp).getTime() > cfg.HEARTBEAT_TIME
 
-	if (!channel.exhausted && shouldSend) {
+	if (!channelExhausted(channel) && shouldSend) {
 		await sendHeartbeat(adapter, iface, channel)
 	}
 }
