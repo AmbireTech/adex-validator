@@ -198,6 +198,7 @@ async function getSlashes() {
 function calculateDistributionForPeriod(period, bonds, slashes) {
 	const sum = (a, b) => a.add(b)
 	const totalInPeriod = period.toDistribute.map(x => x.value).reduce(sum)
+	let currentTotalActiveStake = bigNumberify(0)
 
 	const all = {}
 	period.toDistribute.forEach(datapoint => {
@@ -216,6 +217,7 @@ function calculateDistributionForPeriod(period, bonds, slashes) {
 			owner: bond.owner
 		}))
 		const total = activeBondAmounts.map(bond => bond.effectiveAmount).reduce(sum, bigNumberify(0))
+		currentTotalActiveStake = currentTotalActiveStake.add(total)
 		activeBondAmounts.forEach(bond => {
 			if (!all[bond.owner]) all[bond.owner] = bigNumberify(0)
 			all[bond.owner] = all[bond.owner].add(datapoint.value.mul(bond.effectiveAmount).div(total))
@@ -225,7 +227,7 @@ function calculateDistributionForPeriod(period, bonds, slashes) {
 	const totalDistributed = Object.values(all).reduce(sum, bigNumberify(0))
 	assert.ok(totalDistributed.lte(totalInPeriod), 'total distributed <= total in the period')
 
-	return { balances: all, totalDistributed }
+	return { balances: all, totalDistributed, currentTotalActiveStake }
 }
 
 async function main() {
@@ -334,7 +336,10 @@ async function main() {
 			// The same validator is assigned for both slots
 			signatures: [balancesSig, balancesSig],
 			periodStart: period.start,
-			periodEnd: period.end
+			periodEnd: period.end,
+			stats: {
+				currentTotalActiveStake: period.currentTotalActiveStake.toString(10)
+			}
 		}
 		await rewardChannels.insertOne(rewardRecord)
 
