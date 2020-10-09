@@ -28,6 +28,7 @@ const followerUrl = dummyVals.channel.spec.validators[1].url
 const defaultPubName = getAddress(dummyVals.ids.publisher)
 
 let dummyAdapter = require('../adapters/dummy')
+const { channelExhausted } = require('../services/sentry/lib')
 
 dummyAdapter = new dummyAdapter.Adapter({ dummyIdentity: dummyVals.ids.leader }, cfg)
 dummyAdapter.init()
@@ -920,7 +921,7 @@ tape(
 			res.json()
 		)
 		t.ok(
-			channelStatus.channel.exhausted,
+			channelExhausted(channelStatus.channel),
 			'channel should be exhausted and have exhausted param set'
 		)
 		// sleep to give some time for the channel to be updated
