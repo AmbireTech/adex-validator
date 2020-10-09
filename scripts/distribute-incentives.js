@@ -172,7 +172,7 @@ async function calculateTotalDistribution() {
 
 	return {
 		distribution,
-		currentTotalActiveStake: periodTotalActiveStake.toString(),
+		currentTotalActiveStake: periodTotalActiveStake.toString(10),
 		currentRewardPerSecond: distributionRewardPerSecond
 	}
 }
