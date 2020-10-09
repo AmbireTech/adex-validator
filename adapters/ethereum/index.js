@@ -64,7 +64,7 @@ function Adapter(opts, cfg, ethProvider) {
 		return Promise.resolve(signer === from)
 	}
 
-	this.validateChannel = async function(channel) {
+	this.validateChannel = async function(channel, options = {}) {
 		const ethChannel = toEthereumChannel(channel)
 
 		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
@@ -78,6 +78,11 @@ function Adapter(opts, cfg, ethProvider) {
 		)
 
 		await lib.isChannelValid(cfg, channel, address)
+
+		if (options.preValidation === true) {
+			return true
+		}
+
 		// Check the on-chain status
 		const channelStatus = await core.states(ethChannel.hash(core.address))
 		assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
