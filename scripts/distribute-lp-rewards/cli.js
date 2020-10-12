@@ -33,7 +33,7 @@ const DISTRIBUTION_ENDS = new Date('2020-12-31T00:00:00.000Z')
 
 const INCENTIVE_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
 const INCENTIVE_TO_DISTRIBUTE = bigNumberify('7010000000000000000000000')
-const DISTRIBUTION_PER_SCEOND = bigNumberify('478927203065134100')
+const DISTRIBUTION_PER_SECOND = bigNumberify('478927203065134100')
 
 const provider = getDefaultProvider('homestead')
 const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
@@ -44,12 +44,58 @@ const ADXToken = new Contract(
 )
 const Balancer = new Contract(
 	BALANCER_ADX_YUSD_EXCHANGE_ADDRESS,
-	['event Transfer(address indexed src, address indexed dst, uint amt)'],
+	[
+		{
+			anonymous: false,
+			inputs: [
+				{
+					indexed: true,
+					name: 'src',
+					type: 'address'
+				},
+				{
+					indexed: true,
+					name: 'dst',
+					type: 'address'
+				},
+				{
+					indexed: false,
+					name: 'amt',
+					type: 'uint256'
+				}
+			],
+			name: 'Transfer',
+			type: 'event'
+		}
+	],
 	provider
 )
 const Uniswap = new Contract(
 	UNISWAP_ADX_ETH_ROUTER_ADDRESS,
-	['event Transfer(address indexed from, address indexed to, uint value)'],
+	[
+		{
+			anonymous: false,
+			inputs: [
+				{
+					indexed: true,
+					name: 'from',
+					type: 'address'
+				},
+				{
+					indexed: true,
+					name: 'to',
+					type: 'address'
+				},
+				{
+					indexed: false,
+					name: 'value',
+					type: 'uint256'
+				}
+			],
+			name: 'Transfer',
+			type: 'event'
+		}
+	],
 	provider
 )
 const idInterface = new Interface(identityAbi)
@@ -63,7 +109,7 @@ if (!(keystoreFile && keystorePwd)) {
 
 const adapter = new adapters.ethereum.Adapter(
 	{
-		keystoreFile: process.argv[2],
+		keystoreFile,
 		keystorePwd: process.env.KEYSTORE_PWD
 	},
 	cfg,
@@ -92,24 +138,29 @@ async function calculateTotalDistribution() {
 	const uniswapDistribution = () =>
 		calculateDistribution(
 			distribution,
-			Uniswap.interface.parseLog,
+			Uniswap,
 			UNISWAP_ADX_ETH_ROUTER_ADDRESS,
 			parseUniswapTransferEvents
 		)
 	const balancerDistribution = () =>
 		calculateDistribution(
 			distribution,
-			Balancer.interface.parseLog,
+			Balancer,
 			BALANCER_ADX_YUSD_EXCHANGE_ADDRESS,
 			parseBalancerTransferEvents
 		)
 
-	await uniswapDistribution()
-	await balancerDistribution()
-	return distribution
+	const { periodTotalActiveStake: currentTotalActiveStakeUniswap } = await uniswapDistribution()
+	const { periodTotalActiveStake: currentTotalActiveStakeBalancer } = await balancerDistribution()
+
+	return {
+		distribution,
+		currentTotalActiveStakeUniswap: currentTotalActiveStakeUniswap.toString(),
+		currentTotalActiveStakeBalancer: currentTotalActiveStakeBalancer.toString()
+	}
 }
 
-async function calculateDistribution(distribution, parseLog, address, processEvLog) {
+async function calculateDistribution(distribution, contractInterface, address, processEvLog) {
 	const now = Math.floor(Date.now() / 1000)
 	const distributionStarts = DISTRIBUTION_STARTS.getTime() / 1000
 	const distributionEnds = DISTRIBUTION_ENDS.getTime() / 1000
@@ -120,7 +171,7 @@ async function calculateDistribution(distribution, parseLog, address, processEvL
 	})
 	const parsedLogs = await Promise.all(
 		logs
-			.map(log => ({ ...parseLog(log), blockNumber: log.blockNumber }))
+			.map(log => ({ ...contractInterface.interface.parseLog(log), blockNumber: log.blockNumber }))
 			.map(async l => ({ ...l, time: await getBlockTimestamp(l.blockNumber) }))
 	)
 
@@ -129,7 +180,7 @@ async function calculateDistribution(distribution, parseLog, address, processEvL
 		parsedLogs,
 		distributionStarts,
 		Math.min(now, distributionEnds),
-		DISTRIBUTION_PER_SCEOND,
+		DISTRIBUTION_PER_SECOND,
 		processEvLog,
 		LIQUIDITY_DURATION_BY_MULTIPLIER
 	)
@@ -152,7 +203,12 @@ async function main() {
 		process.exit(1)
 	}
 
-	const distribution = await calculateTotalDistribution()
+	const {
+		distribution,
+		currentTotalActiveStakeUniswap,
+		currentTotalActiveStakeBalancer
+	} = await calculateTotalDistribution()
+
 	const distributed = Object.values(distribution).reduce((a, b) => a.add(b), ZERO)
 	if (distributed.gt(INCENTIVE_TO_DISTRIBUTE)) {
 		console.error('Fatal error: calculated amount to distribute is more than the intended maximum!')
@@ -218,7 +274,12 @@ async function main() {
 		// The same validator is assigned for both slots
 		signatures: [balancesSig, balancesSig],
 		periodStart: DISTRIBUTION_STARTS,
-		periodEnd: DISTRIBUTION_ENDS
+		periodEnd: DISTRIBUTION_ENDS,
+		stats: {
+			currentRewardPerSecond: DISTRIBUTION_PER_SECOND.toString(),
+			currentTotalActiveStakeUniswap,
+			currentTotalActiveStakeBalancer
+		}
 	}
 	await rewardChannels.updateOne({ _id: channelId }, { $set: rewardRecord }, { upsert: true })
 

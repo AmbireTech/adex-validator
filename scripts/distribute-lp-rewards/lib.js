@@ -7,7 +7,7 @@ const ethers = require('ethers')
 const { bigNumberify } = ethers.utils
 const ZERO = bigNumberify(0)
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
-const BALANCER_ADX_YUSD_EXCHANGE_ADDRESS = '0x415900c6e18b89531e3e24c902b05c031c71a925'
+const BALANCER_ADX_YUSD_EXCHANGE_ADDRESS = '0x415900c6e18B89531e3E24C902b05c031C71A925'
 const EXCLUDED_ADDRESSES = [
 	'0x23C2c34f38ce66ccC10E71e9bB2A06532D52C5E9',
 	'0x913bBB4c71DA6E88F90BF7e53E6b1310d75d306e'
@@ -23,15 +23,14 @@ function addToMap(map, key, val) {
 	return map
 }
 
-// checks to reset the multiplier on every event
 function getDistributionForPeriodWithMultiplier(
 	distribution = {},
 	parsedLogs,
 	startSeconds,
 	endSeconds,
-	perSecond,
-	processEvLog,
-	liquidityDurationByMultiplier
+	distributionPerSecond,
+	parseEventLog,
+	liquiditySupplyDurationByMultiplier
 ) {
 	const ONE_WEEK = 604800
 	const currentLiquidityByUser = {}
@@ -43,14 +42,12 @@ function getDistributionForPeriodWithMultiplier(
 		const usedEnd = Math.min(endSeconds, end)
 		const delta = usedEnd - usedStart
 		if (!(delta > 0)) return
-		console.log({ delta })
-		console.log({ perSecond })
-		const totalDistribution = perSecond.mul(bigNumberify(Math.floor(delta)))
+		const totalDistribution = distributionPerSecond.mul(bigNumberify(Math.floor(delta)))
 		const scaledLiquidityByUser = {}
 		for (const addr of Object.keys(currentLiquidityByUser)) {
 			const userTime = currentLiquidityByUserTimestamp[addr]
 			const multiplierDelta = Math.floor((usedEnd - userTime) / ONE_WEEK)
-			const multiplier = bigNumberify(liquidityDurationByMultiplier[multiplierDelta] || 0)
+			const multiplier = bigNumberify(liquiditySupplyDurationByMultiplier[multiplierDelta] || 0)
 			addToMap(
 				scaledLiquidityByUser,
 				addr,
@@ -60,24 +57,31 @@ function getDistributionForPeriodWithMultiplier(
 			)
 		}
 		const totalStake = Object.values(scaledLiquidityByUser).reduce((a, b) => a.add(b), ZERO)
-		for (const addr of Object.keys(currentLiquidityByUser)) {
-			addToMap(
-				distribution,
-				addr,
-				totalDistribution.mul(scaledLiquidityByUser[addr]).div(totalStake)
-			)
+		if (totalStake.gt(ZERO)) {
+			for (const addr of Object.keys(currentLiquidityByUser)) {
+				addToMap(
+					distribution,
+					addr,
+					totalDistribution.mul(scaledLiquidityByUser[addr]).div(totalStake)
+				)
+			}
 		}
 	}
 
 	for (const log of parsedLogs) {
 		tally(currentTime, log.time)
-		processEvLog(log, currentLiquidityByUser, currentLiquidityByUserTimestamp, EXCLUDED_ADDRESSES)
+		parseEventLog(log, currentLiquidityByUser, currentLiquidityByUserTimestamp, EXCLUDED_ADDRESSES)
 		currentTime = log.time
 	}
 
 	tally(currentTime, Math.floor(Date.now() / 1000))
 
-	return distribution
+	const periodTotalActiveStake = Object.values(currentLiquidityByUser).reduce(
+		(a, b) => a.add(b),
+		ZERO
+	)
+
+	return { distribution, periodTotalActiveStake }
 }
 
 function parseBalancerTransferEvents(
