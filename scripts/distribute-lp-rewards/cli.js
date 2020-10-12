@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
-/* eslint-disable no-restricted-syntax */
 /* eslint-disable no-param-reassign */
 // const assert = require('assert')
 const ethers = require('ethers')
@@ -12,20 +11,21 @@ const fetch = require('node-fetch')
 const { Channel, Transaction, MerkleTree, splitSig } = require('adex-protocol-eth/js')
 const identityAbi = require('adex-protocol-eth/abi/Identity')
 
-const db = require('../db')
-const cfg = require('../cfg')
-const adapters = require('../adapters')
+const db = require('../../db')
+const cfg = require('../../cfg')
+const adapters = require('../../adapters')
+const {
+	getDistributionForPeriodWithMultiplier,
+	ZERO,
+	parseBalancerTransferEvents,
+	parseUniswapTransferEvents,
+	ADX_TOKEN,
+	DISTRIBUTION_IDENTITY,
+	FEE_TOKEN,
+	UNISWAP_ADX_ETH_ROUTER_ADDRESS,
+	BALANCER_ADX_YUSD_EXCHANGE_ADDRESS
+} = require('./lib')
 
-const ADX_TOKEN = '0xADE00C28244d5CE17D72E40330B1c318cD12B7c3'
-const DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
-const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
-const UNISWAP_ADX_ETH_ROUTER = '0xD3772A963790feDE65646cFdae08734A17cd0f47'
-const BALANCER_ADX_YUSD_EXCHANGE = '0x415900c6e18b89531e3e24c902b05c031c71a925'
-const EXCLUDE_ADDRESSES = [
-	'0x23C2c34f38ce66ccC10E71e9bB2A06532D52C5E9',
-	'0x913bBB4c71DA6E88F90BF7e53E6b1310d75d306e'
-]
-const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
 const coreAddr = cfg.ETHEREUM_CORE_ADDR
 
 const DISTRIBUTION_STARTS = new Date('2020-08-04T00:00:00.000Z')
@@ -34,7 +34,6 @@ const DISTRIBUTION_ENDS = new Date('2020-12-31T00:00:00.000Z')
 const INCENTIVE_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
 const INCENTIVE_TO_DISTRIBUTE = bigNumberify('7010000000000000000000000')
 const DISTRIBUTION_PER_SCEOND = bigNumberify('478927203065134100')
-const ZERO = bigNumberify(0)
 
 const provider = getDefaultProvider('homestead')
 const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
@@ -44,12 +43,12 @@ const ADXToken = new Contract(
 	provider
 )
 const Balancer = new Contract(
-	BALANCER_ADX_YUSD_EXCHANGE,
+	BALANCER_ADX_YUSD_EXCHANGE_ADDRESS,
 	['event Transfer(address indexed src, address indexed dst, uint amt)'],
 	provider
 )
 const Uniswap = new Contract(
-	UNISWAP_ADX_ETH_ROUTER,
+	UNISWAP_ADX_ETH_ROUTER_ADDRESS,
 	['event Transfer(address indexed from, address indexed to, uint value)'],
 	provider
 )
@@ -72,15 +71,9 @@ const adapter = new adapters.ethereum.Adapter(
 )
 
 const LIQUIDITY_DURATION_BY_MULTIPLIER = {
-	1: 10,
+	1: 10, // 1 week => 0.1% increase
 	2: 20,
 	3: 30
-}
-
-function addToMap(map, key, val) {
-	if (!map[key]) map[key] = val
-	else map[key] = map[key].add(val)
-	return map
 }
 
 async function relayerPost(url, body) {
@@ -97,18 +90,18 @@ async function relayerPost(url, body) {
 async function calculateTotalDistribution() {
 	const distribution = {}
 	const uniswapDistribution = () =>
-		processEventLogs(
+		calculateDistribution(
 			distribution,
 			Uniswap.interface.parseLog,
-			UNISWAP_ADX_ETH_ROUTER,
-			processUniswapLog
+			UNISWAP_ADX_ETH_ROUTER_ADDRESS,
+			parseUniswapTransferEvents
 		)
 	const balancerDistribution = () =>
-		processEventLogs(
+		calculateDistribution(
 			distribution,
 			Balancer.interface.parseLog,
-			BALANCER_ADX_YUSD_EXCHANGE,
-			processBalancerLog
+			BALANCER_ADX_YUSD_EXCHANGE_ADDRESS,
+			parseBalancerTransferEvents
 		)
 
 	await uniswapDistribution()
@@ -116,7 +109,7 @@ async function calculateTotalDistribution() {
 	return distribution
 }
 
-async function processEventLogs(distribution, parseLog, address, loopProcess) {
+async function calculateDistribution(distribution, parseLog, address, processEvLog) {
 	const now = Math.floor(Date.now() / 1000)
 	const distributionStarts = DISTRIBUTION_STARTS.getTime() / 1000
 	const distributionEnds = DISTRIBUTION_ENDS.getTime() / 1000
@@ -137,103 +130,14 @@ async function processEventLogs(distribution, parseLog, address, loopProcess) {
 		distributionStarts,
 		Math.min(now, distributionEnds),
 		DISTRIBUTION_PER_SCEOND,
-		loopProcess
+		processEvLog,
+		LIQUIDITY_DURATION_BY_MULTIPLIER
 	)
 }
 
 async function getBlockTimestamp(blockNumber) {
 	const block = await provider.getBlock(blockNumber)
 	return block.timestamp
-}
-
-function processBalancerLog(log, currentLiquidityByUser, liquidityDuration) {
-	const { time } = log
-	const { src, dst, amt } = log.values
-
-	if (
-		src !== BALANCER_ADX_YUSD_EXCHANGE &&
-		src !== NULL_ADDRESS &&
-		!EXCLUDE_ADDRESSES.includes(src)
-	) {
-		currentLiquidityByUser[src] = currentLiquidityByUser[src].sub(amt)
-		liquidityDuration[src] = time
-	}
-
-	if (
-		dst !== BALANCER_ADX_YUSD_EXCHANGE &&
-		dst !== NULL_ADDRESS &&
-		!EXCLUDE_ADDRESSES.includes(dst)
-	) {
-		currentLiquidityByUser[dst] = currentLiquidityByUser[dst].add(amt)
-		liquidityDuration[dst] = time
-	}
-}
-
-function processUniswapLog(log, currentLiquidityByUser, liquidityDuration) {
-	const { time } = log
-	const { from, value, to } = log.values
-	if (from !== NULL_ADDRESS && !EXCLUDE_ADDRESSES.includes(from)) {
-		currentLiquidityByUser[from] = currentLiquidityByUser[from].sub(value)
-		liquidityDuration[from] = time
-	}
-
-	if (to !== NULL_ADDRESS && !EXCLUDE_ADDRESSES.includes(to)) {
-		addToMap(currentLiquidityByUser, to, value)
-		liquidityDuration[to] = time
-	}
-}
-
-function getDistributionForPeriodWithMultiplier(
-	distribution = {},
-	parsedLogs,
-	startSeconds,
-	endSeconds,
-	perSecond,
-	processEvLog
-) {
-	const ONE_WEEK = 604800
-	const currentLiquidityByUser = {}
-	const currentLiquidityByUserTimestamp = {}
-	let currentTime = 0
-
-	const tally = (start, end) => {
-		const usedStart = Math.max(startSeconds, start)
-		const usedEnd = Math.min(endSeconds, end)
-		const delta = usedEnd - usedStart
-		if (!(delta > 0)) return
-		const totalDistribution = perSecond.mul(delta)
-		const scaledLiquidityByUser = {}
-		for (const addr of Object.keys(currentLiquidityByUser)) {
-			const userTime = currentLiquidityByUserTimestamp[addr]
-			const multiplierDelta = Math.floor((usedEnd - userTime) / ONE_WEEK)
-			const multiplier = bigNumberify(LIQUIDITY_DURATION_BY_MULTIPLIER[multiplierDelta] || 0)
-			addToMap(
-				scaledLiquidityByUser,
-				addr,
-				currentLiquidityByUser[addr].add(
-					currentLiquidityByUser[addr].mul(multiplier).div(bigNumberify(100))
-				)
-			)
-		}
-		const totalStake = Object.values(scaledLiquidityByUser).reduce((a, b) => a.add(b), ZERO)
-		for (const addr of Object.keys(currentLiquidityByUser)) {
-			addToMap(
-				distribution,
-				addr,
-				totalDistribution.mul(scaledLiquidityByUser[addr]).div(totalStake)
-			)
-		}
-	}
-
-	for (const log of parsedLogs) {
-		tally(currentTime, log.time)
-		processEvLog(log, currentLiquidityByUser, currentLiquidityByUserTimestamp)
-		currentTime = log.time
-	}
-
-	tally(currentTime, Math.floor(Date.now() / 1000))
-
-	return distribution
 }
 
 async function main() {
