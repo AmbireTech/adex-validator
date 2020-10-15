@@ -16,6 +16,7 @@ const ADX_TOKEN = '0xADE00C28244d5CE17D72E40330B1c318cD12B7c3'
 const DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const UNISWAP_ADX_ETH_ROUTER_ADDRESS = '0xD3772A963790feDE65646cFdae08734A17cd0f47'
+const ONE_WEEK = 604800
 
 function addToMap(map, key, val) {
 	if (!map[key]) map[key] = val
@@ -32,7 +33,6 @@ function getDistributionForPeriodWithMultiplier(
 	parseEventLog,
 	liquiditySupplyDurationByMultiplier
 ) {
-	const ONE_WEEK = 604800
 	const currentLiquidityByUser = {}
 	const currentLiquidityByUserTimestamp = {}
 	let currentTime = 0
