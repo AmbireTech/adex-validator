@@ -1,5 +1,6 @@
 const { Joi } = require('celebrate')
 const { eventTypes } = require('../services/constants')
+const cfg = require('../cfg')
 
 const numericString = Joi.string().regex(/^\d+$/)
 
@@ -97,6 +98,7 @@ module.exports = {
 				.allow(''),
 			adUnits: Joi.array().items(Joi.object()),
 			targeting: Joi.array().items(Joi.object()),
+			depositChainId: Joi.string().valid(Object.keys(cfg.supportedChainIdsByRPC)),
 			validators: Joi.array()
 				.items(
 					Joi.object({

@@ -27,6 +27,7 @@ const opts = {
 }
 
 const provider = new providers.JsonRpcProvider('http://localhost:8545')
+const testnetChainId = '123456654321'
 let validChannel
 
 // ethereum adapter
@@ -136,13 +137,19 @@ tape('should validate channel properly', async function(t) {
 
 tape('should not validate channel with invalid id', async function(t) {
 	const { core } = await deployContracts()
+	const okChannel = await getValidChannel()
 	const ethereumAdapter = new ethereum.Adapter(
 		opts,
-		{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
+		{
+			...cfg,
+			depositAssetsToChainId: {
+				...cfg.depositAssetsToChainId,
+				[okChannel.depositAsset]: testnetChainId
+			},
+			chainIdsByCoreAddr: { ...cfg.chainIdsByCoreAddr, [testnetChainId]: core.address }
+		},
 		provider
 	)
-
-	const okChannel = await getValidChannel()
 
 	const invalidChannelId = {
 		...okChannel,
@@ -164,7 +171,15 @@ tape('should not validate invalid channels', async function(t) {
 		const [channel, config, err] = item
 		const ethAdapter = new ethereum.Adapter(
 			opts,
-			{ ...cfg, ...config, ETHEREUM_CORE_ADDR: core.address },
+			{
+				...cfg,
+				...config,
+				depositAssetsToChainId: {
+					...cfg.depositAssetsToChainId,
+					[channel.depositAsset]: testnetChainId
+				},
+				chainIdsByCoreAddr: { ...cfg.chainIdsByCoreAddr, [testnetChainId]: core.address }
+			},
 			provider
 		)
 		await ethAdapter.init()
@@ -215,16 +230,25 @@ tape('EWT: should verify message', async function(t) {
 async function getValidChannel() {
 	if (validChannel) return validChannel
 	const { core } = await deployContracts()
+
+	// get a sample valid channel
+	const channel = await sampleChannel()
+
 	const ethereumAdapter = new ethereum.Adapter(
 		opts,
-		{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
+		{
+			...cfg,
+			depositAssetsToChainId: {
+				...cfg.depositAssetsToChainId,
+				[channel.depositAsset]: testnetChainId
+			},
+			chainIdsByCoreAddr: { ...cfg.chainIdsByCoreAddr, [testnetChainId]: core.address }
+		},
 		provider
 	)
 
 	await ethereumAdapter.init()
 
-	// get a sample valid channel
-	const channel = await sampleChannel()
 	const ethChannel = ethereum.toEthereumChannel(channel)
 	channel.id = ethChannel.hashHex(core.address)
 

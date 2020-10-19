@@ -19,6 +19,7 @@
 | CREATORS_WHITELIST | List of accepted channel creators; leave empty for all | [] |
 | MINIMAL_DEPOSIT | Least amount a channel is required to have to be accepted | 0 |
 | TOKEN_ADDRESS_WHITELIST | List of valid payment tokens address; leave empty for all | [] |
-| ETHEREUM_CORE_ADDR | On chain contract address   | 0x333420fc6a897356e69b62417cd17ff012177d2b |
-| ETHEREUM_NETWORK | Ethereum network id | homestead |,
 | VALIDATORS_WHITELIST | List of accepted channel validators; leave empty for all | [] |
+| chainIdsByCoreAddr | Supported chain id to the network deployed on chain contract core addr | { '1': '0x333420fc6a897356e69b62417cd17ff012177d2b' } |
+| supportedChainIdsByRPC | Map of a network chain id to the network rpc url | { '1': 'https://mainnet.infura.io/*' } |
+| depositAssetsToChainId | Default fallback mapping whitelisted deposit asset to its network chain id | {'0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359': '1' } |

@@ -50,7 +50,7 @@ const ADXToken = new Contract(
 )
 const idInterface = new Interface(identityAbi)
 
-const coreAddr = cfg.ETHEREUM_CORE_ADDR
+const coreAddr = cfg.chainIdsByCoreAddr[constants.ETHEREUM_MAINNET_CHAIN_ID]
 
 const ZERO = bigNumberify(0)
 

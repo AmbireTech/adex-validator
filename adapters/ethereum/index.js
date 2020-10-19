@@ -1,5 +1,5 @@
 const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
-const { Wallet, Contract, utils, getDefaultProvider } = require('ethers')
+const { Wallet, Contract, utils, providers } = require('ethers')
 const coreABI = require('adex-protocol-eth/abi/AdExCore')
 const formatAddress = require('ethers').utils.getAddress
 const fetch = require('node-fetch')
@@ -23,9 +23,6 @@ let keystoreJson = null
 let wallet = null
 
 function Adapter(opts, cfg, ethProvider) {
-	const provider = ethProvider || getDefaultProvider(cfg.ETHEREUM_NETWORK)
-	const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
-
 	this.init = function() {
 		assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
 		return readFile(opts.keystoreFile).then(json => {
@@ -66,6 +63,7 @@ function Adapter(opts, cfg, ethProvider) {
 
 	this.validateChannel = async function(channel, options = {}) {
 		const ethChannel = toEthereumChannel(channel)
+		const core = getCoreContractForChannel(cfg, channel, ethProvider)
 
 		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
 		assert.equal(channel.creator, formatAddress(channel.creator), 'channel.creator is checksummed')
@@ -178,6 +176,14 @@ function toEthereumChannel(channel) {
 		validators: channel.spec.validators.map(v => v.id),
 		spec: specHash
 	})
+}
+
+function getCoreContractForChannel(cfg, channel, ethProvider) {
+	const depositChainId =
+		channel.spec.depositChainId || cfg.depositAssetsToChainId[channel.depositAsset]
+	const provider =
+		ethProvider || new providers.JsonRpcProvider(cfg.supportedChainIdsByRPC[depositChainId])
+	return new Contract(cfg.chainIdsByCoreAddr[depositChainId], coreABI, provider)
 }
 
 /*
