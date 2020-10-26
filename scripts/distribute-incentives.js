@@ -7,6 +7,7 @@
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
+const { id } = ethers.utils
 const { keccak256, defaultAbiCoder, bigNumberify, hexlify, Interface } = ethers.utils
 const fetch = require('node-fetch')
 const { Channel, Transaction, MerkleTree, splitSig } = require('adex-protocol-eth/js')
@@ -17,6 +18,8 @@ const db = require('../db')
 const cfg = require('../cfg')
 const adapters = require('../adapters')
 const loyaltyBonuses = require('./loyaltyBonuses')
+
+const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 
 const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
 
@@ -261,7 +264,8 @@ async function main() {
 		periodEnd: DISTRIBUTION_ENDS,
 		stats: {
 			currentRewardPerSecond,
-			currentTotalActiveStake
+			currentTotalActiveStake,
+			poolId: POOL_ID
 		}
 	}
 	await rewardChannels.updateOne({ _id: channelId }, { $set: rewardRecord }, { upsert: true })
