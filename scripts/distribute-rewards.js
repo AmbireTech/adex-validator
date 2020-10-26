@@ -330,10 +330,6 @@ async function main() {
 		const balancesSig = splitSig(await adapter.sign(hashToSign))
 		const periodStart = period.start
 		const periodEnd = period.end
-		const periodSeconds = bigNumberify(
-			Math.floor((period.end.getTime() - period.start.getTime()) / 1000)
-		)
-		const currentRewardPerSecond = period.totalDistributed.div(periodSeconds)
 
 		// The record that we are going to be saving in the DB
 		const rewardRecord = {
@@ -349,7 +345,6 @@ async function main() {
 			periodEnd,
 			stats: {
 				periodTotalActiveStake: period.periodTotalActiveStake.toString(10),
-				currentRewardPerSecond,
 				poolId: POOL_ID
 			}
 		}
