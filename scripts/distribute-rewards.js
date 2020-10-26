@@ -344,7 +344,7 @@ async function main() {
 			periodStart,
 			periodEnd,
 			stats: {
-				periodTotalActiveStake: period.periodTotalActiveStake.toString(10),
+				currentTotalActiveStake: period.periodTotalActiveStake.toString(10),
 				poolId: POOL_ID
 			}
 		}
