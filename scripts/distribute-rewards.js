@@ -200,6 +200,7 @@ function calculateDistributionForPeriod(period, bonds, slashes) {
 	const totalInPeriod = period.toDistribute.map(x => x.value).reduce(sum)
 
 	const all = {}
+	const activeBondsByDataPoint = {}
 	period.toDistribute.forEach(datapoint => {
 		const slashEv = [...slashes].reverse().find(x => datapoint.time > x.time)
 		const slashPts = slashEv ? slashEv.slashPts : bigNumberify(0)
@@ -220,12 +221,17 @@ function calculateDistributionForPeriod(period, bonds, slashes) {
 			if (!all[bond.owner]) all[bond.owner] = bigNumberify(0)
 			all[bond.owner] = all[bond.owner].add(datapoint.value.mul(bond.effectiveAmount).div(total))
 		})
+		activeBondsByDataPoint[datapoint.time] = total
 	})
 
 	const totalDistributed = Object.values(all).reduce(sum, bigNumberify(0))
 	assert.ok(totalDistributed.lte(totalInPeriod), 'total distributed <= total in the period')
+	const periodTotalActiveStake = Object.values(activeBondsByDataPoint).reduce(
+		(a, b) => a.add(b),
+		bigNumberify(0)
+	)
 
-	return { balances: all, totalDistributed }
+	return { balances: all, totalDistributed, periodTotalActiveStake }
 }
 
 async function main() {
@@ -322,6 +328,12 @@ async function main() {
 		const stateRoot = tree.getRoot()
 		const hashToSign = channel.hashToSign(coreAddr, stateRoot)
 		const balancesSig = splitSig(await adapter.sign(hashToSign))
+		const periodStart = period.start
+		const periodEnd = period.end
+		const periodSeconds = bigNumberify(
+			Math.floor((period.end.getTime() - period.start.getTime()) / 1000)
+		)
+		const currentRewardPerSecond = period.totalDistributed.div(periodSeconds)
 
 		// The record that we are going to be saving in the DB
 		const rewardRecord = {
@@ -333,8 +345,13 @@ async function main() {
 			),
 			// The same validator is assigned for both slots
 			signatures: [balancesSig, balancesSig],
-			periodStart: period.start,
-			periodEnd: period.end
+			periodStart,
+			periodEnd,
+			stats: {
+				periodTotalActiveStake: period.periodTotalActiveStake.toString(10),
+				currentRewardPerSecond,
+				poolId: POOL_ID
+			}
 		}
 		await rewardChannels.insertOne(rewardRecord)
 
