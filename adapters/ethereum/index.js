@@ -184,7 +184,7 @@ function getCoreContractForChannel(cfg, channel, ethProvider) {
 	const provider =
 		ethProvider ||
 		(depositChainId && new providers.JsonRpcProvider(cfg.supportedChainIdsByRPC[depositChainId])) ||
-		getDefaultProvider(cfg.NETWORK)
+		getDefaultProvider(cfg.ETHEREUM_NETWORK)
 	return new Contract(cfg.chainIdsByCoreAddr[depositChainId], coreABI, provider)
 }
 
