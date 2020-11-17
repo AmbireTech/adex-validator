@@ -1,5 +1,5 @@
 const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
-const { Wallet, Contract, utils, providers } = require('ethers')
+const { Wallet, Contract, utils, providers, getDefaultProvider } = require('ethers')
 const coreABI = require('adex-protocol-eth/abi/AdExCore')
 const formatAddress = require('ethers').utils.getAddress
 const fetch = require('node-fetch')
@@ -182,7 +182,9 @@ function getCoreContractForChannel(cfg, channel, ethProvider) {
 	const depositChainId =
 		channel.spec.depositChainId || cfg.depositAssetsToChainId[channel.depositAsset]
 	const provider =
-		ethProvider || new providers.JsonRpcProvider(cfg.supportedChainIdsByRPC[depositChainId])
+		ethProvider ||
+		(depositChainId && new providers.JsonRpcProvider(cfg.supportedChainIdsByRPC[depositChainId])) ||
+		getDefaultProvider(cfg.NETWORK)
 	return new Contract(cfg.chainIdsByCoreAddr[depositChainId], coreABI, provider)
 }
 

@@ -19,6 +19,7 @@ module.exports = {
 	CREATORS_WHITELIST: [],
 	MINIMAL_DEPOSIT: 0,
 	MINIMAL_FEE: 0,
+	NETWORK: 'goerli',
 	ETHEREUM_ADAPTER_RELAYER: 'https://goerli-relayer.adex.network',
 	VALIDATORS_WHITELIST: [],
 	CHANNEL_REFRESH_INTERVAL: 1000,
