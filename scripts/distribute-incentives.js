@@ -26,7 +26,7 @@ const DISTRIBUTION_STARTS = new Date('2020-12-29T00:00:00.000Z')
 const DISTRIBUTION_ENDS = new Date('2021-03-31T00:00:00.000Z')
 const DISTRIBUTION_SECONDS = (DISTRIBUTION_ENDS.getTime() - DISTRIBUTION_STARTS.getTime()) / 1000
 const CHANNEL_VALIDITY = 350 * 24 * 60 * 60
-const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d')
+const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d') // '0x2ce0c96383fb229d9776f33846e983a956a7d95844fac57b180ed0071d93bb28'
 
 if ((DISTRIBUTION_ENDS.getTime() - DISTRIBUTION_STARTS.getTime()) / 1000 > CHANNEL_VALIDITY / 2) {
 	throw new Error('distribution lasts for longer than channel validity times two')
@@ -253,7 +253,8 @@ async function main() {
 		periodEnd: DISTRIBUTION_ENDS,
 		stats: {
 			currentRewardPerSecond,
-			currentTotalActiveStake
+			currentTotalActiveStake,
+			poolId: POOL_ID
 		}
 	}
 	await rewardChannels.updateOne({ _id: channelId }, { $set: rewardRecord }, { upsert: true })

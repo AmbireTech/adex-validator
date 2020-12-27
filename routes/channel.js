@@ -65,9 +65,10 @@ function getEventAggregates(req, res, next) {
 async function getList(req, res, next) {
 	const { CHANNELS_FIND_LIMIT } = cfg
 	// assign 0 default value
-	const { page = 0, validUntil } = req.query
+	const { page: paramsPage, validUntil } = req.query
 	const channelsCol = db.getMongo().collection('channels')
-	const skip = page && parseInt(page, 10) * CHANNELS_FIND_LIMIT
+	const page = parseInt(paramsPage, 10) || 0
+	const skip = page * CHANNELS_FIND_LIMIT
 	let query = {
 		validUntil: { $gt: parseInt(validUntil, 10) || Math.floor(Date.now() / 1000) }
 	}
