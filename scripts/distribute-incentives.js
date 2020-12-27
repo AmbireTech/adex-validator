@@ -24,6 +24,7 @@ const ADX_TOKEN = '0xADE00C28244d5CE17D72E40330B1c318cD12B7c3'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const DISTRIBUTION_STARTS = new Date('2020-12-29T00:00:00.000Z')
 const DISTRIBUTION_ENDS = new Date('2021-03-31T00:00:00.000Z')
+const DISTRIBUTION_SECONDS = (DISTRIBUTION_ENDS.getTime() - DISTRIBUTION_STARTS.getTime()) / 1000
 const CHANNEL_VALIDITY = 350 * 24 * 60 * 60
 const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d')
 
@@ -33,6 +34,11 @@ if ((DISTRIBUTION_ENDS.getTime() - DISTRIBUTION_STARTS.getTime()) / 1000 > CHANN
 
 const INCENTIVE_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
 const INCENTIVE_TO_DISTRIBUTE = bigNumberify('5000000000000000000000000')
+const DISTRIBUTION_REWARDS_PER_SECOND = INCENTIVE_TO_DISTRIBUTE.div(DISTRIBUTION_SECONDS).toString(
+	10
+)
+
+if (DISTRIBUTION_REWARDS_PER_SECOND !== '629025764895330112') throw new Error('rate miscalc?')
 
 const provider = getDefaultProvider('homestead')
 const Staking = new Contract(ADDR_STAKING, stakingAbi, provider)
@@ -145,7 +151,7 @@ async function calculateTotalDistribution() {
 	const now = Math.floor(Date.now() / 1000)
 	const distributionStarts = DISTRIBUTION_STARTS.getTime() / 1000
 	const distributionEnds = DISTRIBUTION_ENDS.getTime() / 1000
-	const distributionRewardPerSecond = '629025764895330200'
+	const distributionRewardPerSecond = DISTRIBUTION_REWARDS_PER_SECOND
 
 	const { distribution, periodTotalActiveStake } = getDistributionForPeriod(
 		parsedLogs,
