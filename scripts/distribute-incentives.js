@@ -7,7 +7,7 @@
 const ethers = require('ethers')
 
 const { Contract, getDefaultProvider } = ethers
-const { keccak256, defaultAbiCoder, bigNumberify, hexlify, Interface } = ethers.utils
+const { keccak256, defaultAbiCoder, bigNumberify, hexlify, Interface, id } = ethers.utils
 const fetch = require('node-fetch')
 const { Channel, Transaction, MerkleTree, splitSig } = require('adex-protocol-eth/js')
 const stakingAbi = require('adex-protocol-eth/abi/Staking')
@@ -16,18 +16,23 @@ const identityAbi = require('adex-protocol-eth/abi/Identity')
 const db = require('../db')
 const cfg = require('../cfg')
 const adapters = require('../adapters')
-const loyaltyBonuses = require('./loyaltyBonuses')
 
 const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
 
 const DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
 const ADX_TOKEN = '0xADE00C28244d5CE17D72E40330B1c318cD12B7c3'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
-const DISTRIBUTION_STARTS = new Date('2020-08-04T00:00:00.000Z')
-const DISTRIBUTION_ENDS = new Date('2020-12-31T00:00:00.000Z')
+const DISTRIBUTION_STARTS = new Date('2020-12-29T00:00:00.000Z')
+const DISTRIBUTION_ENDS = new Date('2021-03-31T00:00:00.000Z')
+const CHANNEL_VALIDITY = 350 * 24 * 60 * 60
+const POOL_ID = id('validator:0x2892f6C41E0718eeeDd49D98D648C789668cA67d')
+
+if ((DISTRIBUTION_ENDS.getTime() - DISTRIBUTION_STARTS.getTime()) / 1000 > CHANNEL_VALIDITY / 2) {
+	throw new Error('distribution lasts for longer than channel validity times two')
+}
 
 const INCENTIVE_CHANNEL_OPEN_FEE = bigNumberify('1500000000000000000')
-const INCENTIVE_TO_DISTRIBUTE = bigNumberify('7010000000000000000000000')
+const INCENTIVE_TO_DISTRIBUTE = bigNumberify('5000000000000000000000000')
 
 const provider = getDefaultProvider('homestead')
 const Staking = new Contract(ADDR_STAKING, stakingAbi, provider)
@@ -133,16 +138,14 @@ async function calculateTotalDistribution() {
 	// From infura's docs: https://infura.io/docs/ethereum/json-rpc/eth-getLogs
 	// A max of 10,000 results can be returned by a single query
 	const logs = await provider.getLogs({ fromBlock: 0, address: ADDR_STAKING })
-	if (logs.length === 10000)
+	if (logs.length >= 10000)
 		throw new Error('max limit of getLogs reached; we must reimplement the way we get logs')
 
 	const parsedLogs = logs.map(log => Staking.interface.parseLog(log))
 	const now = Math.floor(Date.now() / 1000)
 	const distributionStarts = DISTRIBUTION_STARTS.getTime() / 1000
 	const distributionEnds = DISTRIBUTION_ENDS.getTime() / 1000
-	const earlyBirdEnds = 1599177600
-	const earlyBirdSubscriptionEnds = 1597276800
-	const distributionRewardPerSecond = '478927203065134100'
+	const distributionRewardPerSecond = '629025764895330200'
 
 	const { distribution, periodTotalActiveStake } = getDistributionForPeriod(
 		parsedLogs,
@@ -150,25 +153,6 @@ async function calculateTotalDistribution() {
 		Math.min(now, distributionEnds),
 		bigNumberify(distributionRewardPerSecond)
 	)
-	// duplicate entries are not an issue
-	const earlyBirdAllowed = parsedLogs
-		.filter(l => l.name === 'LogBond' && l.values.time.toNumber() < earlyBirdSubscriptionEnds)
-		.map(l => l.values.owner)
-	const earlyBirdLogs = parsedLogs.filter(
-		l => !l.values.owner || earlyBirdAllowed.includes(l.values.owner)
-	)
-	const { distribution: fromEarlyBird } = getDistributionForPeriod(
-		earlyBirdLogs,
-		distributionStarts,
-		Math.min(now, earlyBirdEnds),
-		bigNumberify('373357228195937860')
-	)
-	Object.entries(fromEarlyBird).forEach(([addr, amount]) => {
-		addToMap(distribution, addr, amount)
-	})
-	Object.entries(loyaltyBonuses).forEach(([addr, amount]) => {
-		addToMap(distribution, addr, bigNumberify(amount))
-	})
 
 	return {
 		distribution,
@@ -207,11 +191,11 @@ async function main() {
 		creator: DISTRIBUTION_IDENTITY,
 		tokenAddr: ADXToken.address,
 		tokenAmount: INCENTIVE_TO_DISTRIBUTE.toString(10),
-		validUntil: DISTRIBUTION_ENDS.getTime() / 1000 + 2592000,
+		validUntil: DISTRIBUTION_STARTS.getTime() / 1000 + CHANNEL_VALIDITY,
 		validators: [adapter.whoami(), adapter.whoami()],
-		// This one may produce diff results depending on timezone
-		// spec: id(POOL_ID + DISTRIBUTION_STARTS.toString())
-		spec: '0xf72ffa0786a2d5294679c87728c5df56f1f57910de95e738a0db0e4f9952319b'
+		// we can just use new formula: POOL_ID + DISTRIBUTION_STARTS.getTime()
+		// prev spec used .toString() instead of .getTime() but that is dependent on timezone
+		spec: id(POOL_ID + DISTRIBUTION_STARTS.getTime())
 	}
 	const channel = new Channel({
 		...channelArgs,
@@ -220,6 +204,8 @@ async function main() {
 	const channelId = channel.hashHex(coreAddr)
 
 	if (!(await rewardChannels.countDocuments({ channelId }))) {
+		console.log('Channel does not exist, opening...')
+
 		// Open the channel
 		const openTxRaw = {
 			identityContract: DISTRIBUTION_IDENTITY,
