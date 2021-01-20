@@ -19,11 +19,13 @@ module.exports = {
 	CREATORS_WHITELIST: [],
 	MINIMAL_DEPOSIT: 0,
 	MINIMAL_FEE: 0,
-	ETHEREUM_CORE_ADDR: '0x333420fc6a897356e69b62417cd17ff012177d2b',
-	ETHEREUM_NETWORK: 'goerli',
+	NETWORK: 'goerli',
 	ETHEREUM_ADAPTER_RELAYER: 'https://goerli-relayer.adex.network',
 	VALIDATORS_WHITELIST: [],
 	CHANNEL_REFRESH_INTERVAL: 1000,
 	MAX_CHANNEL_SPEC_BYTES_SIZE: 35000,
-	admins: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e']
+	admins: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
+	chainIdsByCoreAddr: {},
+	supportedChainIdsByRPC: {},
+	depositAssetsToChainId: {}
 }

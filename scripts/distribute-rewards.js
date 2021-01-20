@@ -12,6 +12,7 @@ const identityAbi = require('adex-protocol-eth/abi/Identity')
 const db = require('../db')
 const cfg = require('../cfg')
 const adapters = require('../adapters')
+const constants = require('../services/constants')
 
 const STAKING_START_MONTH = new Date('01-01-2020')
 const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
@@ -38,7 +39,7 @@ const Token = new Contract(
 )
 const idInterface = new Interface(identityAbi)
 
-const coreAddr = cfg.ETHEREUM_CORE_ADDR
+const coreAddr = cfg.chainIdsByCoreAddr[constants.ETHEREUM_MAINNET_CHAIN_ID]
 
 const keystoreFile = process.argv[2]
 const keystorePwd = process.env.KEYSTORE_PWD
