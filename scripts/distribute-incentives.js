@@ -16,6 +16,7 @@ const identityAbi = require('adex-protocol-eth/abi/Identity')
 const db = require('../db')
 const cfg = require('../cfg')
 const adapters = require('../adapters')
+const constants = require('../services/constants')
 
 const ADDR_STAKING = '0x4846c6837ec670bbd1f5b485471c8f64ecb9c534'
 
