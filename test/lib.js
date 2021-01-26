@@ -62,6 +62,15 @@ function exec(cmd) {
 }
 
 function forceTick() {
+	const {
+		RUST_VALIDATOR_WORKER,
+		RUST_DOCKER_VALIDATOR_WORKER,
+		LEADER_SENTRY,
+		FOLLOWER_SENTRY
+	} = process.env
+	const leaderSentryUrl = LEADER_SENTRY || 'http://localhost:8005'
+	const followerSentryUrl = FOLLOWER_SENTRY || 'http:///localhost:8006'
+
 	let leaderTick = `./bin/validatorWorker.js --single-tick --adapter=dummy --dummyIdentity=${
 		dummyVals.ids.leader
 	} --sentryUrl=http://localhost:8005`
@@ -69,17 +78,28 @@ function forceTick() {
 		dummyVals.ids.follower
 	} --sentryUrl=http://localhost:8006`
 	// using rust validator worker
-	if (process.env.RUST_VALIDATOR_WORKER) {
+	if (RUST_VALIDATOR_WORKER) {
 		const onlyRun = process.env.RUST_ONLY_RUN
 		if (!onlyRun || onlyRun === 'follower')
-			leaderTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
+			leaderTick = `RUST_BACKTRACE=1 ${RUST_VALIDATOR_WORKER} -a dummy -i ${
 				dummyVals.ids.leader
 			} -u http://localhost:8005 -t`
 		if (!onlyRun || onlyRun === 'leader')
-			followerTick = `RUST_BACKTRACE=1 ${process.env.RUST_VALIDATOR_WORKER} -a dummy -i ${
+			followerTick = `RUST_BACKTRACE=1 ${RUST_VALIDATOR_WORKER} -a dummy -i ${
 				dummyVals.ids.follower
 			} -u http://localhost:8006 -t`
 	}
+
+	// e.g. RUST_DOCKER_VALIDATOR_WORKER=docker-compose exec -it -f docker-compose.dev.yml adex-validator
+	if (RUST_DOCKER_VALIDATOR_WORKER) {
+		leaderTick = `${RUST_DOCKER_VALIDATOR_WORKER} /bin/sh -c "validator_worker -a dummy -i ${
+			dummyVals.ids.leader
+		} -u ${leaderSentryUrl} -t"`
+		leaderTick = `${RUST_DOCKER_VALIDATOR_WORKER} /bin/sh -c "validator_worker -a dummy -i ${
+			dummyVals.ids.follower
+		} -u ${followerSentryUrl} -t"`
+	}
+
 	return Promise.all([exec(leaderTick), exec(followerTick)])
 }
 
