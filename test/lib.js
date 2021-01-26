@@ -90,7 +90,6 @@ function forceTick() {
 			} -u http://localhost:8006 -t`
 	}
 
-	// e.g. RUST_DOCKER_VALIDATOR_WORKER=docker-compose exec -it -f docker-compose.dev.yml adex-validator
 	if (RUST_DOCKER_VALIDATOR_WORKER) {
 		leaderTick = `${RUST_DOCKER_VALIDATOR_WORKER} /bin/sh -c "validator_worker -a dummy -i ${
 			dummyVals.ids.leader

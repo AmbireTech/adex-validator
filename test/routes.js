@@ -74,7 +74,7 @@ tape('/channel/{id}/status', async function(t) {
 		res.json()
 	)
 	t.ok(resp.channel, 'has resp.channel')
-	t.deepEqual(resp.channel, dummyVals.channel, 'channel is deepEqual')
+	t.deepEqual(resp.channel, { ...dummyVals.channel, exhausted: [] }, 'channel is deepEqual')
 	t.end()
 })
 
@@ -221,8 +221,7 @@ tape('POST /channel: create channel', async function(t) {
 			...dummyVals.channel.spec,
 			minPerImpression: '1',
 			maxPerImpression: '1',
-			withdrawPeriodStart,
-			targeting: [{ tag: 'gender_female', score: 17 }]
+			withdrawPeriodStart
 		}
 	}
 
