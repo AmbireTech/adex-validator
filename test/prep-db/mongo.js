@@ -42,5 +42,6 @@ const dummyVals = {
 
 if (typeof module !== 'undefined') module.exports = dummyVals
 if (typeof db !== 'undefined') {
-	db.channels.insert(Object.assign({ _id: dummyVals.channel.id }, {...dummyVals.channel, exhausted: [],}))
+	db.channels.insert(Object.assign({ _id: dummyVals.channel.id }, dummyVals.channel))
+	db.channels.updateOne({_id: dummyVals.channel.id}, {$set: {exhausted: []}})
 }
