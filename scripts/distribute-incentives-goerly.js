@@ -12,6 +12,7 @@ const fetch = require('node-fetch')
 const { Channel, Transaction, MerkleTree, splitSig } = require('adex-protocol-eth/js')
 const stakingAbi = require('adex-protocol-eth/abi/Staking')
 const identityAbi = require('adex-protocol-eth/abi/Identity')
+const COREAbi = require('adex-protocol-eth/abi/AdExCore.json')
 const erc20AIB = require('./erc20abi.json')
 
 const db = require('../db')
@@ -46,9 +47,10 @@ const Staking = new Contract(ADDR_STAKING, stakingAbi, provider)
 const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
 const ADXToken = new Contract(ADX_TOKEN, erc20AIB, provider)
 const ADXTokenInterface = new Interface(erc20AIB)
-const idInterface = new Interface(identityAbi)
+// const idInterface = new Interface(identityAbi)
 
 const coreAddr = cfg.ETHEREUM_CORE_ADDR
+const coreInterface = new Interface(COREAbi)
 
 const ZERO = bigNumberify(0)
 
@@ -218,8 +220,6 @@ async function main() {
 	})
 	const channelId = channel.hashHex(coreAddr)
 
-	console.log('channelId', channelId)
-
 	if (!(await rewardChannels.countDocuments({ channelId }))) {
 		console.log('Channel does not exist, opening...')
 		const allowance = await ADXToken.allowance(DISTRIBUTION_IDENTITY, coreAddr)
@@ -256,13 +256,14 @@ async function main() {
 		}
 
 		// Open the channel
+		// identity V2 (no channelOpen)
 		const openTxRaw = {
 			identityContract: DISTRIBUTION_IDENTITY,
 			nonce,
 			feeTokenAddr: FEE_TOKEN,
 			feeAmount: INCENTIVE_CHANNEL_OPEN_FEE.toString(10),
-			to: DISTRIBUTION_IDENTITY,
-			data: hexlify(idInterface.functions.channelOpen.encode([coreAddr, channel.toSolidityTuple()]))
+			to: coreAddr,
+			data: hexlify(coreInterface.functions.channelOpen.encode([channel.toSolidityTuple()]))
 		}
 		const openTx = new Transaction(openTxRaw)
 		const txSig = splitSig(await adapter.sign(openTx.hash()))
