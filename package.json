@@ -1,5 +1,5 @@
 {
-  "name": "adex-validator-stack",
+  "name": "adex-validator",
   "version": "0.11.7",
   "description": "AdEx Validator stack (sentry, validator worker, watcher)",
   "main": "bin/sentry.js",
@@ -34,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AdExNetwork/adex-validator-stack-js.git"
+    "url": "git+https://github.com/AdExNetwork/adex-validator.git"
   },
   "keywords": [
     "adex",
@@ -43,9 +43,9 @@
   "author": "Smart Code OOD",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/AdExNetwork/adex-validator-stack-js/issues"
+    "url": "https://github.com/AdExNetwork/adex-validator/issues"
   },
-  "homepage": "https://github.com/AdExNetwork/adex-validator-stack-js#readme",
+  "homepage": "https://github.com/AdExNetwork/adex-validator#readme",
   "dependencies": {
     "@google-cloud/bigquery": "^4.7.0",
     "adex-adview-manager": "^2.1.0",
