@@ -76,6 +76,7 @@ async function allChannelsTick(currentPage) {
 	logPostChannelsTick(allResults)
 }
 
+// @TODO eliminate
 function range(start, end) {
 	const arr = []
 	for (let i = start; i <= end; i += 1) {
