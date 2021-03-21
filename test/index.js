@@ -10,8 +10,7 @@ const {
 const { mergeAggrs } = require('../services/validatorWorker/lib/mergeAggrs')
 const eventReducer = require('../services/sentry/lib/eventReducer')
 const getPayout = require('../services/sentry/lib/getPayout')
-const { getBalancesAfterFeesTree } = require('../services/validatorWorker/lib/fees')
-const { getStateRootHash, toBNMap, toBNStringMap } = require('../services/validatorWorker/lib')
+const { getStateRootHash, toBNMap } = require('../services/validatorWorker/lib')
 
 const schema = require('../routes/schemas')
 const { Adapter } = require('../adapters/dummy')
@@ -190,73 +189,6 @@ tape('getStateRootHash: returns correct result', function(t) {
 		const actualHash = getStateRootHash(dummyAdapter, channel, balances).toString('hex')
 		t.equal(actualHash, expectedHash, 'correct root hash')
 	})
-
-	t.end()
-})
-
-//
-// Fees
-//
-tape('getBalancesAfterFeesTree: returns the same tree with zero fees', function(t) {
-	// some semi-randomly created trees
-	const tree1 = { a: '1001', b: '3124', c: '122' }
-	const tree2 = { a: '1', b: '2', c: '3' }
-	const tree3 = { a: '1' }
-	const tree4 = { a: '1', b: '99999' }
-	const zeroFeeChannel = {
-		spec: { validators: [{ id: 'one', fee: '0' }, { id: 'two', fee: '0' }] },
-		depositAmount: '100000'
-	}
-	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree1, zeroFeeChannel)), tree1)
-	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, zeroFeeChannel)), tree2)
-	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree3, zeroFeeChannel)), tree3)
-	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree4, zeroFeeChannel)), tree4)
-	t.end()
-})
-
-tape('getBalancesAfterFeesTree: fees larger than deposit handled correctly', function(t) {
-	const tree1 = { a: '10', b: '10' }
-	const maliciousFeeChannel = {
-		spec: { validators: [{ id: 'one', fee: '600' }, { id: 'two', fee: '600' }] },
-		depositAmount: '1000'
-	}
-	t.throws(
-		() => getBalancesAfterFeesTree(tree1, maliciousFeeChannel),
-		/fee constraint violated/,
-		'should not allow fees sum to exceed the deposit'
-	)
-	t.end()
-})
-
-tape('getBalancesAfterFeesTree: applies fees correctly', function(t) {
-	const channel = {
-		spec: { validators: [{ id: 'one', fee: '50' }, { id: 'two', fee: '50' }] },
-		depositAmount: '10000'
-	}
-	// partially distributed
-	const tree1 = { a: '1000', b: '1200' }
-	const tree1ExpectedResult = { a: '990', b: '1188', one: '11', two: '11' }
-	t.deepEqual(sum(tree1), sum(tree1ExpectedResult))
-	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree1, channel)), tree1ExpectedResult)
-
-	// fully distributed; this also tests rounding error correction
-	const tree2 = { a: '105', b: '195', c: '700', d: '5000', e: '4000' }
-	const tree2ExpectedResult = {
-		a: '103',
-		b: '193',
-		c: '693',
-		d: '4950',
-		e: '3960',
-		one: '51',
-		two: '50'
-	}
-	t.deepEqual(sum(tree2), sum(tree2ExpectedResult))
-	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree2, channel)), tree2ExpectedResult)
-
-	// partially distributed; but validator is in the input tree
-	const tree3 = { a: '100', b: '2000', one: '200' }
-	const tree3Expected = { a: '99', b: '1980', one: '209', two: '11' }
-	t.deepEqual(toBNStringMap(getBalancesAfterFeesTree(tree3, channel)), tree3Expected)
 
 	t.end()
 })

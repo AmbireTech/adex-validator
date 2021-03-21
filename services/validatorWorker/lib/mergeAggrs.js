@@ -1,7 +1,6 @@
 const assert = require('assert')
 const BN = require('bn.js')
 const { toBNStringMap, toBNMap } = require('./')
-const { getBalancesAfterFeesTree } = require('./fees')
 
 // Pure, should not mutate inputs
 // mergeAggrs(accounting, aggrs, channel) -> newAccounting
@@ -9,27 +8,22 @@ function mergeAggrs(accounting, aggrs, channel) {
 	const depositAmount = new BN(channel.depositAmount, 10)
 	const newAccounting = {
 		type: 'Accounting',
-		balancesBeforeFees: {},
 		balances: {},
 		lastEvAggr: new Date(accounting.lastEvAggr)
 	}
 
 	// Build an intermediary balances representation
-	let balancesBeforeFees = toBNMap(accounting.balancesBeforeFees)
+	let balances = toBNMap(accounting.balances)
 
 	// Merge in all the aggrs
 	aggrs.forEach(function(evAggr) {
 		newAccounting.lastEvAggr = new Date(
 			Math.max(newAccounting.lastEvAggr.getTime(), new Date(evAggr.created).getTime())
 		)
-		balancesBeforeFees = mergePayoutsIntoBalances(balancesBeforeFees, evAggr.events, depositAmount)
+		balances = mergePayoutsIntoBalances(balances, evAggr.events, depositAmount)
 	})
 
-	// Finalize balancesBeforeFees
-	newAccounting.balancesBeforeFees = toBNStringMap(balancesBeforeFees)
-
-	// apply fees
-	const balances = getBalancesAfterFeesTree(balancesBeforeFees, channel)
+	// Finalize balances
 	newAccounting.balances = toBNStringMap(balances)
 
 	return newAccounting
