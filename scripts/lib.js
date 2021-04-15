@@ -1,5 +1,5 @@
 const ethers = require('ethers')
-const assert = require('assert')
+// const assert = require('assert')
 const cfg = require('../cfg')
 
 const {
@@ -27,10 +27,10 @@ const providerLogs = LOGS_INFURA_PROJECT_ID
 	? new ethers.providers.InfuraProvider(network, LOGS_INFURA_PROJECT_ID)
 	: provider
 
-const Wallet = (() => {
-	const privateKey = process.env.PRIVATE_KEY
-	assert.ok(privateKey, 'PRIVATE_KEY required')
-	return new ethers.Wallet(privateKey, provider)
-})()
+// const Wallet = () => {
+// 	const privateKey = process.env.PRIVATE_KEY
+// 	assert.ok(privateKey, 'PRIVATE_KEY required')
+// 	return new ethers.Wallet(privateKey, provider)
+// }
 
-module.exports = { provider, providerLogs, Wallet }
+module.exports = { provider, providerLogs }
