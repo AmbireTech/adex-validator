@@ -29,8 +29,6 @@ async function main() {
 	let totalAmountToDeposit = new BN(0)
 	balances.forEach(channelBalances => {
 		if (!channelBalances) return
-		// console.log({ channelBalances })
-		// console.log(channelBalances.results.transformed)
 		Object.entries(channelBalances.results.transformed).forEach(([user, balance]) => {
 			remainingBalancesMap[user] = (remainingBalancesMap[user] || new BN(0)).add(balance)
 			totalAmountToDeposit = totalAmountToDeposit.add(balance)
