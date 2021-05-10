@@ -104,7 +104,7 @@ async function main() {
 		uniswapRouterContractAddress,
 		[
 			`function getAmountsOut(uint amountIn, address[] memory path) external view returns (uint[] memory amounts)`,
-			`function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external`
+			`function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external`
 		],
 		provider
 	)
@@ -148,7 +148,7 @@ async function main() {
 		feeAmount: 0,
 		to: DISTRIBUTION_IDENTITY,
 		data: hexlify(
-			uniswapV2Router.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens.encode(
+			uniswapV2Router.functions.swapExactTokensForTokens.encode(
 				daiAmountToTrade,
 				amountOutMin,
 				[dai, weth, adx],
