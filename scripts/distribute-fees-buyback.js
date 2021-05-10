@@ -113,6 +113,7 @@ async function main() {
 	if (!dai) throw new Error('Invalid $DAI address')
 	if (!weth) throw new Error('Invalid $WETH address')
 	if (!adx) throw new Error('Invalid $ADX address')
+	if (!stakingPoolAddress) throw new Error('Invalid StakingPool address')
 
 	// dai is 18 decimal places
 	const daiContract = new ethers.Contract(
