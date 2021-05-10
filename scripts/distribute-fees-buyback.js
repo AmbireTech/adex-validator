@@ -18,7 +18,6 @@ const adapters = require('../adapters')
 
 const { provider } = require('./lib')
 
-const DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 
 const keystoreFile = process.argv[2]
@@ -41,6 +40,12 @@ const ADDRESSES = {
 		weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
 		adx: '0xADE00C28244d5CE17D72E40330B1c318cD12B7c3'
 	}
+}
+
+const STAKING_POOL_ADDRESSES = {
+	homestead: '0xb6456b57f03352be48bf101b46c1752a0813491a',
+	ropsten: '',
+	goerli: '0xb6456b57f03352be48bf101b46c1752a0813491a'
 }
 
 const PUSHOVER_URL = 'https://api.pushover.net/1/messages.json'
@@ -70,7 +75,8 @@ const adapter = new adapters.ethereum.Adapter(
 	provider
 )
 
-const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
+const stakingPoolAddress = STAKING_POOL_ADDRESSES[cfg.ETHEREUM_NETWORK]
+const Identity = new Contract(stakingPoolAddress, identityAbi, provider)
 
 async function relayerPost(url, body) {
 	const r = await fetch(cfg.ETHEREUM_ADAPTER_RELAYER + url, {
@@ -84,7 +90,7 @@ async function relayerPost(url, body) {
 }
 
 async function main() {
-	console.log(`Distribution identity: ${DISTRIBUTION_IDENTITY}`)
+	console.log(`Distribution identity: ${Identity.address}`)
 
 	await adapter.init()
 	await adapter.unlock()
@@ -113,7 +119,7 @@ async function main() {
 		[['function balanceOf(address owner) view returns (uint)']],
 		provider
 	)
-	const daiAmountToTrade = daiContract.balanceOf(DISTRIBUTION_IDENTITY)
+	const daiAmountToTrade = daiContract.balanceOf(Identity.address)
 	const formattedDAIAmountToTrade = formatUnits(daiAmountToTrade, 18)
 
 	const [, estimatedETHForDAI] = await uniswapV2Router.getAmountsOut(daiAmountToTrade, [dai, weth])
@@ -135,17 +141,17 @@ async function main() {
 
 	// identity uniswap trade transaction
 	const uniswapTradeTxRaw = {
-		identityContract: DISTRIBUTION_IDENTITY,
+		identityContract: Identity.address,
 		nonce: (await Identity.nonce()).toNumber(),
 		feeTokenAddr: FEE_TOKEN,
 		feeAmount: 0,
-		to: DISTRIBUTION_IDENTITY,
+		to: Identity.address,
 		data: hexlify(
 			uniswapV2Router.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens.encode(
 				daiAmountToTrade,
 				amountOutMin,
 				[dai, weth, adx],
-				DISTRIBUTION_IDENTITY,
+				Identity.address,
 				tradeDeadline
 			)
 		)
@@ -154,13 +160,15 @@ async function main() {
 	const uniswapTradeTx = new Transaction(uniswapTradeTxRaw)
 	const txSig = splitSig(await adapter.sign(uniswapTradeTx.hash()))
 
-	await relayerPost(`/identity/${DISTRIBUTION_IDENTITY}/execute`, {
+	await relayerPost(`/identity/${Identity.address}/execute`, {
 		signatures: [txSig],
 		txnsRaw: [uniswapTradeTx]
 	})
 
 	notify(
-		`Fees buyback with ${DISTRIBUTION_IDENTITY}: Traded ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForETH} ADX on Uniswap`
+		`Fees buyback with ${
+			Identity.address
+		}: Traded ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForETH} ADX on Uniswap`
 	)
 }
 
