@@ -18,6 +18,7 @@ const adapters = require('../adapters')
 
 const { provider } = require('./lib')
 
+const DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 
 const keystoreFile = process.argv[2]
@@ -75,8 +76,8 @@ const adapter = new adapters.ethereum.Adapter(
 	provider
 )
 
-const stakingPoolAddress = STAKING_POOL_ADDRESSES[cfg.ETHEREUM_NETWORK]
-const Identity = new Contract(stakingPoolAddress, identityAbi, provider)
+const stakingPoolAddress = STAKING_POOL_ADDRESSES[cfg.network]
+const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
 
 async function relayerPost(url, body) {
 	const r = await fetch(cfg.ETHEREUM_ADAPTER_RELAYER + url, {
@@ -90,7 +91,7 @@ async function relayerPost(url, body) {
 }
 
 async function main() {
-	console.log(`Distribution identity: ${Identity.address}`)
+	console.log(`Distribution identity: ${DISTRIBUTION_IDENTITY}`)
 
 	await adapter.init()
 	await adapter.unlock()
@@ -119,7 +120,7 @@ async function main() {
 		[['function balanceOf(address owner) view returns (uint)']],
 		provider
 	)
-	const daiAmountToTrade = daiContract.balanceOf(Identity.address)
+	const daiAmountToTrade = daiContract.balanceOf(DISTRIBUTION_IDENTITY)
 	const formattedDAIAmountToTrade = formatUnits(daiAmountToTrade, 18)
 
 	const [, estimatedETHForDAI] = await uniswapV2Router.getAmountsOut(daiAmountToTrade, [dai, weth])
@@ -141,17 +142,17 @@ async function main() {
 
 	// identity uniswap trade transaction
 	const uniswapTradeTxRaw = {
-		identityContract: Identity.address,
+		identityContract: DISTRIBUTION_IDENTITY,
 		nonce: (await Identity.nonce()).toNumber(),
 		feeTokenAddr: FEE_TOKEN,
 		feeAmount: 0,
-		to: Identity.address,
+		to: DISTRIBUTION_IDENTITY,
 		data: hexlify(
 			uniswapV2Router.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens.encode(
 				daiAmountToTrade,
 				amountOutMin,
 				[dai, weth, adx],
-				Identity.address,
+				stakingPoolAddress,
 				tradeDeadline
 			)
 		)
@@ -160,15 +161,13 @@ async function main() {
 	const uniswapTradeTx = new Transaction(uniswapTradeTxRaw)
 	const txSig = splitSig(await adapter.sign(uniswapTradeTx.hash()))
 
-	await relayerPost(`/identity/${Identity.address}/execute`, {
+	await relayerPost(`/identity/${DISTRIBUTION_IDENTITY}/execute`, {
 		signatures: [txSig],
 		txnsRaw: [uniswapTradeTx]
 	})
 
 	notify(
-		`Fees buyback with ${
-			Identity.address
-		}: Traded ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForETH} ADX on Uniswap`
+		`Fees buyback with ${DISTRIBUTION_IDENTITY}: Traded ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForETH} ADX on Uniswap`
 	)
 }
 
