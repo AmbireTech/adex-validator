@@ -5,14 +5,13 @@
 const ethers = require('ethers')
 
 const { Contract } = ethers
-const { hexlify, formatUnits } = ethers.utils
+const { hexlify, formatUnits, bigNumberify } = ethers.utils
 const fetch = require('node-fetch')
 const throttle = require('lodash.throttle')
 const qs = require('querystring')
 const identityAbi = require('adex-protocol-eth/abi/Identity')
 const { Transaction, splitSig } = require('adex-protocol-eth/js')
 
-const db = require('../db')
 const cfg = require('../cfg')
 const adapters = require('../adapters')
 
@@ -77,7 +76,19 @@ const adapter = new adapters.ethereum.Adapter(
 )
 
 const stakingPoolAddress = STAKING_POOL_ADDRESSES[cfg.network]
+const { dai, weth, adx } = ADDRESSES[cfg.ETHEREUM_NETWORK]
 const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
+
+const uniswapRouterContractAddress = UNISWAP_V2_02_ROUTER_ADDRESSES[cfg.ETHEREUM_NETWORK]
+
+const uniswapV2Router = new Contract(
+	uniswapRouterContractAddress,
+	[
+		`function getAmountsOut(uint amountIn, address[] memory path) external view returns (uint[] memory amounts)`,
+		`function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external`
+	],
+	provider
+)
 
 async function relayerPost(url, body) {
 	const r = await fetch(cfg.ETHEREUM_ADAPTER_RELAYER + url, {
@@ -90,26 +101,64 @@ async function relayerPost(url, body) {
 	return responseBody
 }
 
+async function estimateTxCostRequiredInDAI(tx = [], sig = [], nonce, deadline) {
+	const [uniswapTradeTxRaw, txSig] = await estimateUniswapTradeGasCostInDAI(nonce, deadline)
+
+	tx.push(uniswapTradeTxRaw)
+	sig.push(txSig)
+
+	// estimate transaction cost
+	const estimatedGasRequired = await Identity.estimateGas.execute(
+		tx.map(t => t.toSolidityTuple()),
+		sig
+	)
+	// the multiple invokations of the CALL opcode in execute() sometimes
+	// cause gas estimations to be a bit lower than what's actually required
+	const gasLimit = estimatedGasRequired.add(20000)
+	const currentGasPrice = await provider.getGasPrice()
+	const totalTxAmountInETH = gasLimit.mul(currentGasPrice)
+	const [, txFeeAmountInDAI] = await uniswapV2Router.getAmountsOut(totalTxAmountInETH, [weth, dai])
+
+	return txFeeAmountInDAI
+}
+
+async function estimateUniswapTradeGasCostInDAI(nonce, tradeDeadline) {
+	const mockDaiAmountToTrade = bigNumberify(1000).mul(bigNumberify(10).pow(18))
+	const [, , estimatedADXForDAI] = await uniswapV2Router.getAmountsOut(mockDaiAmountToTrade, [
+		dai,
+		weth,
+		adx
+	])
+	const uniswapTradeTxRaw = {
+		identityContract: DISTRIBUTION_IDENTITY,
+		nonce,
+		feeTokenAddr: FEE_TOKEN,
+		feeAmount: 0,
+		to: uniswapV2Router.address,
+		data: hexlify(
+			uniswapV2Router.functions.swapExactTokensForTokens.encode(
+				// we use demo values to get gas cost estimate
+				mockDaiAmountToTrade,
+				estimatedADXForDAI,
+				[dai, weth, adx],
+				stakingPoolAddress,
+				tradeDeadline
+			)
+		)
+	}
+
+	const uniswapTradeTx = new Transaction(uniswapTradeTxRaw)
+	const txSig = splitSig(await adapter.sign(uniswapTradeTx.hash()))
+
+	return [uniswapTradeTxRaw, txSig]
+}
+
 async function main() {
 	console.log(`Distribution identity: ${DISTRIBUTION_IDENTITY}`)
 
 	await adapter.init()
 	await adapter.unlock()
 
-	await db.connect()
-
-	const uniswapRouterContractAddress = UNISWAP_V2_02_ROUTER_ADDRESSES[cfg.ETHEREUM_NETWORK]
-
-	const uniswapV2Router = new Contract(
-		uniswapRouterContractAddress,
-		[
-			`function getAmountsOut(uint amountIn, address[] memory path) external view returns (uint[] memory amounts)`,
-			`function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external`
-		],
-		provider
-	)
-
-	const { dai, weth, adx } = ADDRESSES[cfg.ETHEREUM_NETWORK]
 	if (!dai) throw new Error('Invalid $DAI address')
 	if (!weth) throw new Error('Invalid $WETH address')
 	if (!adx) throw new Error('Invalid $ADX address')
@@ -118,36 +167,77 @@ async function main() {
 	// dai is 18 decimal places
 	const daiContract = new ethers.Contract(
 		dai,
-		[['function balanceOf(address owner) view returns (uint)']],
+		[
+			`function approve(address spender, uint amount) returns (bool)`,
+			`function allowance(address owner, address spender) view returns (uint)`,
+			'function balanceOf(address owner) view returns (uint)'
+		],
 		provider
 	)
-	const daiAmountToTrade = daiContract.balanceOf(DISTRIBUTION_IDENTITY)
-	const formattedDAIAmountToTrade = formatUnits(daiAmountToTrade, 18)
 
-	const [, estimatedETHForDAI] = await uniswapV2Router.getAmountsOut(daiAmountToTrade, [dai, weth])
-	const [, estimatedADXForETH] = await uniswapV2Router.getAmountsOut(estimatedETHForDAI, [
+	// current block timestamp + 7200 secs (2 hr)
+	const tradeDeadline = (await provider.getBlock('latest')).timestamp + 60 * 60 * 2
+	const totalDaiAmountToTrade = daiContract.balanceOf(DISTRIBUTION_IDENTITY)
+	// check the allowance of the dai
+	const allowance = daiContract.allowance(DISTRIBUTION_IDENTITY, uniswapV2Router.address)
+
+	const transactions = {
+		signatures: [],
+		rawTx: []
+	}
+
+	let nonce = (await Identity.nonce()).toNumber()
+
+	if (allowance.lt(totalDaiAmountToTrade)) {
+		// identity uniswap trade transaction
+		// approve uniswap to spend
+		const uniswapApproveTxRaw = {
+			identityContract: DISTRIBUTION_IDENTITY,
+			// eslint-disable-next-line no-plusplus
+			nonce: nonce++,
+			feeTokenAddr: FEE_TOKEN,
+			feeAmount: 0,
+			to: daiContract.address,
+			data: hexlify(
+				daiContract.functions.approve.encode(uniswapV2Router.address, ethers.constants.MaxUint256)
+			)
+		}
+
+		const uniswapApproveTx = new Transaction(uniswapApproveTxRaw)
+		const txSig = splitSig(await adapter.sign(uniswapApproveTx.hash()))
+
+		transactions.signatures.push(txSig)
+		transactions.rawTx.push(uniswapApproveTxRaw)
+	}
+
+	const estimatedTxCostInDAI = await estimateTxCostRequiredInDAI(
+		transactions.rawTx,
+		transactions.signatures,
+		nonce,
+		tradeDeadline
+	)
+	const daiAmountToTrade = totalDaiAmountToTrade - estimatedTxCostInDAI
+	const formattedDAIAmountToTrade = formatUnits(daiAmountToTrade, 18)
+	const [, , estimatedADXForDAI] = await uniswapV2Router.getAmountsOut(daiAmountToTrade, [
+		dai,
 		weth,
 		adx
 	])
 
 	// slippage tolerance of 20% (0.2)
-	const amountOutMin = estimatedADXForETH.sub(estimatedADXForETH.mul(20).div(100))
-	const formattedEstimatedADXForETH = formatUnits(amountOutMin, 18)
+	const amountOutMin = estimatedADXForDAI.sub(estimatedADXForDAI.mul(20).div(100))
+	const formattedEstimatedADXForDAI = formatUnits(amountOutMin, 18)
 
 	console.log(
-		`Trading ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForETH} ADX on Uniswap`
+		`Trading ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForDAI} ADX on Uniswap`
 	)
 
-	// current block timestamp + 7200 secs (2 hr)
-	const tradeDeadline = (await provider.getBlock('latest')).timestamp + 60 * 60 * 2
-
-	// identity uniswap trade transaction
 	const uniswapTradeTxRaw = {
 		identityContract: DISTRIBUTION_IDENTITY,
-		nonce: (await Identity.nonce()).toNumber(),
+		nonce,
 		feeTokenAddr: FEE_TOKEN,
-		feeAmount: 0,
-		to: DISTRIBUTION_IDENTITY,
+		feeAmount: estimatedTxCostInDAI.toString(),
+		to: uniswapV2Router.address,
 		data: hexlify(
 			uniswapV2Router.functions.swapExactTokensForTokens.encode(
 				daiAmountToTrade,
@@ -161,20 +251,23 @@ async function main() {
 
 	const uniswapTradeTx = new Transaction(uniswapTradeTxRaw)
 	const txSig = splitSig(await adapter.sign(uniswapTradeTx.hash()))
+	transactions.signatures.push(txSig)
+	transactions.rawTx.push(uniswapTradeTxRaw)
+
+	console.log(transactions)
 
 	await relayerPost(`/identity/${DISTRIBUTION_IDENTITY}/execute`, {
-		signatures: [txSig],
-		txnsRaw: [uniswapTradeTx]
+		signatures: transactions.signatures,
+		txnsRaw: transactions.rawTx
 	})
 
 	notify(
-		`Fees buyback with ${DISTRIBUTION_IDENTITY}: Traded ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForETH} ADX on Uniswap`
+		`Fees buyback with ${DISTRIBUTION_IDENTITY}: Traded ${formattedDAIAmountToTrade} DAI for ${formattedEstimatedADXForDAI} ADX on Uniswap`
 	)
 }
 
 main()
 	.then(() => {
-		db.close()
 		process.exit(0)
 	})
 	.catch(e => {
