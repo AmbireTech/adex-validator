@@ -101,16 +101,13 @@ async function relayerPost(url, body) {
 	return responseBody
 }
 
-async function estimateTxCostRequiredInDAI(tx = [], sig = [], nonce, deadline) {
+async function estimateTxCostRequiredInDAI(txns = [], sigs = [], nonce, deadline) {
 	const [uniswapTradeTxRaw, txSig] = await estimateUniswapTradeGasCostInDAI(nonce, deadline)
-
-	tx.push(uniswapTradeTxRaw)
-	sig.push(txSig)
 
 	// estimate transaction cost
 	const estimatedGasRequired = await Identity.estimate.execute(
-		tx.map(t => new Transaction(t).toSolidityTuple()),
-		sig
+		txns.concat([uniswapTradeTxRaw]).map(t => new Transaction(t).toSolidityTuple()),
+		sigs.concat([txSig])
 	)
 	// the multiple invokations of the CALL opcode in execute() sometimes
 	// cause gas estimations to be a bit lower than what's actually required
@@ -196,7 +193,7 @@ async function main() {
 			// eslint-disable-next-line no-plusplus
 			nonce: nonce++,
 			feeTokenAddr: FEE_TOKEN,
-			feeAmount: 0,
+			feeAmount: '5000000000000000000',
 			to: daiContract.address,
 			data: hexlify(
 				daiContract.interface.functions.approve.encode([
@@ -219,7 +216,10 @@ async function main() {
 		nonce,
 		tradeDeadline
 	)
-	const daiAmountToTrade = totalDaiAmountToTrade.sub(estimatedTxCostInDAI)
+	const daiAmountToTrade = totalDaiAmountToTrade
+		.sub(estimatedTxCostInDAI)
+		// this is added on top of the total estimatedTxCostInDAI, only in case of a first approval
+		.sub(transactions.rawTx[0] ? transactions.rawTx[0].feeAmount : 0)
 	const formattedDAIAmountToTrade = formatUnits(daiAmountToTrade, 18)
 	const [, , estimatedADXForDAI] = await uniswapV2Router.getAmountsOut(daiAmountToTrade, [
 		dai,
@@ -227,8 +227,8 @@ async function main() {
 		adx
 	])
 
-	// slippage tolerance of 20% (0.2)
-	const amountOutMin = estimatedADXForDAI.sub(estimatedADXForDAI.mul(20).div(100))
+	// slippage tolerance of 5% (0.05)
+	const amountOutMin = estimatedADXForDAI.sub(estimatedADXForDAI.mul(5).div(100))
 	const formattedEstimatedADXForDAI = formatUnits(amountOutMin, 18)
 
 	console.log(
@@ -242,13 +242,13 @@ async function main() {
 		feeAmount: estimatedTxCostInDAI.toString(),
 		to: uniswapV2Router.address,
 		data: hexlify(
-			uniswapV2Router.functions.swapExactTokensForTokens.encode(
+			uniswapV2Router.interface.functions.swapExactTokensForTokens.encode([
 				daiAmountToTrade,
 				amountOutMin,
 				[dai, weth, adx],
 				stakingPoolAddress,
 				tradeDeadline
-			)
+			])
 		)
 	}
 
