@@ -43,9 +43,9 @@ const ADDRESSES = {
 }
 
 const STAKING_POOL_ADDRESSES = {
-	homestead: '0xb6456b57f03352be48bf101b46c1752a0813491a',
+	homestead: '0xB6456b57f03352bE48Bf101B46c1752a0813491a',
 	ropsten: '',
-	goerli: '0xb6456b57f03352be48bf101b46c1752a0813491a'
+	goerli: '0xB6456b57f03352bE48Bf101B46c1752a0813491a'
 }
 
 const PUSHOVER_URL = 'https://api.pushover.net/1/messages.json'
@@ -84,8 +84,8 @@ const uniswapRouterContractAddress = UNISWAP_V2_02_ROUTER_ADDRESSES[cfg.ETHEREUM
 const uniswapV2Router = new Contract(
 	uniswapRouterContractAddress,
 	[
-		`function getAmountsOut(uint amountIn, address[] memory path) external view returns (uint[] memory amounts)`,
-		`function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external`
+		`function getAmountsOut(uint amountIn, address[] path) external view returns (uint[] amounts)`,
+		`function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] path, address to, uint deadline) external`
 	],
 	provider
 )
