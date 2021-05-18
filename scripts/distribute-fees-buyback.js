@@ -52,12 +52,12 @@ const PUSHOVER_URL = 'https://api.pushover.net/1/messages.json'
 
 const notify = throttle(message => {
 	console.log(message)
-	if (cfg.network === 'goerli') {
+	if (cfg.ETHEREUM_NETWORK === 'goerli') {
 		return
 	}
 	const token = process.env.PUSHOVER_TOKEN
 	const user = process.env.PUSHOVER_USER
-	const body = qs.stringify({ token, user, message: `${cfg.network}: ${message}` })
+	const body = qs.stringify({ token, user, message: `${cfg.ETHEREUM_NETWORK}: ${message}` })
 
 	fetch(PUSHOVER_URL, {
 		method: 'POST',
@@ -75,7 +75,7 @@ const adapter = new adapters.ethereum.Adapter(
 	provider
 )
 
-const stakingPoolAddress = STAKING_POOL_ADDRESSES[cfg.network]
+const stakingPoolAddress = STAKING_POOL_ADDRESSES[cfg.ETHEREUM_NETWORK]
 const { dai, weth, adx } = ADDRESSES[cfg.ETHEREUM_NETWORK]
 const Identity = new Contract(DISTRIBUTION_IDENTITY, identityAbi, provider)
 
@@ -108,8 +108,8 @@ async function estimateTxCostRequiredInDAI(tx = [], sig = [], nonce, deadline) {
 	sig.push(txSig)
 
 	// estimate transaction cost
-	const estimatedGasRequired = await Identity.estimateGas.execute(
-		tx.map(t => t.toSolidityTuple()),
+	const estimatedGasRequired = await Identity.estimate.execute(
+		tx.map(t => new Transaction(t).toSolidityTuple()),
 		sig
 	)
 	// the multiple invokations of the CALL opcode in execute() sometimes
@@ -136,14 +136,14 @@ async function estimateUniswapTradeGasCostInDAI(nonce, tradeDeadline) {
 		feeAmount: 0,
 		to: uniswapV2Router.address,
 		data: hexlify(
-			uniswapV2Router.functions.swapExactTokensForTokens.encode(
+			uniswapV2Router.interface.functions.swapExactTokensForTokens.encode([
 				// we use demo values to get gas cost estimate
 				mockDaiAmountToTrade,
 				estimatedADXForDAI,
 				[dai, weth, adx],
 				stakingPoolAddress,
 				tradeDeadline
-			)
+			])
 		)
 	}
 
@@ -177,9 +177,9 @@ async function main() {
 
 	// current block timestamp + 7200 secs (2 hr)
 	const tradeDeadline = (await provider.getBlock('latest')).timestamp + 60 * 60 * 2
-	const totalDaiAmountToTrade = daiContract.balanceOf(DISTRIBUTION_IDENTITY)
+	const totalDaiAmountToTrade = await daiContract.balanceOf(DISTRIBUTION_IDENTITY)
 	// check the allowance of the dai
-	const allowance = daiContract.allowance(DISTRIBUTION_IDENTITY, uniswapV2Router.address)
+	const allowance = await daiContract.allowance(DISTRIBUTION_IDENTITY, uniswapV2Router.address)
 
 	const transactions = {
 		signatures: [],
@@ -199,7 +199,10 @@ async function main() {
 			feeAmount: 0,
 			to: daiContract.address,
 			data: hexlify(
-				daiContract.functions.approve.encode(uniswapV2Router.address, ethers.constants.MaxUint256)
+				daiContract.interface.functions.approve.encode([
+					uniswapV2Router.address,
+					ethers.constants.MaxUint256
+				])
 			)
 		}
 
@@ -216,7 +219,7 @@ async function main() {
 		nonce,
 		tradeDeadline
 	)
-	const daiAmountToTrade = totalDaiAmountToTrade - estimatedTxCostInDAI
+	const daiAmountToTrade = totalDaiAmountToTrade.sub(estimatedTxCostInDAI)
 	const formattedDAIAmountToTrade = formatUnits(daiAmountToTrade, 18)
 	const [, , estimatedADXForDAI] = await uniswapV2Router.getAmountsOut(daiAmountToTrade, [
 		dai,
@@ -254,7 +257,7 @@ async function main() {
 	transactions.signatures.push(txSig)
 	transactions.rawTx.push(uniswapTradeTxRaw)
 
-	console.log(transactions)
+	// console.log(transactions)
 
 	await relayerPost(`/identity/${DISTRIBUTION_IDENTITY}/execute`, {
 		signatures: transactions.signatures,
