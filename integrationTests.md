@@ -1,11 +1,15 @@
 new mini test kit:
 
-create a campaign
+deposit into a channel and create a campaign
+	make sure it doesn't work before that
 submit events
 verify that payments appear in NewState/ApproveState, incl. fees
 verify that /analytics returns stuff
 
 mini test kit v2: same, but add failure case tests to each one
+
+
+TO REVIEW
 
 routes:
 POST /channel/{id}/events: non existant channel
