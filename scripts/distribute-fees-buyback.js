@@ -19,6 +19,7 @@ const { provider } = require('./lib')
 
 const DISTRIBUTION_IDENTITY = '0xe3C19038238De9bcc3E735ec4968eCd45e04c837'
 const FEE_TOKEN = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+const MIN_BUYBACK = bigNumberify('500000000000000000000')
 
 const keystoreFile = process.argv[2]
 const keystorePwd = process.env.KEYSTORE_PWD
@@ -175,6 +176,10 @@ async function main() {
 	// current block timestamp + 7200 secs (2 hr)
 	const tradeDeadline = (await provider.getBlock('latest')).timestamp + 60 * 60 * 2
 	const totalDaiAmountToTrade = await daiContract.balanceOf(DISTRIBUTION_IDENTITY)
+	if (totalDaiAmountToTrade.lt(MIN_BUYBACK)) {
+		console.log('Incurred DAI reward is under the minimum')
+		process.exit(0)
+	}
 	// check the allowance of the dai
 	const allowance = await daiContract.allowance(DISTRIBUTION_IDENTITY, uniswapV2Router.address)
 
