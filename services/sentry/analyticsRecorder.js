@@ -47,7 +47,8 @@ const whitelisted = [
 	'NetBSD',
 	'Nintendo',
 	'OpenBSD',
-	'Playstation',
+	'PlayStation',
+	'Tizen',
 	'Symbian',
 	'KAIOS'
 ]
