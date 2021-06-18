@@ -13,6 +13,51 @@ function getHourEpoch() {
 	return Math.floor(Date.now() / 3600000)
 }
 
+const linuxDistros = [
+	'Arch',
+	'CentOS',
+	'Slackware',
+	'Fedora',
+	'Debian',
+	'Deepin',
+	'elementary OS',
+	'Gentoo',
+	'Mandriva',
+	'Manjaro',
+	'Mint',
+	'PCLinuxOS',
+	'Raspbian',
+	'Sabayon',
+	'SUSE',
+	'Ubuntu',
+	'RedHat'
+]
+const whitelisted = [
+	'Android',
+	'Android-x86',
+	'iOS',
+	'BlackBerry',
+	'Chromium OS',
+	'Fuchsia',
+	'Mac OS',
+	'Windows',
+	'Windows Phone',
+	'Windows Mobile',
+	'Linux',
+	'NetBSD',
+	'Nintendo',
+	'OpenBSD',
+	'Playstation',
+	'Symbian',
+	'KAIOS'
+]
+// eslint-disable-next-line no-unused-vars
+function mapOS(osName) {
+	if (linuxDistros.includes(osName)) return 'Linux'
+	if (whitelisted.includes(osName)) return osName
+	return 'Other'
+}
+
 function record(channel, session, events, payouts) {
 	const batch = events
 		.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
