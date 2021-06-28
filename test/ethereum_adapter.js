@@ -6,9 +6,9 @@ const { readFileSync } = require('fs')
 const formatAddress = require('ethers').utils.getAddress
 const { ethereum } = require('../adapters')
 const cfg = require('../cfg')
-const { channelOpen, deployContracts, sampleChannel } = require('./ethereum')
+const { deployContracts, sampleChannel, depositToChannel, sweep } = require('./ethereum')
 const ewt = require('../adapters/ethereum/ewt')
-const fixtures = require('./fixtures')
+const { toEthereumChannel } = require('../adapters/ethereum')
 
 const tryCatchAsync = async function(fn, errMsg) {
 	try {
@@ -27,7 +27,7 @@ const opts = {
 }
 
 const provider = new providers.JsonRpcProvider('http://localhost:8545')
-let validChannel
+// let validChannel
 
 // ethereum adapter
 tape('should init ethereum adapter', async function(t) {
@@ -128,56 +128,6 @@ tape('should getAuthFor and sessionFromToken for validator', async function(t) {
 	t.end()
 })
 
-tape('should validate channel properly', async function(t) {
-	await getValidChannel()
-	t.pass('succesfully validated channel')
-	t.end()
-})
-
-tape('should not validate channel with invalid id', async function(t) {
-	const { core } = await deployContracts()
-	const ethereumAdapter = new ethereum.Adapter(
-		opts,
-		{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
-		provider
-	)
-
-	const okChannel = await getValidChannel()
-
-	const invalidChannelId = {
-		...okChannel,
-		id: '0xdffsfsfsfs'
-	}
-	await tryCatchAsync(
-		async () => ethereumAdapter.validateChannel(invalidChannelId),
-		'channel.id is not valid'
-	)
-	t.end()
-})
-
-tape('should not validate invalid channels', async function(t) {
-	const { core } = await deployContracts()
-
-	const okChannel = await getValidChannel()
-
-	fixtures.invalidChannels(okChannel).forEach(async item => {
-		const [channel, config, err] = item
-		const ethAdapter = new ethereum.Adapter(
-			opts,
-			{ ...cfg, ...config, ETHEREUM_CORE_ADDR: core.address },
-			provider
-		)
-		await ethAdapter.init()
-		// ethereum representation
-		const ethChannel = ethereum.toEthereumChannel(channel)
-		channel.id = ethChannel.hashHex(core.address)
-
-		await tryCatchAsync(async () => ethAdapter.validateChannel(channel), err)
-	})
-
-	t.end()
-})
-
 tape('EWT should sign message', async function(t) {
 	const ethereumAdapter = new ethereum.Adapter(opts, cfg, provider)
 
@@ -212,33 +162,88 @@ tape('EWT: should verify message', async function(t) {
 	t.end()
 })
 
-async function getValidChannel() {
-	if (validChannel) return validChannel
-	const { core } = await deployContracts()
+tape('getDepositFor', async function(t) {
+	const { core, token, sweeper } = await deployContracts()
+
+	const channel = await sampleChannel()
+	const MINIMAL_DEPOSIT = '100000000'
 	const ethereumAdapter = new ethereum.Adapter(
 		opts,
-		{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
+		{
+			...cfg,
+			ETHEREUM_CORE_ADDR: core.address,
+			SWEEPER_ADDRESS: sweeper.address,
+			TOKEN_ADDRESS_WHITELIST: {
+				[token.address]: {
+					MINIMAL_DEPOSIT,
+					MINIMAL_FEE: '100000000',
+					DECIMALS: 18
+				}
+			}
+		},
 		provider
 	)
 
-	await ethereumAdapter.init()
-
-	// get a sample valid channel
-	const channel = await sampleChannel()
-	const ethChannel = ethereum.toEthereumChannel(channel)
-	channel.id = ethChannel.hashHex(core.address)
-
-	// cannot validate if its not onchain
-	await tryCatchAsync(
-		() => ethereumAdapter.validateChannel(channel),
-		'channel is not Active on ethereum'
+	const create2Addr = ethereumAdapter.getCreate2Address(
+		core.address,
+		sweeper.address,
+		channel,
+		channel.leader
 	)
 
-	// open channel onchain
-	await channelOpen(ethChannel)
-	const validate = await ethereumAdapter.validateChannel(channel)
-	assert.ok(validate, 'channel should pass validation')
-	// assign channel to validChannel
-	validChannel = channel
-	return channel
-}
+	// deposit without create2
+	const ethChannel = await toEthereumChannel(channel)
+	await depositToChannel(ethChannel, channel.leader, `${MINIMAL_DEPOSIT}0`)
+	const resultWithoutCreate2 = await ethereumAdapter.getDepositFor(channel, channel.leader)
+	console.log({ resultWithoutCreate2 })
+
+	// deposit with create2 below minimum deposit
+	// await depositToChannel(ethChannel, channel.leader, `10000000`)
+	await (await token.setBalanceTo(create2Addr, `10000000`)).wait()
+	const resultWithCreate2 = await ethereumAdapter.getDepositFor(channel, channel.leader)
+	console.log({ resultWithCreate2 })
+
+	// deposit with create2 exceed minimum deposit
+	// await depositToChannel(ethChannel, channel.leader, `${MINIMAL_DEPOSIT}0`)
+	await (await token.setBalanceTo(create2Addr, `${MINIMAL_DEPOSIT}0`)).wait()
+	const resultWithCreate2Exceed = await ethereumAdapter.getDepositFor(channel, channel.leader)
+	console.log({ resultWithCreate2Exceed })
+
+	// run sweeper
+	await sweep(ethChannel, channel.leader)
+	const resultAfterSweeper = await ethereumAdapter.getDepositFor(channel, channel.leader)
+	console.log({ resultAfterSweeper })
+
+	t.end()
+})
+
+// async function getValidChannel() {
+// 	if (validChannel) return validChannel
+// const { core } = await deployContracts()
+// const ethereumAdapter = new ethereum.Adapter(
+// 	opts,
+// 	{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
+// 	provider
+// )
+
+// await ethereumAdapter.init()
+
+// // get a sample valid channel
+// const channel = await sampleChannel()
+// const ethChannel = ethereum.toEthereumChannel(channel)
+// channel.id = ethChannel.hashHex(core.address)
+
+// // cannot validate if its not onchain
+// await tryCatchAsync(
+// 	() => ethereumAdapter.validateChannel(channel),
+// 	'channel is not Active on ethereum'
+// )
+
+// // open channel onchain
+// await channelOpen(ethChannel)
+// const validate = await ethereumAdapter.validateChannel(channel)
+// assert.ok(validate, 'channel should pass validation')
+// // assign channel to validChannel
+// validChannel = channel
+// return channel
+// }

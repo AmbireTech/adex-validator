@@ -26,5 +26,7 @@ module.exports = {
 	CHANNEL_REFRESH_INTERVAL: 1000,
 	MAX_CHANNEL_SPEC_BYTES_SIZE: 35000,
 	admins: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
-	V4_VALIDATOR_URL: 'https://jerry.adex.network'
+	V4_VALIDATOR_URL: 'https://jerry.adex.network',
+	SWEEPER_ADDRESS: '0x0',
+	TOKEN_ADDRESS_WHITELIST: {}
 }
