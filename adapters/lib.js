@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 const BN = require('bn.js')
 const assert = require('assert')
 
@@ -7,6 +6,7 @@ async function isChannelValid(cfg, channel, address) {
 	assert.ok(ourValidator, 'channel is not validated by us')
 	const inOneYear = new Date()
 	inOneYear.setDate(inOneYear.getDate() + 365)
+
 	assert.ok(channel.validUntil * 1000 > Date.now(), 'channel.validUntil has passed')
 	assert.ok(
 		channel.validUntil * 1000 <= inOneYear.getTime(),
@@ -16,6 +16,7 @@ async function isChannelValid(cfg, channel, address) {
 		channel.spec.withdrawPeriodStart < channel.validUntil * 1000,
 		'channel withdrawPeriodStart is invalid'
 	)
+
 	if (cfg.VALIDATORS_WHITELIST && cfg.VALIDATORS_WHITELIST.length) {
 		assert.ok(
 			channel.spec.validators.every(
@@ -32,6 +33,7 @@ async function isChannelValid(cfg, channel, address) {
 	}
 	if (cfg.TOKEN_ADDRESS_WHITELIST && cfg.TOKEN_ADDRESS_WHITELIST.length) {
 		const depositAsset = channel.depositAsset
+
 		assert.ok(
 			cfg.TOKEN_ADDRESS_WHITELIST.some(
 				id => id === depositAsset || id.toLowerCase() === depositAsset.toLowerCase()
@@ -39,6 +41,7 @@ async function isChannelValid(cfg, channel, address) {
 			'channel.depositAsset is not whitelisted'
 		)
 	}
+
 	// we use buffer instead of string length to cater for
 	// non utf8 strings
 	const specByteSize = Buffer.from(JSON.stringify(channel.spec)).byteLength
@@ -46,6 +49,7 @@ async function isChannelValid(cfg, channel, address) {
 		specByteSize <= cfg.MAX_CHANNEL_SPEC_BYTES_SIZE,
 		`spec byte size exceeds allowed ${cfg.MAX_CHANNEL_SPEC_BYTES_SIZE} bytes size limit`
 	)
+
 	const depositAmount = new BN(channel.depositAmount)
 	assert.ok(
 		depositAmount.gte(new BN(cfg.MINIMAL_DEPOSIT || 0)),
