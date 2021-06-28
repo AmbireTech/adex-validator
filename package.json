@@ -15,7 +15,8 @@
     "export-analytics": "./scripts/export-analytics.js",
     "benchmark": "./test/run-integration-tests.sh benchmark",
     "benchmark-docker": "./test/benchmark/benchmark.sh",
-    "bq": "node ./scripts/bigquery.js"
+    "bq": "node ./scripts/bigquery.js",
+    "v5-test-adapter": "node test/ethereum_adapter.js"
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
@@ -50,13 +51,13 @@
     "@google-cloud/bigquery": "^4.7.0",
     "@makerdao/multicall": "^0.12.0",
     "adex-adview-manager": "^2.1.0",
-    "adex-protocol-eth": "^4.2.3",
+    "adex-protocol-eth": "github:AdExNetwork/adex-protocol-eth",
     "base64url": "^3.0.1",
     "bn.js": "^4.11.8",
     "body-parser": "^1.18.3",
     "celebrate": "^9.0.2",
     "cors": "^2.8.5",
-    "ethers": "^4.0.47",
+    "ethers": "^5.3.1",
     "express": "^4.16.4",
     "graphql-request": "^2.1.0-next.1",
     "lodash.isequal": "^4.5.0",

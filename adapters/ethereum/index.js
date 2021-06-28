@@ -1,15 +1,15 @@
-const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
-const { Wallet, Contract, utils, getDefaultProvider } = require('ethers')
+const { MerkleTree, Channel } = require('adex-protocol-eth/js')
+const { Wallet, Contract, utils, getDefaultProvider, BigNumber } = require('ethers')
 const coreABI = require('adex-protocol-eth/abi/AdExCore')
+const depositorByteCode = require('adex-protocol-eth/resources/bytecode/Depositor')
 const formatAddress = require('ethers').utils.getAddress
 const fetch = require('node-fetch')
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
-const crypto = require('crypto')
 
 const readFile = util.promisify(fs.readFile)
-const lib = require('../lib')
+const BN = require('bn.js')
 const ewt = require('./ewt')
 
 // Auth tokens that we have verified (tokenId => session)
@@ -24,7 +24,8 @@ let wallet = null
 
 function Adapter(opts, cfg, ethProvider) {
 	const provider = ethProvider || getDefaultProvider(cfg.ETHEREUM_NETWORK)
-	const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
+	const outpace = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
+	const erc20 = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
 	this.init = function() {
 		assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
@@ -62,33 +63,6 @@ function Adapter(opts, cfg, ethProvider) {
 
 		const from = utils.verifyMessage(stateRoot, signature)
 		return Promise.resolve(signer === from)
-	}
-
-	this.validateChannel = async function(channel, options = {}) {
-		const ethChannel = toEthereumChannel(channel)
-
-		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
-		assert.equal(channel.creator, formatAddress(channel.creator), 'channel.creator is checksummed')
-		assert.ok(
-			channel.spec.validators.every(
-				({ id, feeAddr }) =>
-					id === formatAddress(id) && (!feeAddr || feeAddr === formatAddress(feeAddr))
-			),
-			'channel.validators: all addresses are checksummed'
-		)
-
-		await lib.isChannelValid(cfg, channel, address)
-
-		if (options.preValidation === true) {
-			return true
-		}
-
-		// Check the on-chain status
-		const channelStatus = await core.states(ethChannel.hash(core.address))
-		assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
-
-		// Channel is valid
-		return true
 	}
 
 	// Authentication tokens
@@ -136,6 +110,36 @@ function Adapter(opts, cfg, ethProvider) {
 			return token
 		})
 	}
+
+	this.getDepositFor = async function(channel, depositor) {
+		const outpaceBalance = await outpace.deposits(channel.id, depositor)
+		const depositorConstructorArg = utils.defaultAbiCoder.encode(
+			['address', 'tuple', 'address'],
+			[cfg.SWEEPER, channel.toSolidityTuple(), depositor]
+		)
+		const codeHash = utils.keccak256(
+			utils.concat(utils.arrayify(depositorByteCode), utils.arrayify(depositorConstructorArg))
+		)
+
+		const create2Addr = utils.getCreate2Address(cfg.SWEEPER_ADDRESS, '0x0', codeHash)
+		const create2Balance = await erc20.balanceOf(create2Addr)
+
+		if (
+			create2Balance.gt(
+				BigNumber.from(cfg.TOKEN_ADDRESS_WHITELIST[channel.tokenAddr].minimumDeposit)
+			)
+		) {
+			return {
+				total: new BN(create2Balance.add(outpaceBalance).toString()),
+				create2Balance: new BN(create2Balance.toString())
+			}
+		}
+
+		return {
+			total: outpaceBalance,
+			create2Balance: new BN(0)
+		}
+	}
 }
 
 Adapter.prototype.getAddress = function(addr) {
@@ -166,17 +170,12 @@ Adapter.prototype.MerkleTree = MerkleTree
 // p.then(() => console.log(Date.now()-start))
 
 function toEthereumChannel(channel) {
-	const specHash = crypto
-		.createHash('sha256')
-		.update(JSON.stringify(channel.spec))
-		.digest()
 	return new Channel({
-		creator: channel.creator,
-		tokenAddr: channel.depositAsset,
-		tokenAmount: channel.depositAmount,
-		validUntil: channel.validUntil,
-		validators: channel.spec.validators.map(v => v.id),
-		spec: specHash
+		leader: channel.leader,
+		follower: channel.follower,
+		guardian: channel.guardian,
+		tokenAddr: channel.tokenAddr,
+		nonce: channel.nonce
 	})
 }
 
