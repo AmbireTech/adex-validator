@@ -1,5 +1,5 @@
 const assert = require('assert')
-const { ContractFactory, Contract, Wallet, providers } = require('ethers')
+const { ContractFactory, Wallet, providers } = require('ethers')
 
 const outpaceABI = require('adex-protocol-eth/abi/OUTPACE')
 const outpaceBytecode = require('adex-protocol-eth/resources/bytecode/OUTPACE')
@@ -46,10 +46,7 @@ async function deployContracts() {
 }
 
 async function depositToChannel(ethChannel, recipient = wallet.address, amountToDeposit = 2000) {
-	core = new Contract(core.address, outpaceABI, wallet)
-	token = new Contract(token.address, tokenabi, wallet)
-
-	await (await token.setBalanceTo(recipient, amountToDeposit)).wait()
+	await (await token.setBalanceTo(wallet.address, amountToDeposit)).wait()
 
 	const receipt = await (await core.deposit(
 		ethChannel.toSolidityTuple(),
@@ -65,10 +62,13 @@ async function sweep(ethChannel, depositor) {
 	await (await sweeper.sweep(core.address, ethChannel.toSolidityTuple(), [depositor])).wait()
 }
 
-async function sampleChannel() {
+async function sampleChannel(nonce = 0) {
 	assert.ok(token, 'deploy contracts first')
+	const nonceBytes = Buffer.alloc(32)
+	nonceBytes.writeUInt32BE(nonce)
 	return {
 		...dummyVals.channel,
+		nonce: nonceBytes,
 		tokenAddr: token.address
 	}
 }

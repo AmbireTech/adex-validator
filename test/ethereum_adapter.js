@@ -4,6 +4,7 @@ const assert = require('assert')
 const { providers } = require('ethers')
 const { readFileSync } = require('fs')
 const formatAddress = require('ethers').utils.getAddress
+const BN = require('bn.js')
 const { ethereum } = require('../adapters')
 const cfg = require('../cfg')
 const { deployContracts, sampleChannel, depositToChannel, sweep } = require('./ethereum')
@@ -27,7 +28,6 @@ const opts = {
 }
 
 const provider = new providers.JsonRpcProvider('http://localhost:8545')
-// let validChannel
 
 // ethereum adapter
 tape('should init ethereum adapter', async function(t) {
@@ -166,7 +166,8 @@ tape('getDepositFor', async function(t) {
 	const { core, token, sweeper } = await deployContracts()
 
 	const channel = await sampleChannel()
-	const MINIMAL_DEPOSIT = '100000000'
+	const ethChannel = await toEthereumChannel(channel)
+	const MINIMUM_DEPOSIT = '100000000'
 	const ethereumAdapter = new ethereum.Adapter(
 		opts,
 		{
@@ -174,8 +175,8 @@ tape('getDepositFor', async function(t) {
 			ETHEREUM_CORE_ADDR: core.address,
 			SWEEPER_ADDRESS: sweeper.address,
 			TOKEN_ADDRESS_WHITELIST: {
-				[token.address]: {
-					MINIMAL_DEPOSIT,
+				[token.address.toLowerCase()]: {
+					MINIMUM_DEPOSIT,
 					MINIMAL_FEE: '100000000',
 					DECIMALS: 18
 				}
@@ -187,63 +188,77 @@ tape('getDepositFor', async function(t) {
 	const create2Addr = ethereumAdapter.getCreate2Address(
 		core.address,
 		sweeper.address,
+		ethChannel,
+		channel.leader
+	)
+
+	// deposit without using create2 i.e. deposit directly on outpace
+	const toDeposit = new BN(`${MINIMUM_DEPOSIT}0`)
+	await depositToChannel(ethChannel, channel.leader, toDeposit.toString())
+	const depositWithoutCreate2 = await ethereumAdapter.getDepositFor(channel, channel.leader)
+	t.equal(
+		depositWithoutCreate2.total.toString(),
+		toDeposit.toString(),
+		'depositWithoutCreate2: incorrect total balance'
+	)
+	t.equal(
+		depositWithoutCreate2.create2Balance.toString(),
+		'0',
+		'depositWithoutCreate2: incorrect create2balance'
+	)
+
+	// deposit with create2 below minimum deposit
+	const toDeposit1 = new BN(`10000000`)
+	await (await token.setBalanceTo(create2Addr, toDeposit1.toString())).wait()
+	const depositWithCreate2 = await ethereumAdapter.getDepositFor(channel, channel.leader)
+	t.equal(
+		depositWithCreate2.total.toString(),
+		// eslint-disable-next-line prettier/prettier
+		toDeposit.toString(),
+		'depositWithCreate2: incorrect total balance'
+	)
+	t.equal(
+		depositWithCreate2.create2Balance.toString(),
+		'0',
+		'depositWithCreate2: incorrect create2balance'
+	)
+
+	// deposit with create2 exceed minimum deposit
+	const toDepositExceed = new BN(`${MINIMUM_DEPOSIT}0`)
+	await (await token.setBalanceTo(create2Addr, toDepositExceed.toString())).wait()
+	const depositWithCreate2MinimumExceed = await ethereumAdapter.getDepositFor(
 		channel,
 		channel.leader
 	)
 
-	// deposit without create2
-	const ethChannel = await toEthereumChannel(channel)
-	await depositToChannel(ethChannel, channel.leader, `${MINIMAL_DEPOSIT}0`)
-	const resultWithoutCreate2 = await ethereumAdapter.getDepositFor(channel, channel.leader)
-	console.log({ resultWithoutCreate2 })
+	t.equal(
+		depositWithCreate2MinimumExceed.total.toString(),
+		// eslint-disable-next-line prettier/prettier
+		toDeposit.add(toDepositExceed).toString(),
+		'depositWithCreate2MinimumExceed: incorrect total balance'
+	)
 
-	// deposit with create2 below minimum deposit
-	// await depositToChannel(ethChannel, channel.leader, `10000000`)
-	await (await token.setBalanceTo(create2Addr, `10000000`)).wait()
-	const resultWithCreate2 = await ethereumAdapter.getDepositFor(channel, channel.leader)
-	console.log({ resultWithCreate2 })
+	t.equal(
+		depositWithCreate2MinimumExceed.create2Balance.toString(),
+		toDepositExceed.toString(),
+		'depositWithCreate2MinimumExceed: incorrect create2balance'
+	)
 
-	// deposit with create2 exceed minimum deposit
-	// await depositToChannel(ethChannel, channel.leader, `${MINIMAL_DEPOSIT}0`)
-	await (await token.setBalanceTo(create2Addr, `${MINIMAL_DEPOSIT}0`)).wait()
-	const resultWithCreate2Exceed = await ethereumAdapter.getDepositFor(channel, channel.leader)
-	console.log({ resultWithCreate2Exceed })
+	// run sweeper to sweep deposits on create2
+	await sweep(ethChannel, ethChannel.leader)
+	const depositAfterSweep = await ethereumAdapter.getDepositFor(channel, channel.leader)
 
-	// run sweeper
-	await sweep(ethChannel, channel.leader)
-	const resultAfterSweeper = await ethereumAdapter.getDepositFor(channel, channel.leader)
-	console.log({ resultAfterSweeper })
+	t.equal(
+		depositAfterSweep.total.toString(),
+		toDeposit.add(toDepositExceed).toString(),
+		'depositAfterSweep: incorrect total balance'
+	)
+
+	t.equal(
+		depositAfterSweep.create2Balance.toString(),
+		'0',
+		'depositAfterSweep: incorrect create2balance'
+	)
 
 	t.end()
 })
-
-// async function getValidChannel() {
-// 	if (validChannel) return validChannel
-// const { core } = await deployContracts()
-// const ethereumAdapter = new ethereum.Adapter(
-// 	opts,
-// 	{ ...cfg, ETHEREUM_CORE_ADDR: core.address },
-// 	provider
-// )
-
-// await ethereumAdapter.init()
-
-// // get a sample valid channel
-// const channel = await sampleChannel()
-// const ethChannel = ethereum.toEthereumChannel(channel)
-// channel.id = ethChannel.hashHex(core.address)
-
-// // cannot validate if its not onchain
-// await tryCatchAsync(
-// 	() => ethereumAdapter.validateChannel(channel),
-// 	'channel is not Active on ethereum'
-// )
-
-// // open channel onchain
-// await channelOpen(ethChannel)
-// const validate = await ethereumAdapter.validateChannel(channel)
-// assert.ok(validate, 'channel should pass validation')
-// // assign channel to validChannel
-// validChannel = channel
-// return channel
-// }

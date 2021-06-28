@@ -15,8 +15,7 @@
     "export-analytics": "./scripts/export-analytics.js",
     "benchmark": "./test/run-integration-tests.sh benchmark",
     "benchmark-docker": "./test/benchmark/benchmark.sh",
-    "bq": "node ./scripts/bigquery.js",
-    "v5-test-adapter": "node test/ethereum_adapter.js"
+    "bq": "node ./scripts/bigquery.js"
   },
   "bin": {
     "adex-sentry": "./bin/sentry.js",
@@ -75,7 +74,7 @@
     "eslint-config-prettier": "^4.1.0",
     "eslint-plugin-import": "^2.16.0",
     "eslint-plugin-prettier": "^3.0.1",
-    "ganache-cli": "^6.4.2",
+    "ganache-cli": "^6.12.2",
     "husky": "^1.3.1",
     "lint-staged": "^8.1.5",
     "prettier": "^1.16.4",

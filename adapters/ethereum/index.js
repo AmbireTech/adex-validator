@@ -115,15 +115,7 @@ function Adapter(opts, cfg, ethProvider) {
 	this.getDepositFor = async function(channel, depositor) {
 		const ethChannel = toEthereumChannel(channel)
 		const erc20 = new Contract(channel.tokenAddr, erc20ABI, provider)
-		const outpaceBalance = await outpace.deposits(channel.id, depositor)
-		// const depositorConstructorArg = utils.defaultAbiCoder.encode(
-		// 	['address', 'tuple', 'address'],
-		// 	[cfg.ETHEREUM_CORE_ADDR, channel.toSolidityTuple(), depositor]
-		// )
-		// const codeHash = utils.keccak256(
-		// 	utils.concat(utils.arrayify(depositorByteCode), utils.arrayify(depositorConstructorArg))
-		// )
-		// const create2Addr = utils.getCreate2Address(cfg.SWEEPER_ADDRESS, '0x0', codeHash)
+		const outpaceBalance = await outpace.deposits(ethChannel.hashHex(), depositor)
 		const create2Addr = this.getCreate2Address(
 			cfg.ETHEREUM_CORE_ADDR,
 			cfg.SWEEPER_ADDRESS,
@@ -132,10 +124,10 @@ function Adapter(opts, cfg, ethProvider) {
 		)
 
 		const create2Balance = await erc20.balanceOf(create2Addr)
-		const tokenConfig = cfg.TOKEN_ADDRESS_WHITELIST[channel.tokenAddr]
+		const tokenConfig = cfg.TOKEN_ADDRESS_WHITELIST[channel.tokenAddr.toLowerCase()]
 		assert.ok(tokenConfig, 'token: invalid token addr')
 
-		if (create2Balance.gt(BigNumber.from(tokenConfig.minimumDeposit))) {
+		if (create2Balance.gt(BigNumber.from(tokenConfig.MINIMUM_DEPOSIT))) {
 			return {
 				total: new BN(create2Balance.add(outpaceBalance).toString()),
 				create2Balance: new BN(create2Balance.toString())
@@ -143,7 +135,7 @@ function Adapter(opts, cfg, ethProvider) {
 		}
 
 		return {
-			total: outpaceBalance,
+			total: new BN(outpaceBalance.toString()),
 			create2Balance: new BN(0)
 		}
 	}
@@ -161,16 +153,13 @@ Adapter.prototype.getSignableStateRoot = function(channelId, balanceRoot) {
 	return Channel.getSignableStateRoot(channelId, balanceRoot)
 }
 
-Adapter.prototype.getCreate2Address = function(outpace, sweeper, channel, depositor) {
+Adapter.prototype.getCreate2Address = function(outpace, sweeper, ethChannel, depositor) {
 	const depositorConstructorArg = utils.defaultAbiCoder.encode(
-		['address', 'tuple', 'address'],
-		[outpace, channel.toSolidityTuple(), depositor]
+		['address', 'tuple(address,address,address,address,bytes32)', 'address'],
+		[outpace, ethChannel.toSolidityTuple(), depositor]
 	)
-	const codeHash = utils.keccak256(
-		utils.concat(utils.arrayify(depositorByteCode), utils.arrayify(depositorConstructorArg))
-	)
-
-	return utils.getCreate2Address(sweeper, '0x0', codeHash)
+	const codeHash = utils.keccak256(`0x${depositorByteCode}${depositorConstructorArg.slice(2)}`)
+	return utils.getCreate2Address(sweeper, utils.hexZeroPad('0x0', 32), codeHash)
 }
 
 Adapter.prototype.MerkleTree = MerkleTree
