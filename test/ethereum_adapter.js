@@ -202,9 +202,9 @@ tape('getDepositFor', async function(t) {
 		'depositWithoutCreate2: incorrect total balance'
 	)
 	t.equal(
-		depositWithoutCreate2.create2Balance.toString(),
+		depositWithoutCreate2.stillOnCreate2.toString(),
 		'0',
-		'depositWithoutCreate2: incorrect create2balance'
+		'depositWithoutCreate2: incorrect stillOnCreate2'
 	)
 
 	// deposit with create2 below minimum deposit
@@ -218,9 +218,9 @@ tape('getDepositFor', async function(t) {
 		'depositWithCreate2: incorrect total balance'
 	)
 	t.equal(
-		depositWithCreate2.create2Balance.toString(),
+		depositWithCreate2.stillOnCreate2.toString(),
 		'0',
-		'depositWithCreate2: incorrect create2balance'
+		'depositWithCreate2: incorrect stillOnCreate2'
 	)
 
 	// deposit with create2 exceed minimum deposit
@@ -239,9 +239,9 @@ tape('getDepositFor', async function(t) {
 	)
 
 	t.equal(
-		depositWithCreate2MinimumExceed.create2Balance.toString(),
+		depositWithCreate2MinimumExceed.stillOnCreate2.toString(),
 		toDepositExceed.toString(),
-		'depositWithCreate2MinimumExceed: incorrect create2balance'
+		'depositWithCreate2MinimumExceed: incorrect stillOnCreate2'
 	)
 
 	// run sweeper to sweep deposits on create2
@@ -255,7 +255,7 @@ tape('getDepositFor', async function(t) {
 	)
 
 	t.equal(
-		depositAfterSweep.create2Balance.toString(),
+		depositAfterSweep.stillOnCreate2.toString(),
 		'0',
 		'depositAfterSweep: incorrect create2balance'
 	)

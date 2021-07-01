@@ -130,13 +130,13 @@ function Adapter(opts, cfg, ethProvider) {
 		if (create2Balance.gt(BigNumber.from(tokenConfig.MINIMUM_DEPOSIT))) {
 			return {
 				total: new BN(create2Balance.add(outpaceBalance).toString()),
-				create2Balance: new BN(create2Balance.toString())
+				stillOnCreate2: new BN(create2Balance.toString())
 			}
 		}
 
 		return {
 			total: new BN(outpaceBalance.toString()),
-			create2Balance: new BN(0)
+			stillOnCreate2: new BN(0)
 		}
 	}
 }
