@@ -30,5 +30,6 @@ module.exports = {
 	VALIDATORS_WHITELIST: [],
 	CHANNEL_REFRESH_INTERVAL: 40000,
 	MAX_CHANNEL_SPEC_BYTES_SIZE: 35000,
-	admins: []
+	admins: [],
+	V4_VALIDATOR_URL: 'https://jerry.adex.network'
 }
