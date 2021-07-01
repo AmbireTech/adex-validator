@@ -1,82 +1,81 @@
 const assert = require('assert')
-const { ContractFactory, Contract, Wallet, providers } = require('ethers')
-const formatAddress = require('ethers').utils.getAddress
+const { ContractFactory, Wallet, providers } = require('ethers')
 
-const adexCoreABI = require('adex-protocol-eth/abi/AdExCore.json')
-const adexCoreBytecode = require('adex-protocol-eth/resources/bytecode/AdExCore.json')
+const outpaceABI = require('adex-protocol-eth/abi/OUTPACE')
+const outpaceBytecode = require('adex-protocol-eth/resources/bytecode/OUTPACE')
+const sweeperABI = require('adex-protocol-eth/abi/Sweeper')
+const sweeperBytecode = require('adex-protocol-eth/resources/bytecode/Sweeper')
 const tokenbytecode = require('./token/tokenbytecode.json')
 const tokenabi = require('./token/tokenabi.json')
+
 const dummyVals = require('../prep-db/mongo')
 
 const provider = new providers.JsonRpcProvider('http://localhost:8545')
+
 let core = null
 let token = null
+let sweeper = null
 
 // the private keys used in starting the ganache cli instance
 const wallet = new Wallet(
 	'0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200',
 	provider
 )
-const wallet2 = new Wallet(
-	'0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501201',
-	provider
-)
+// const wallet2 = new Wallet(
+// 	'0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501201',
+// 	provider
+// )
 
 async function deployContracts() {
 	// if contracts have been deployed return
 	if (core) return { core, token }
-	core = new ContractFactory(adexCoreABI, adexCoreBytecode, wallet)
+	core = new ContractFactory(outpaceABI, outpaceBytecode, wallet)
 	token = new ContractFactory(tokenabi, tokenbytecode, wallet)
+	sweeper = new ContractFactory(sweeperABI, sweeperBytecode, wallet)
 
 	core = await core.deploy()
 	core = await core.deployed()
 
 	token = await token.deploy()
 	token = await token.deployed()
-	return { core, token }
+
+	sweeper = await sweeper.deploy()
+	sweeper = await sweeper.deployed()
+
+	return { core, token, sweeper }
 }
 
-async function channelOpen(channel) {
-	core = new Contract(core.address, adexCoreABI, wallet)
-	token = new Contract(token.address, tokenabi, wallet)
+async function depositToChannel(ethChannel, recipient = wallet.address, amountToDeposit = 2000) {
+	await (await token.setBalanceTo(wallet.address, amountToDeposit)).wait()
 
-	await token.setBalanceTo(wallet.address, 2000)
+	const receipt = await (await core.deposit(
+		ethChannel.toSolidityTuple(),
+		recipient,
+		amountToDeposit
+	)).wait()
 
-	const receipt = await (await core.channelOpen(channel.toSolidityTuple())).wait()
-
-	const ev = receipt.events.find(x => x.event === 'LogChannelOpen')
-	assert.ok(ev, 'Should have LogChannelOpen event')
+	const ev = receipt.events.find(x => x.event === 'LogChannelDeposit')
+	assert.ok(ev, 'Should have LogChannelDeposit event')
 }
 
-async function sampleChannel() {
-	const blockTime = (await provider.getBlock('latest')).timestamp
+async function sweep(ethChannel, depositor) {
+	await (await sweeper.sweep(core.address, ethChannel.toSolidityTuple(), [depositor])).wait()
+}
 
+async function sampleChannel(nonce = 0) {
+	assert.ok(token, 'deploy contracts first')
+	const nonceBytes = Buffer.alloc(32)
+	nonceBytes.writeUInt32BE(nonce)
 	return {
 		...dummyVals.channel,
-		id: null,
-		creator: wallet.address,
-		depositAsset: token.address,
-		depositAmount: 2000,
-		validUntil: blockTime + 50,
-		spec: {
-			...dummyVals.channel.spec,
-			minPerImpression: '1',
-			withdrawPeriodStart: (blockTime + 40) * 1000,
-			validators: [
-				// keystore json address
-				{
-					id: formatAddress('0x2bdeafae53940669daa6f519373f686c1f3d3393'),
-					url: 'http://localhost:8005',
-					fee: '100'
-				},
-				{ id: wallet2.address, url: 'http://localhost:8006', fee: '100' }
-			]
-		}
+		nonce: nonceBytes,
+		tokenAddr: token.address
 	}
 }
 
 module.exports = {
-	channelOpen,
+	depositToChannel,
 	deployContracts,
-	sampleChannel
+	sampleChannel,
+	sweep
 }

@@ -9,9 +9,8 @@ before_script:
         - sleep 5
 script:
         - npm run lint
-        - npm test
         - npm run test-integration
-        #- npm run test-integration-external
+        # - npm run test-integration-external
 addons:
   apt:
     sources:
