@@ -288,6 +288,7 @@ function channelAdvertiserIfOwns(req, res, next) {
 		.catch(next)
 }
 
+// maybe not needed - or at least we need to be extra careful with the cache times (not too long)
 function redisCached(seconds, fn) {
 	return function(req, res, next) {
 		if (req.session) {
