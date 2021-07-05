@@ -2,7 +2,6 @@ const express = require('express')
 const { promisify } = require('util')
 const { celebrate, Joi } = require('celebrate')
 const toBalancesKey = require('../services/sentry/toBalancesKey')
-const schemas = require('./schemas')
 const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
 const { collections } = require('../services/constants')
@@ -20,8 +19,23 @@ const notCached = fn => (req, res, next) =>
 // @TODO: timeframe should not support hour, we do not have this granularity
 const validate = celebrate({
 	query: {
-		...schemas.eventTimeAggr,
+		eventType: Joi.string()
+			.valid(['IMPRESSION', 'CLICK'])
+			.default('IMPRESSION'),
+		metric: Joi.string()
+			.valid(['count', 'paid'])
+			.default('count'),
+		timeframe: Joi.string()
+			.valid(['year', 'month', 'week', 'day'])
+			.default('day'),
+		start: Joi.date(),
+		end: Joi.date(),
+		limit: Joi.number().default(100),
+		// @TODO
+		// channels: Joi.string(),
+		earner: Joi.string(),
 		segmentByChannel: Joi.string(),
+		// @TODO: check what happens if an invalid value is supplied
 		timezone: Joi.string()
 	}
 })
@@ -103,6 +117,7 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner, ti
 		? { 'keys.time': { $lte: end, $gte: start } }
 		: { 'keys.time': { $gte: start } }
 	let publisherId = null
+	// @TODO
 	if (earner) {
 		publisherId = toBalancesKey(earner)
 	}
@@ -112,7 +127,7 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner, ti
 		'keys.time': 1,
 		'keys.campaignId': 1,
 		// @TODO metric can be count, paid
-		value: `$values.${eventType}.${metric}`,
+		value: `$${eventType}.${metric}`,
 		year: { $year: { date: '$keys.time', timezone } },
 		month: { $month: { date: '$keys.time', timezone } },
 		day: { $dayOfMonth: { date: '$keys.time', timezone } },
@@ -191,11 +206,14 @@ function analytics(req, advertiserChannels, earner) {
 		{ $project: resultProjection }
 	]
 
+	// @TODO get rid of this
+	// console.log(JSON.stringify(pipeline, null, 4))
 	return collection
 		.aggregate(pipeline, { maxTimeMS: cfg.ANALYTICS_MAXTIME_V5 })
 		.toArray()
 		.then(aggr => ({
 			limit: appliedLimit,
+			limitReached: appliedLimit === aggr.length,
 			aggr
 		}))
 }
