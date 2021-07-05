@@ -1,7 +1,8 @@
 module.exports = Object.freeze({
 	collections: {
 		eventAggregates: 'eventAggregates',
-		analyticsAggregate: 'analyticsAggregates'
+		analyticsAggregate: 'analyticsAggregates',
+		analyticsV5: 'analytics'
 	},
 	eventTypes: {
 		update_targeting: 'UPDATE_TARGETING',
