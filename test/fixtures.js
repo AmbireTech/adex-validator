@@ -1,5 +1,5 @@
 const BN = require('bn.js')
-const dummyVals = require('./prep-db/mongo')
+// const dummyVals = require('./prep-db/mongo')
 
 const validatorMessage = {
 	type: 'NewState',
@@ -10,97 +10,6 @@ const validatorMessage = {
 }
 
 module.exports = {
-	createChannel: [
-		[
-			{
-				id: 'awesomeTestChannel'
-			},
-			`ValidationError: child "depositAsset" fails because ["depositAsset" is required]`
-		],
-		[
-			{
-				...dummyVals.channel,
-				id: undefined
-			},
-			`ValidationError: child "id" fails because ["id" is required]`
-		],
-		[
-			{
-				...dummyVals.channel,
-				spec: {
-					...dummyVals.channel.spec,
-					minPerImpression: '1acb'
-				}
-			},
-			'ValidationError: child "spec" fails because [child "minPerImpression" fails because ["minPerImpression" with value "1acb" fails to match the required pattern: /^\\d+$/]]'
-		],
-		[
-			{
-				...dummyVals.channel,
-				spec: {
-					minPerImpression: '1',
-					validators: [
-						{
-							id: '0xa95743F561db3618D204C9a7c3ca55cDf0625107',
-							url: 'http://localhost:8005',
-							fee: '-100'
-						},
-						{
-							id: '0xa95743F561db3618D204C9a7c3ca55cDf0625107',
-							url: 'http://localhost:8006',
-							fee: '100'
-						}
-					]
-				}
-			},
-			'ValidationError: child "spec" fails because [child "validators" fails because ["validators" at position 0 fails because [child "fee" fails because ["fee" with value "-100" fails to match the required pattern: /^\\d+$/]]]]'
-		],
-		[
-			{
-				...dummyVals.channel,
-				creator: 8
-			},
-			`ValidationError: child "creator" fails because ["creator" must be a string]`
-		],
-		[
-			{
-				...dummyVals.channel
-			},
-			null
-		],
-		[
-			{
-				...dummyVals.channel,
-				spec: {
-					validators: [
-						{
-							id: '0xa95743F561db3618D204C9a7c3ca55cDf0625107',
-							url: 'http://localhost:8005',
-							fee: '0'
-						}
-					]
-				}
-			},
-			`ValidationError: child "spec" fails because [child "validators" fails because ["validators" must contain 2 items]]`
-		],
-		[
-			{
-				...dummyVals.channel,
-				spec: undefined
-			},
-			`ValidationError: child "spec" fails because ["spec" is required]`
-		],
-		// correct adunit spec
-		[
-			{
-				...dummyVals.channel,
-				spec: {
-					...dummyVals.channel.spec
-				}
-			},
-			null
-		]
-	],
 	validatorMessages: [
 		[
 			{

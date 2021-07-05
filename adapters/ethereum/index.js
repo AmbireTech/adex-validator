@@ -1,15 +1,17 @@
-const { MerkleTree, Channel, ChannelState } = require('adex-protocol-eth/js')
-const { Wallet, Contract, utils, getDefaultProvider } = require('ethers')
-const coreABI = require('adex-protocol-eth/abi/AdExCore')
+const { MerkleTree, Channel } = require('adex-protocol-eth/js')
+const { Wallet, Contract, utils, getDefaultProvider, BigNumber } = require('ethers')
+const coreABI = require('adex-protocol-eth/abi/OUTPACE')
+const erc20ABI = require('adex-protocol-eth/abi/ERC20')
+
+const depositorByteCode = require('adex-protocol-eth/resources/bytecode/Depositor')
 const formatAddress = require('ethers').utils.getAddress
 const fetch = require('node-fetch')
 const util = require('util')
 const assert = require('assert')
 const fs = require('fs')
-const crypto = require('crypto')
 
 const readFile = util.promisify(fs.readFile)
-const lib = require('../lib')
+const BN = require('bn.js')
 const ewt = require('./ewt')
 
 // Auth tokens that we have verified (tokenId => session)
@@ -24,7 +26,7 @@ let wallet = null
 
 function Adapter(opts, cfg, ethProvider) {
 	const provider = ethProvider || getDefaultProvider(cfg.ETHEREUM_NETWORK)
-	const core = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
+	const outpace = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
 	this.init = function() {
 		assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
@@ -62,33 +64,6 @@ function Adapter(opts, cfg, ethProvider) {
 
 		const from = utils.verifyMessage(stateRoot, signature)
 		return Promise.resolve(signer === from)
-	}
-
-	this.validateChannel = async function(channel, options = {}) {
-		const ethChannel = toEthereumChannel(channel)
-
-		assert.equal(channel.id, ethChannel.hashHex(core.address), 'channel.id is not valid')
-		assert.equal(channel.creator, formatAddress(channel.creator), 'channel.creator is checksummed')
-		assert.ok(
-			channel.spec.validators.every(
-				({ id, feeAddr }) =>
-					id === formatAddress(id) && (!feeAddr || feeAddr === formatAddress(feeAddr))
-			),
-			'channel.validators: all addresses are checksummed'
-		)
-
-		await lib.isChannelValid(cfg, channel, address)
-
-		if (options.preValidation === true) {
-			return true
-		}
-
-		// Check the on-chain status
-		const channelStatus = await core.states(ethChannel.hash(core.address))
-		assert.equal(channelStatus, ChannelState.Active, 'channel is not Active on ethereum')
-
-		// Channel is valid
-		return true
 	}
 
 	// Authentication tokens
@@ -136,6 +111,34 @@ function Adapter(opts, cfg, ethProvider) {
 			return token
 		})
 	}
+
+	this.getDepositFor = async function(channel, depositor) {
+		const ethChannel = toEthereumChannel(channel)
+		const erc20 = new Contract(channel.tokenAddr, erc20ABI, provider)
+		const outpaceBalance = await outpace.deposits(ethChannel.hashHex(), depositor)
+		const create2Addr = this.getCreate2Address(
+			cfg.ETHEREUM_CORE_ADDR,
+			cfg.SWEEPER_ADDRESS,
+			ethChannel,
+			depositor
+		)
+
+		const create2Balance = await erc20.balanceOf(create2Addr)
+		const tokenConfig = cfg.TOKEN_ADDRESS_WHITELIST[channel.tokenAddr.toLowerCase()]
+		assert.ok(tokenConfig, 'token: invalid token addr')
+
+		if (create2Balance.gt(BigNumber.from(tokenConfig.MINIMUM_DEPOSIT))) {
+			return {
+				total: new BN(create2Balance.add(outpaceBalance).toString()),
+				stillOnCreate2: new BN(create2Balance.toString())
+			}
+		}
+
+		return {
+			total: new BN(outpaceBalance.toString()),
+			stillOnCreate2: new BN(0)
+		}
+	}
 }
 
 Adapter.prototype.getAddress = function(addr) {
@@ -148,6 +151,15 @@ Adapter.prototype.getBalanceLeaf = function(acc, bal) {
 
 Adapter.prototype.getSignableStateRoot = function(channelId, balanceRoot) {
 	return Channel.getSignableStateRoot(channelId, balanceRoot)
+}
+
+Adapter.prototype.getCreate2Address = function(outpace, sweeper, ethChannel, depositor) {
+	const depositorConstructorArg = utils.defaultAbiCoder.encode(
+		['address', 'tuple(address,address,address,address,bytes32)', 'address'],
+		[outpace, ethChannel.toSolidityTuple(), depositor]
+	)
+	const codeHash = utils.keccak256(`0x${depositorByteCode}${depositorConstructorArg.slice(2)}`)
+	return utils.getCreate2Address(sweeper, utils.hexZeroPad('0x0', 32), codeHash)
 }
 
 Adapter.prototype.MerkleTree = MerkleTree
@@ -166,17 +178,12 @@ Adapter.prototype.MerkleTree = MerkleTree
 // p.then(() => console.log(Date.now()-start))
 
 function toEthereumChannel(channel) {
-	const specHash = crypto
-		.createHash('sha256')
-		.update(JSON.stringify(channel.spec))
-		.digest()
 	return new Channel({
-		creator: channel.creator,
-		tokenAddr: channel.depositAsset,
-		tokenAmount: channel.depositAmount,
-		validUntil: channel.validUntil,
-		validators: channel.spec.validators.map(v => v.id),
-		spec: specHash
+		leader: channel.leader,
+		follower: channel.follower,
+		guardian: channel.guardian,
+		tokenAddr: channel.tokenAddr,
+		nonce: channel.nonce
 	})
 }
 
