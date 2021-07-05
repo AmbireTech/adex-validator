@@ -473,7 +473,7 @@ Get a specific advertiser analytics
 
 #### Admin Analytics
 
-Get analytics for any earner, channel or advertiser only for users with
+Get analytics for any earner, channel(s) or advertiser only for users with
 admin allowed authentication capabilities
 
 - URL
