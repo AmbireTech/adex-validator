@@ -505,3 +505,49 @@ admin allowed authentication capabilities
             }
         ]
         ```
+
+
+## V5 analytics
+
+### Routes
+
+/v5/analytics
+
+/v5/analytics/for-publisher
+
+/v5/analytics/for-advertisers
+
+/v5/analytics/for-admin
+
+### Parameters
+
+All routes take `timeframe` (string, can be "month", "week", *"day" (default)*), `start`/`end` (optional ISO string dates)
+
+The following query parameters are supported on all analytics routes unless specified otherwise:
+
+?metric=[string] - supported values are *`"count"` (default)* and `"paid"`
+
+?eventType=[string] - supported values are *`"IMPRESSION"` (default)*, `"CLICK"`
+
+?segmentBy=[string] - segment the output by the value of a particular key; valid values are `["campaignId","adUnit","adSlot","adSlotType","advertiser","publisher","hostname","country","osName"]`; for example `?segmentBy=osName`
+
+#### Filtering
+
+Queries can be made on the following keys: `['campaignId', 'adUnit', 'adSlot', 'adSlotType', 'advertiser', 'publisher', 'hostname', 'country', 'osName']` by either passing one value or multiple values.
+
+For example, `?adSlotType=legacy_160x600` will only match events where the adSlotType is `legacy_160x600`, but `?adSlotType=legacy_160x600&adSlotType=legacy_728x90` will match all events where it's either of the two.
+
+Please note that not all keys are queryable in all cases, see "Permissions"
+
+### Permissions
+
+Global queries are restricted to querying by/segmenting by ['country', 'adSlotType'] only.
+
+All other routes allow querying and segmenting by any key, but `/for-publisher` restricts the dataset to all events recorded where the authenticated user is the publisher, and `/for-advertiser` does the same but where the authenticated user is the advertiser. To truly access all data, you need `/for-admin`
+
+
+### Examples
+
+`/v5/analytics/for-publisher?timeframe=month&segmentBy=adSlotType&country=BG` - gets all events for the authenticated publisher in Bulgaria and segments them by adSlotType, for each day in the month
+
+`/v5/analytics/for-publisher?segmentBy=adSlotType&country=BG` - gets all events for the authenticated publisher in Bulgaria and segments them by adSlotType

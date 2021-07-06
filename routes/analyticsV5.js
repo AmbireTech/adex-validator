@@ -9,31 +9,55 @@ const router = express.Router()
 const redisCli = db.getRedis()
 const redisGet = promisify(redisCli.get).bind(redisCli)
 const authRequired = (req, res, next) => (req.session ? next() : res.sendStatus(401))
+const RouteErr = (code, msg) => {
+	const err = new Error(msg)
+	err.code = code
+	return err
+}
+const handleErr = (res, err) => {
+	if (err && err.code && err.message)
+		res.status(err.code).json({ message: err.message, code: err.code })
+	else throw err
+}
 const notCached = fn => (req, res, next) =>
 	fn(req)
 		.then(res.json.bind(res))
+		.catch(handleErr.bind(null, res))
 		.catch(next)
 
-// @TODO: timeframe should not support hour, we do not have this granularity
-const validate = celebrate({
-	query: {
-		eventType: Joi.string()
-			.valid(['IMPRESSION', 'CLICK'])
-			.default('IMPRESSION'),
-		metric: Joi.string()
-			.valid(['count', 'paid'])
-			.default('count'),
-		timeframe: Joi.string()
-			.valid(['year', 'month', 'week', 'day'])
-			.default('day'),
-		start: Joi.date(),
-		end: Joi.date(),
-		limit: Joi.number().default(100),
-		segmentBy: Joi.string(),
-		// @TODO: check what happens if an invalid value is supplied
-		timezone: Joi.string().default('UTC')
-	}
-})
+const allowedKeys = [
+	'campaignId',
+	'adUnit',
+	'adSlot',
+	'adSlotType',
+	'advertiser',
+	'publisher',
+	'hostname',
+	'country',
+	'osName'
+]
+const validate = celebrate(
+	{
+		query: {
+			eventType: Joi.string()
+				.valid(['IMPRESSION', 'CLICK'])
+				.default('IMPRESSION'),
+			metric: Joi.string()
+				.valid(['count', 'paid'])
+				.default('count'),
+			timeframe: Joi.string()
+				.valid(['year', 'month', 'week', 'day'])
+				.default('day'),
+			start: Joi.date(),
+			end: Joi.date(),
+			limit: Joi.number().default(100),
+			segmentBy: Joi.string(),
+			// @TODO: check what happens if an invalid value is supplied
+			timezone: Joi.string().default('UTC')
+		}
+	},
+	{ allowUnknown: true }
+)
 
 const isAdmin = (req, res, next) => {
 	if (cfg.admins.includes(req.session.uid)) {
@@ -44,7 +68,11 @@ const isAdmin = (req, res, next) => {
 
 // Global statistics
 // WARNING: redisCached can only be used on methods that are called w/o auth
-router.get('/', validate, redisCached(500, analytics))
+router.get(
+	'/',
+	validate,
+	redisCached(500, req => analytics(req, { allowedKeys: ['country', 'adSlotType'] }))
+)
 router.get(
 	'/for-publisher',
 	validate,
@@ -57,16 +85,8 @@ router.get(
 	authRequired,
 	notCached(req => analytics(req, { authAsKey: 'advertiser' }))
 )
-router.get(
-	'/for-admin',
-	validate,
-	authRequired,
-	isAdmin,
-	notCached(req => analytics(req, { isAdmin: true }))
-)
-// :id is channelId: needs to be named that way cause of channelIfExists
-// @TODO
-// router.get('/:campaignId', validate, channelAdvertiserIfOwns, notCached(advertiserChannelAnalytics))
+// just plain analytics() w/o options is unrestricted: it can query/segment by all keys, and it doesn't restrict the dataset to a publisher/advertiser
+router.get('/for-admin', validate, authRequired, isAdmin, notCached(analytics))
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
@@ -118,9 +138,6 @@ function getTimeGroup(timeframe) {
 function getTimeProjAndMatch(start, end, eventType, metric, timezone) {
 	const match = end ? { 'keys.time': { $lte: end, $gte: start } } : { 'keys.time': { $gte: start } }
 	const project = {
-		// NOTE: can we extract more performance by limiting the projection here?
-		// Seems like no, from 3 tests on a daily dataset, avgs are 2.7s vs 2.6s
-		keys: 1,
 		value: `$${eventType}.${metric}`,
 		year: { $year: { date: '$keys.time', timezone } },
 		month: { $month: { date: '$keys.time', timezone } },
@@ -131,9 +148,6 @@ function getTimeProjAndMatch(start, end, eventType, metric, timezone) {
 }
 
 function analytics(req, opts = {}) {
-	// redundant extra safety check
-	if (opts.authAsKey && !req.session) throw new Error('auth required')
-
 	const { limit, timeframe, eventType, metric, start, end, segmentBy, timezone } = req.query
 
 	const period = getMaxPeriod(timeframe)
@@ -145,17 +159,36 @@ function analytics(req, opts = {}) {
 		metric,
 		timezone
 	)
-	const restrictedMatch = opts.authAsKey
-		? { ...match, [`$keys.${opts.authAsKey}`]: req.session.uid }
-		: match
-	const finalMatch = restrictedMatch // @TODO
 
+	// There's four authentication groups: admin, publisher, advertiser, global
+	// Apply the query and grouping
+	const allowed = opts.allowedKeys || allowedKeys
+	if (segmentBy) {
+		if (!allowed.includes(segmentBy)) {
+			throw RouteErr(403, 'disallowed segmentBy')
+		}
+		project.segment = `$keys.${segmentBy}`
+	}
+	allowedKeys.forEach(key => {
+		const inQuery = req.query[key]
+		if (inQuery) {
+			if (!allowed.includes(key)) throw RouteErr(403, 'disallowed query key')
+			match[`keys.${key}`] = Array.isArray(inQuery) ? { $in: inQuery } : inQuery
+		}
+	})
+	// IMPORTANT FOR SECURITY: this must be LAST so that req.query.publisher/req.query.advertiser cannot override it
+	if (opts.authAsKey) {
+		if (!req.session) throw new Error('internal err: auth required')
+		match[`keys.${opts.authAsKey}`] = req.session.uid
+	}
+
+	// Everything from here on out is generic no matter what the query is
 	const timeGroup = getTimeGroup(timeframe)
-
 	const group = {
-		_id: segmentBy ? { time: timeGroup, segment: `$keys.${segmentBy}` } : { time: timeGroup },
+		_id: segmentBy ? { time: timeGroup, segment: `$segment` } : { time: timeGroup },
 		value: { $sum: '$value' }
 	}
+
 	const resultProjection = {
 		value: '$value',
 		time: {
@@ -176,7 +209,7 @@ function analytics(req, opts = {}) {
 	const maxLimit = cfg.ANALYTICS_FIND_LIMIT_V5
 	const appliedLimit = Math.min(maxLimit, limit)
 	const pipeline = [
-		{ $match: finalMatch },
+		{ $match: match },
 		{ $project: project },
 		{ $group: group },
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
@@ -216,6 +249,7 @@ function redisCached(seconds, fn) {
 					res.send(resp)
 				})
 			})
+			.catch(handleErr.bind(null, res))
 			.catch(next)
 	}
 }
