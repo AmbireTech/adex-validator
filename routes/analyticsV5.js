@@ -1,8 +1,6 @@
 const express = require('express')
 const { promisify } = require('util')
 const { celebrate, Joi } = require('celebrate')
-const toBalancesKey = require('../services/sentry/toBalancesKey')
-const { channelIfExists } = require('../middlewares/channel')
 const db = require('../db')
 const { collections } = require('../services/constants')
 const cfg = require('../cfg')
@@ -31,12 +29,9 @@ const validate = celebrate({
 		start: Joi.date(),
 		end: Joi.date(),
 		limit: Joi.number().default(100),
-		// @TODO
-		// channels: Joi.string(),
-		earner: Joi.string(),
-		segmentByChannel: Joi.string(),
+		segmentBy: Joi.string(),
 		// @TODO: check what happens if an invalid value is supplied
-		timezone: Joi.string()
+		timezone: Joi.string().default('UTC')
 	}
 })
 
@@ -50,20 +45,28 @@ const isAdmin = (req, res, next) => {
 // Global statistics
 // WARNING: redisCached can only be used on methods that are called w/o auth
 router.get('/', validate, redisCached(500, analytics))
-router.get('/for-publisher', validate, authRequired, notCached(publisherAnalytics))
-// router.get('/for-advertiser', validate, authRequired, notCached(advertiserAnalytics))
-
 router.get(
-	'/for-publisher/:id',
+	'/for-publisher',
 	validate,
 	authRequired,
-	channelIfExists,
-	notCached(publisherAnalytics)
+	notCached(req => analytics(req, { authAsKey: 'publisher' }))
 )
-router.get('/for-admin', validate, authRequired, isAdmin, notCached(adminAnalytics))
+router.get(
+	'/for-advertiser',
+	validate,
+	authRequired,
+	notCached(req => analytics(req, { authAsKey: 'advertiser' }))
+)
+router.get(
+	'/for-admin',
+	validate,
+	authRequired,
+	isAdmin,
+	notCached(req => analytics(req, { isAdmin: true }))
+)
 // :id is channelId: needs to be named that way cause of channelIfExists
 // @TODO
-// router.get('/:id', validate, channelAdvertiserIfOwns, notCached(advertiserChannelAnalytics))
+// router.get('/:campaignId', validate, channelAdvertiserIfOwns, notCached(advertiserChannelAnalytics))
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
@@ -112,21 +115,12 @@ function getTimeGroup(timeframe) {
 	throw new Error('unsupported time group')
 }
 
-function getProjAndMatch(channelMatch, start, end, eventType, metric, earner, timezone) {
-	const timeMatch = end
-		? { 'keys.time': { $lte: end, $gte: start } }
-		: { 'keys.time': { $gte: start } }
-	let publisherId = null
-	// @TODO
-	if (earner) {
-		publisherId = toBalancesKey(earner)
-	}
-	const filteredMatch = publisherId ? { 'keys.publisher': publisherId, ...timeMatch } : timeMatch
-	const match = channelMatch ? { channelId: channelMatch, ...filteredMatch } : filteredMatch
+function getTimeProjAndMatch(start, end, eventType, metric, timezone) {
+	const match = end ? { 'keys.time': { $lte: end, $gte: start } } : { 'keys.time': { $gte: start } }
 	const project = {
-		'keys.time': 1,
-		'keys.campaignId': 1,
-		// @TODO metric can be count, paid
+		// NOTE: can we extract more performance by limiting the projection here?
+		// Seems like no, from 3 tests on a daily dataset, avgs are 2.7s vs 2.6s
+		keys: 1,
 		value: `$${eventType}.${metric}`,
 		year: { $year: { date: '$keys.time', timezone } },
 		month: { $month: { date: '$keys.time', timezone } },
@@ -136,51 +130,34 @@ function getProjAndMatch(channelMatch, start, end, eventType, metric, earner, ti
 	return { match, project }
 }
 
-function analytics(req, advertiserChannels, earner) {
-	// default is applied via validation schema
-	// @TODO
-	const {
-		limit,
-		timeframe,
-		eventType,
-		metric,
-		start,
-		end,
-		segmentByChannel,
-		timezone = 'UTC'
-	} = req.query
+function analytics(req, opts = {}) {
+	// redundant extra safety check
+	if (opts.authAsKey && !req.session) throw new Error('auth required')
+
+	const { limit, timeframe, eventType, metric, start, end, segmentBy, timezone } = req.query
 
 	const period = getMaxPeriod(timeframe)
-
 	const collection = db.getMongo().collection(collections.analyticsV5)
-
-	const channelMatch = advertiserChannels ? { $in: advertiserChannels } : req.params.id
-	const { project, match } = getProjAndMatch(
-		channelMatch,
+	const { project, match } = getTimeProjAndMatch(
 		start && !Number.isNaN(new Date(start)) ? new Date(start) : new Date(Date.now() - period),
 		end && !Number.isNaN(new Date(end)) ? new Date(end) : null,
 		eventType,
 		metric,
-		earner,
 		timezone
 	)
-	const maxLimit = cfg.ANALYTICS_FIND_LIMIT_V5
-	const appliedLimit = Math.min(maxLimit, limit)
+	const restrictedMatch = opts.authAsKey
+		? { ...match, [`$keys.${opts.authAsKey}`]: req.session.uid }
+		: match
+	const finalMatch = restrictedMatch // @TODO
 
 	const timeGroup = getTimeGroup(timeframe)
 
 	const group = {
-		// @TODO segment
-		_id: segmentByChannel
-			? { time: timeGroup, campaignId: '$keys.campaignId' }
-			: { time: timeGroup },
+		_id: segmentBy ? { time: timeGroup, segment: `$keys.${segmentBy}` } : { time: timeGroup },
 		value: { $sum: '$value' }
 	}
-
 	const resultProjection = {
-		// NOTE: the toString will work fine w/o scientific notation for numbers up to 34 digits long
-		// @TODO get rid of this
-		value: { $toString: '$value' },
+		value: '$value',
 		time: {
 			$toLong: {
 				$dateFromParts: {
@@ -196,8 +173,10 @@ function analytics(req, advertiserChannels, earner) {
 		_id: 0
 	}
 
+	const maxLimit = cfg.ANALYTICS_FIND_LIMIT_V5
+	const appliedLimit = Math.min(maxLimit, limit)
 	const pipeline = [
-		{ $match: match },
+		{ $match: finalMatch },
 		{ $project: project },
 		{ $group: group },
 		{ $sort: { _id: 1, channelId: 1, created: 1 } },
@@ -206,8 +185,6 @@ function analytics(req, advertiserChannels, earner) {
 		{ $project: resultProjection }
 	]
 
-	// @TODO get rid of this
-	// console.log(JSON.stringify(pipeline, null, 4))
 	return collection
 		.aggregate(pipeline, { maxTimeMS: cfg.ANALYTICS_MAXTIME_V5 })
 		.toArray()
@@ -216,26 +193,6 @@ function analytics(req, advertiserChannels, earner) {
 			limitReached: appliedLimit === aggr.length,
 			aggr
 		}))
-}
-
-async function publisherAnalytics(req) {
-	const earner = req.session.uid
-	return analytics(req, null, earner)
-}
-
-// @TODO
-// async function advertiserAnalytics(req) {
-// 	return analytics(req, await getAdvertiserChannels(req), null)
-// }
-
-// async function advertiserChannelAnalytics(req) {
-//	return analytics(req, [req.params.id], null)
-// }
-
-async function adminAnalytics(req) {
-	const { channels, earner } = req.query
-	if (!channels) throw new Error('please provide channels query param')
-	return analytics(req, channels.split('+'), earner)
 }
 
 // maybe not needed - or at least we need to be extra careful with the cache times (not too long)
