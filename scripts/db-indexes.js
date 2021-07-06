@@ -12,6 +12,7 @@ db.validatorMessages.createIndex({ channelId: 1, from: 1, received: 1 })
 db.rewardChannels.createIndex({ periodStart: -1 })
 
 // V5 analytics
+db.analytics.createIndex({ keys: 1 })
 db.analytics.createIndex({ 'keys.publisher': 1, 'keys.time': 1 })
 db.analytics.createIndex({ 'keys.advertiser': 1, 'keys.time': 1 })
 db.analytics.createIndex({ 'keys.campaignId': 1, 'keys.time': 1 })
