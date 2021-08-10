@@ -79,6 +79,61 @@ const sentryValidatorMessage = Joi.object({
 
 const targetingRules = Joi.array().items(Joi.object())
 
+const channelV5 = {
+	leader: Joi.string().required(),
+	follower: Joi.string().required(),
+	guardian: Joi.string().required(),
+	token: Joi.string().required(),
+	nonce: Joi.string()
+}
+
+const createCampaign = {
+	channel: Joi.object(channelV5).required(),
+	creator: Joi.string().required(),
+	budget: numericString.required(),
+	validators: Joi.array()
+		.items(
+			Joi.object({
+				id: Joi.string().required(),
+				feeAddr: Joi.string(),
+				url: Joi.string()
+					.uri({
+						scheme: ['http', 'https']
+					})
+					.required(),
+				fee: numericString.required()
+			})
+		)
+		.required()
+		.length(2),
+	title: Joi.string()
+		.min(3)
+		.max(120)
+		.allow(''),
+	pricingBounds: Joi.object()
+		.keys()
+		.pattern(
+			/^(IMPRESSION|CLICK)$/,
+			Joi.object({ min: numericString.required(), max: numericString.required() })
+		),
+	eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
+	adUnits: Joi.array().items(Joi.object()),
+	targetingRules,
+	created: Joi.number(),
+	// UNIX timestamp; we're not using Jai.date() cause
+	// we want it to be stored in MongoDB as a number
+	activeFrom: Joi.number().integer(),
+	activeTo: Joi.number()
+		.integer()
+		.required()
+}
+
+// Campaign consists of all the fields of the create campaign but with the randomly generate id
+const campaign = {
+	id: Joi.string().required(),
+	...createCampaign
+}
+
 module.exports = {
 	createChannel: {
 		id: Joi.string().required(),
@@ -132,6 +187,9 @@ module.exports = {
 			targetingRules
 		}).required()
 	},
+	channelV5,
+	campaign,
+	createCampaign,
 	validatorMessage: {
 		messages: Joi.array().items(validatorMessage)
 	},
