@@ -280,3 +280,7 @@ To run the BigQuery export script e.g.
 > ./scripts/export-analytics.js
 
 ```
+
+## LICENSE
+
+This project is licensed under the [AGPL-3.0 license](./LICENSE)
