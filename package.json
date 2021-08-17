@@ -41,7 +41,7 @@
     "sentry"
   ],
   "author": "Smart Code OOD",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "bugs": {
     "url": "https://github.com/AdExNetwork/adex-validator-stack-js/issues"
   },
