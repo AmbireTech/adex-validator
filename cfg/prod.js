@@ -52,7 +52,9 @@ module.exports = {
 	VALIDATORS_WHITELIST: [],
 	CHANNEL_REFRESH_INTERVAL: 40000,
 	MAX_CHANNEL_SPEC_BYTES_SIZE: 35000,
-	admins: [],
+	admins: [
+		'0x5d6A3F1AD7b124ecDFDf4841D9bB246eD5fBF04c' // Galya (for analytics)
+	],
 	V4_VALIDATOR_URL: 'https://jerry.adex.network',
 	SWEEPER_ADDRESS: '0x872e239332d13d6b29bf58283906d92fb2a7209b'
 }
