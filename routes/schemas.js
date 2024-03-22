@@ -80,6 +80,30 @@ const sentryValidatorMessage = Joi.object({
 const targetingRules = Joi.array().items(Joi.object())
 
 module.exports = {
+	createChannelV5_Offchain: {
+		id: Joi.string().required(),
+		depositAsset: Joi.string().required(),
+		depositAmount: numericString.required(),
+		// UNIX timestamp; we're not using Jai.date() cause
+		// we want it to be stored in MongoDB as a number
+		validUntil: Joi.number()
+			.integer()
+			.required(),
+		creator: Joi.string().required(),
+		spec: Joi.object({
+			adUnits: Joi.array().items(Joi.object()),
+			pricingBounds: Joi.object()
+				.keys()
+				.pattern(
+					/^(IMPRESSION|CLICK)$/,
+					Joi.object({ min: numericString.required(), max: numericString.required() })
+				),
+			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
+			nonce: Joi.string(),
+			created: Joi.number(),
+			activeFrom: Joi.number(),
+		}).required()
+	},
 	createChannel: {
 		id: Joi.string().required(),
 		depositAsset: Joi.string().required(),
