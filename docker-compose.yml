@@ -16,19 +16,19 @@ services:
       - mongodb
     ports:
       - "8005:8005"
-  validator:
-    build: .
-    container_name: 'adexnetwork/validator'
-    command: bin/validatorWorker.js --keystoreFile=/app/keystore.json --sentryUrl=http://localhost:8005
-    restart: always
-    environment:
-      - PORT=8005
-      - DB_MONGO_URL=mongodb://mongodb:27017
-      - NODE_ENV=production
-    volumes:
-      - /root/keystore.json:/app/keystore.json
-    env_file:
-      - validator.env
-    depends_on:
-      - sentry
+  # validator:
+  #   build: .
+  #   container_name: 'adexnetwork/validator'
+  #   command: bin/validatorWorker.js --keystoreFile=/app/keystore.json --sentryUrl=http://localhost:8005
+  #   restart: always
+  #   environment:
+  #     - PORT=8005
+  #     - DB_MONGO_URL=mongodb://mongodb:27017
+  #     - NODE_ENV=production
+  #   volumes:
+  #     - /root/keystore.json:/app/keystore.json
+  #   env_file:
+  #     - validator.env
+  #   depends_on:
+  #     - sentry
 
