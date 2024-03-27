@@ -101,7 +101,7 @@ module.exports = {
 			eventSubmission: Joi.object({ allow: Joi.array().items(Joi.object()) }),
 			nonce: Joi.string(),
 			created: Joi.number(),
-			activeFrom: Joi.number(),
+			activeFrom: Joi.number()
 		}).required()
 	},
 	createChannel: {

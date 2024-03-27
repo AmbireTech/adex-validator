@@ -4,7 +4,7 @@ const UAParser = require('ua-parser-js')
 const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
-const { channelLoad, channelIfExists, channelIfActive } = require('../middlewares/channel')
+const { channelLoad, channelIfActive } = require('../middlewares/channel')
 const eventAggrService = require('../services/sentry/eventAggregator')
 
 const router = express.Router()
@@ -13,22 +13,9 @@ const router = express.Router()
 router.get('/list', getList)
 router.get('/:id/status', channelLoad, getStatus)
 
-// Validator information
-router.get('/:id/validator-messages', channelIfExists, getValidatorMessages)
-router.get('/:id/last-approved', channelLoad, getLastApprovedMessages)
-router.get('/:id/validator-messages/:uid/:type?', channelIfExists, getValidatorMessages)
-
 // event aggregates information
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 
-// Submitting events/messages: requires auth
-router.post(
-	'/:id/validator-messages',
-	authRequired,
-	celebrate({ body: schema.validatorMessage }),
-	channelLoad,
-	postValidatorMessages
-)
 router.post('/:id/events', celebrate({ body: schema.events }), channelIfActive, postEvents)
 
 // Implementations
@@ -65,18 +52,11 @@ function getEventAggregates(req, res, next) {
 async function getList(req, res, next) {
 	const { CHANNELS_FIND_LIMIT } = cfg
 	// assign 0 default value
-	const { page: paramsPage, validUntil } = req.query
+	const { page: paramsPage } = req.query
 	const channelsCol = db.getMongo().collection('channels')
 	const page = parseInt(paramsPage, 10) || 0
 	const skip = page * CHANNELS_FIND_LIMIT
-	let query = {
-		validUntil: { $gt: parseInt(validUntil, 10) || Math.floor(Date.now() / 1000) }
-	}
-	if (typeof req.query.validator === 'string') {
-		// This is MongoDB behavior: since validators is an array,
-		// this query will find anything where the array contains an object with this ID
-		query = { ...query, 'spec.validators.id': req.query.validator }
-	}
+	const query = {}
 
 	const channelTotal = await channelsCol.countDocuments(query)
 	const totalPages = Math.ceil(channelTotal / CHANNELS_FIND_LIMIT)
@@ -87,148 +67,6 @@ async function getList(req, res, next) {
 		.toArray()
 		.then(function(channels) {
 			res.send({ channels, total: totalPages, totalPages, page })
-		})
-		.catch(next)
-}
-
-// Implementation of getValidatorMessages
-// It retrieves the last N validator messages
-const VALIDATOR_MSGS_PROJ = { _id: 0, channelId: 0 }
-function getValidatorMessages(req, res, next) {
-	const { type, id, uid } = req.params
-	const { limit } = req.query
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	let query = { channelId: id }
-	if (typeof uid === 'string') query = { ...query, from: uid }
-	if (typeof type === 'string') {
-		const types = type.split('+')
-		const typesQuery = types.length === 1 ? types[0] : { $in: types }
-		query = { ...query, 'msg.type': typesQuery }
-	}
-
-	validatorMsgCol
-		.find(query, { projection: VALIDATOR_MSGS_PROJ })
-		.sort({ received: -1 })
-		.limit(limit ? Math.min(cfg.MSGS_FIND_LIMIT, limit) : cfg.MSGS_FIND_LIMIT)
-		.toArray()
-		.then(function(validatorMessages) {
-			res.send({ validatorMessages })
-		})
-		.catch(next)
-}
-
-async function getLastApprovedMessages(req, res, next) {
-	const response = {}
-	if (req.query.withHeartbeat === 'true') {
-		response.heartbeats = [].concat(...(await retreiveLastHeartbeats(req.channel)))
-	}
-	retrieveLastApproved(req.channel)
-		.then(lastApproved => res.send({ lastApproved, ...response }))
-		.catch(next)
-}
-
-async function retrieveLastApproved(channel) {
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	const approveStateMsgs = await validatorMsgCol
-		.find(
-			{
-				channelId: channel.id,
-				from: channel.spec.validators[1].id,
-				'msg.type': 'ApproveState'
-			},
-			{
-				projection: VALIDATOR_MSGS_PROJ
-			}
-		)
-		.sort({ received: -1 })
-		.limit(1)
-		.toArray()
-	if (!approveStateMsgs.length) {
-		return null
-	}
-	const approveState = approveStateMsgs[0]
-	const newState = await validatorMsgCol.findOne(
-		{
-			channelId: channel.id,
-			from: channel.spec.validators[0].id,
-			'msg.type': 'NewState',
-			'msg.stateRoot': approveState.msg.stateRoot
-		},
-		{
-			projection: VALIDATOR_MSGS_PROJ
-		}
-	)
-	if (newState) {
-		return { newState, approveState }
-	}
-	return null
-}
-
-async function retreiveLastHeartbeats(channel) {
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-	return Promise.all(
-		channel.spec.validators.map(({ id }) => {
-			return validatorMsgCol
-				.find(
-					{
-						channelId: channel.id,
-						from: id,
-						'msg.type': 'Heartbeat'
-					},
-					{
-						projection: VALIDATOR_MSGS_PROJ
-					}
-				)
-				.sort({ received: -1 })
-				.limit(2)
-				.toArray()
-		})
-	)
-}
-
-async function updateChannelIfExhausted(isChannelExhausted, channel, validatorIdx) {
-	if (isChannelExhausted) {
-		const channelCol = db.getMongo().collection('channels')
-		await channelCol.updateOne(
-			{ id: channel.id },
-			{ $set: { [`exhausted.${validatorIdx}`]: true } }
-		)
-	}
-}
-
-function postValidatorMessages(req, res, next) {
-	if (!req.channel.spec.validators.find(v => v.id === req.session.uid)) {
-		res.sendStatus(401)
-		return
-	}
-
-	const validatorMsgCol = db.getMongo().collection('validatorMessages')
-
-	const { messages } = req.body
-	const startTime = Date.now()
-
-	const toInsert = messages.map((msg, idx) =>
-		validatorMsgCol.insertOne({
-			channelId: req.channel.id,
-			from: req.session.uid,
-			msg,
-			// This is a hack to help ordering
-			// MongoDB has no notion of auto-increment, so it's not that appropriate
-			// for this but we'll swap it out eventually
-			received: new Date(startTime + idx)
-		})
-	)
-
-	// can never be -1
-	const validatorIdx = req.channel.spec.validators.findIndex(v => v.id === req.session.uid)
-	const isChannelExhausted = messages.find(message => message.exhausted === true)
-
-	Promise.all([
-		...toInsert,
-		updateChannelIfExhausted(isChannelExhausted, req.channel, validatorIdx)
-	])
-		.then(function() {
-			res.send({ success: true })
 		})
 		.catch(next)
 }

@@ -72,7 +72,8 @@ function record(channel, session, events, payouts) {
 			const payAmount = parseInt(payout[1].toString(), 10) / MUL
 			// NOTE: copied from getPayout
 			const adUnit =
-				Array.isArray(channel.adUnits) && channel.adUnits.find(u => u.ipfs === ev.adUnit || u.id === ev.adUnit)
+				Array.isArray(channel.adUnits) &&
+				channel.adUnits.find(u => u.ipfs === ev.adUnit || u.id === ev.adUnit)
 			const ref = ev.ref || session.referrerHeader
 			const hostname = ref ? ref.split('/')[2] : null
 			const ssp = ev.ssp

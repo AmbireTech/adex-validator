@@ -6,7 +6,10 @@ const db = require('../db')
 function forAdapter(adapter) {
 	const router = express.Router()
 
-	router.post('/validate', celebrate({ body: schema.createChannelV5_Offchain }), function(req, res) {
+	router.post('/validate', celebrate({ body: schema.createChannelV5_Offchain }), function(
+		req,
+		res
+	) {
 		const channel = {
 			...req.body,
 			_id: req.body.id
