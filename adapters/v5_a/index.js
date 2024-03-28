@@ -84,10 +84,15 @@ function Adapter(opts, cfg, ethProvider) {
 				authorization: `Bearer ${token}`
 			}
 		}).then(r => r.json())
+		let account = null
 
-		assert.ok(typeof res.account === 'string', 'token: invalid token addr')
-
-		const account = this.getAddress(res.account)
+		try {
+			assert.ok(typeof res.account === 'string', 'token: invalid token addr')
+			account = this.getAddress(res.account)
+		} catch (_err) {
+			// NOTE: hax to return the backend resp, that should force the UI to refresh the token without additional code
+			return res
+		}
 
 		return account
 
