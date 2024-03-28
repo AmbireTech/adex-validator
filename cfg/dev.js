@@ -30,5 +30,6 @@ module.exports = {
 	admins: ['0xce07CbB7e054514D590a0262C93070D838bFBA2e'],
 	V4_VALIDATOR_URL: 'https://jerry.adex.network',
 	SWEEPER_ADDRESS: '0x0',
-	TOKEN_ADDRESS_WHITELIST: {}
+	TOKEN_ADDRESS_WHITELIST: {},
+	V5_ADAPTER_BACKEND: 'http://localhost:3069'
 }

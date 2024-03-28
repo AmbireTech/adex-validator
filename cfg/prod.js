@@ -56,5 +56,6 @@ module.exports = {
 		'0x5d6A3F1AD7b124ecDFDf4841D9bB246eD5fBF04c' // Galya (for analytics)
 	],
 	V4_VALIDATOR_URL: 'https://jerry.adex.network',
-	SWEEPER_ADDRESS: '0x872e239332d13d6b29bf58283906d92fb2a7209b'
+	SWEEPER_ADDRESS: '0x872e239332d13d6b29bf58283906d92fb2a7209b',
+	V5_ADAPTER_BACKEND: 'https://vhoda.adex.network'
 }
