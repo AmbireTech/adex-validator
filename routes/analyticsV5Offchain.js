@@ -48,7 +48,7 @@ const validate = celebrate(
 				.valid(['count', 'paid'])
 				.default('count'),
 			timeframe: Joi.string()
-				.valid(['year', 'month', 'week', 'day'])
+				.valid(['year', 'month', 'week', 'day', 'hour'])
 				.default('day'),
 			start: Joi.date(),
 			end: Joi.date(),
