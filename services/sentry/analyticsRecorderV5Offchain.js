@@ -78,6 +78,7 @@ function record(channel, session, events, payouts) {
 			const hostname = ref ? ref.split('/')[2] : null
 			const ssp = ev.ssp
 			const sspPublisher = ev.sspPublisher
+			const placement = ev.placement
 
 			return analyticsCol.updateOne(
 				{
@@ -96,6 +97,7 @@ function record(channel, session, events, payouts) {
 						sspPublisher,
 						/** hostname or app domain ot app bundle */
 						hostname,
+						placement,
 						country: session.country,
 						osName
 					}
