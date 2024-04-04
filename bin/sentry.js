@@ -30,7 +30,8 @@ const { argv } = yargs
 	.describe('clustered', 'run app in cluster mode with multiple workers')
 	.demandOption(['adapter'])
 
-const adapter = new adapters[argv.adapter].Adapter(argv, cfg)
+// const adapter = new adapters[argv.adapter].Adapter(argv, cfg)
+const adapter = new adapters.v5Alpha.Adapter(argv, cfg)
 const app = express()
 const port = process.env.PORT || 8005
 

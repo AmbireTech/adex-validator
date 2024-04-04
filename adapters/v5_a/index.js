@@ -23,16 +23,18 @@ const tokensForAuth = new Map()
 let address = null
 let keystoreJson = null
 let wallet = null
-let secret = process.env.JWT_SECRET
+// let secret = process.env.JWT_SECRET || 'test jwt secret 12345'
 
 function Adapter(opts, cfg, ethProvider) {
 	const provider = ethProvider || getDefaultProvider(cfg.ETHEREUM_NETWORK)
 	const outpace = new Contract(cfg.ETHEREUM_CORE_ADDR, coreABI, provider)
 
+	console.log('V5Adapter init')
+
 	this.init = function() {
 		assert.ok(typeof opts.keystoreFile === 'string', 'keystoreFile required')
-		assert.ok(typeof secret === 'string', 'secret required')
-		secret = opts.secret
+		// assert.ok(typeof secret === 'string', 'secret required')
+		// secret = opts.secret
 		return readFile(opts.keystoreFile).then(json => {
 			keystoreJson = json
 			address = formatAddress(`0x${JSON.parse(json).address}`)
@@ -72,6 +74,8 @@ function Adapter(opts, cfg, ethProvider) {
 	// Authentication tokens
 	this.sessionFromToken = async function(token) {
 		const tokenId = token.slice(0, -24)
+
+		// console.log({ tokenId })
 		// JWT backend token match
 		if (tokensVerified.has(tokenId)) {
 			// @TODO: validate era
@@ -79,22 +83,34 @@ function Adapter(opts, cfg, ethProvider) {
 		}
 
 		const backendURL = `${cfg.V5_ADAPTER_BACKEND}/dsp/account`
-		const res = await fetch(backendURL, {
-			headers: {
-				authorization: `Bearer ${token}`
-			}
-		}).then(r => r.json())
-		let account = null
 
 		try {
-			assert.ok(typeof res.account === 'string', 'token: invalid token addr')
-			account = this.getAddress(res.account)
-		} catch (_err) {
-			// NOTE: hax to return the backend resp, that should force the UI to refresh the token without additional code
-			return res
-		}
+			const res = await fetch(backendURL, {
+				headers: {
+					'X-DSP-AUTH': `Bearer ${token}`
+				}
+			})
 
-		return account
+			const data = await res.json()
+
+			let account = null
+
+			// console.log({ data })
+
+			assert.ok(typeof data.account === 'string', 'token: invalid token addr')
+			account = this.getAddress(data.account)
+
+			// console.log({ account })
+
+			// NOTE: hax to return the backend resp, that should force the UI to refresh the token without additional code
+			return { uid: account }
+
+			// return account
+		} catch (err) {
+			console.log('errrrr', err)
+
+			return { uid: null }
+		}
 
 		// EWT
 		/**

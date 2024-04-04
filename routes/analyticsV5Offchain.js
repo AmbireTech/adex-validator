@@ -153,6 +153,8 @@ function getTimeProjAndMatch(start, end, eventType, metric, timezone) {
 function analytics(req, opts = {}) {
 	const { limit, timeframe, eventType, metric, start, end, segmentBy, timezone } = req.query
 
+	// console.log('query', req.query)
+
 	const period = getMaxPeriod(timeframe)
 	const collection = db.getMongo().collection(collections.analyticsV5)
 	const { project, match } = getTimeProjAndMatch(
@@ -209,6 +211,8 @@ function analytics(req, opts = {}) {
 		_id: 0
 	}
 
+	// console.log({ resultProjection })
+
 	const maxLimit = cfg.ANALYTICS_FIND_LIMIT_V5
 	const appliedLimit = Math.min(maxLimit, limit)
 	const pipeline = [
@@ -224,11 +228,17 @@ function analytics(req, opts = {}) {
 	return collection
 		.aggregate(pipeline, { maxTimeMS: cfg.ANALYTICS_MAXTIME_V5 })
 		.toArray()
-		.then(aggr => ({
-			limit: appliedLimit,
-			limitReached: appliedLimit === aggr.length,
-			aggr
-		}))
+		.then(aggr => {
+			// console.log(aggr)
+			return {
+				limit: appliedLimit,
+				limitReached: appliedLimit === aggr.length,
+				aggr
+			}
+		})
+		.catch(err => {
+			console.log(err)
+		})
 }
 
 // maybe not needed - or at least we need to be extra careful with the cache times (not too long)
