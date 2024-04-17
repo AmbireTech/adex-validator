@@ -5,7 +5,7 @@
   "main": "bin/sentry.js",
   "scripts": {
     "lint": "eslint .  -c .eslintrc.js --fix",
-    "start": "node bin/sentry.js",
+    "start": "node bin/sentry.js --adepter=v5Alpha --keystoreFile=keystores/keystore.json",
     "test": "node test/index.js",
     "test-eth-adapter": "node test/ethereum_adapter.js",
     "test-integration": "./test/run-integration-tests.sh",

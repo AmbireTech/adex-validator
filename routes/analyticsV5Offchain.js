@@ -153,7 +153,7 @@ function getTimeProjAndMatch(start, end, eventType, metric, timezone) {
 function analytics(req, opts = {}) {
 	const { limit, timeframe, eventType, metric, start, end, segmentBy, timezone } = req.query
 
-	// console.log('query', req.query)
+	console.log('query', req.query)
 
 	const period = getMaxPeriod(timeframe)
 	const collection = db.getMongo().collection(collections.analyticsV5)
@@ -211,7 +211,7 @@ function analytics(req, opts = {}) {
 		_id: 0
 	}
 
-	// console.log({ resultProjection })
+	console.log({ resultProjection })
 
 	const maxLimit = cfg.ANALYTICS_FIND_LIMIT_V5
 	const appliedLimit = Math.min(maxLimit, limit)
