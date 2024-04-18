@@ -185,6 +185,12 @@ function Adapter(opts, cfg, ethProvider) {
 			stillOnCreate2: new BN(0)
 		}
 	}
+
+	this.validateChannel = async function(channel, options) {
+		console.log({ channel })
+		console.log({ options })
+		return true
+	}
 }
 
 Adapter.prototype.getAddress = function(addr) {
