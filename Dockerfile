@@ -14,7 +14,7 @@ RUN echo 'http://dl-3.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositor
     apk upgrade --update
 
 RUN apk add --update alpine-sdk
-RUN apk add --update python
+RUN apk add --update python3
 
 COPY cloudflare_origin.crt /usr/local/share/ca-certificates/
 
