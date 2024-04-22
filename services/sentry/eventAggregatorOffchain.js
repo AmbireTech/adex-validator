@@ -91,9 +91,7 @@ function makeRecorder(channelId) {
 			return { success: false, statusCode: 469, message: 'no event payout' }
 		}
 
-		if (process.env.ANALYTICS_RECORDER_V5_Offchain) {
-			analyticsRecorderV5Offchain.record(channel, session, events, payouts)
-		}
+		analyticsRecorderV5Offchain.record(channel, session, events, payouts)
 
 		// Keep in mind that at one point validator messages will be able to change payment/bidding information
 		// this will be saved in the channel object, which is passed into the eventReducer
