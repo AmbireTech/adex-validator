@@ -83,6 +83,7 @@ module.exports = {
 	createChannelV5_Offchain: {
 		id: Joi.string().required(),
 		depositAsset: Joi.string().required(),
+		depositAssetDecimals: Joi.number().required(),
 		depositAmount: numericString.required(),
 		// UNIX timestamp; we're not using Jai.date() cause
 		// we want it to be stored in MongoDB as a number
@@ -107,7 +108,6 @@ module.exports = {
 	createChannel: {
 		id: Joi.string().required(),
 		depositAsset: Joi.string().required(),
-		depositAssetDecimals: Joi.number().required(),
 		depositAmount: numericString.required(),
 		// UNIX timestamp; we're not using Jai.date() cause
 		// we want it to be stored in MongoDB as a number
