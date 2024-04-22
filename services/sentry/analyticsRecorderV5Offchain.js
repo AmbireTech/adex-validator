@@ -68,7 +68,7 @@ function record(channel, session, events, payouts) {
 			// This should never happen, as the conditions we are checking for in the .filter are the same as getPayout's
 			if (!payout) return Promise.resolve()
 			// @TODO is there a way to get rid of this ugly hardcode (10**18)?
-			const MUL = 10 ** 18
+			const MUL = channel.depositAssetDecimals || 6
 			const payAmount = parseInt(payout[1].toString(), 10) / MUL
 			// NOTE: copied from getPayout
 			const adUnit =

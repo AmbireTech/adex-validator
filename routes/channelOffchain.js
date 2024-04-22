@@ -5,7 +5,7 @@ const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
 const { channelLoad, channelIfActive } = require('../middlewares/channel')
-const eventAggrService = require('../services/sentry/eventAggregator')
+const eventAggrService = require('../services/sentry/eventAggregatorOffchain')
 
 const router = express.Router()
 
