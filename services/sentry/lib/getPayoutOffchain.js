@@ -1,3 +1,4 @@
+const BN = require('bn.js')
 const toBalancesKey = require('../toBalancesKey')
 const logger = require('../../logger')('sentry')
 const { eventTypes } = require('../../constants')
@@ -19,7 +20,7 @@ function getPayoutOffchain(channel, ev) {
 	}
 	if (!balancesKey) return null
 
-	const price = ev.price
+	const price = BN(ev.price)
 	return [balancesKey, price]
 }
 
