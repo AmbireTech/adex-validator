@@ -20,7 +20,7 @@ function getPayoutOffchain(channel, ev) {
 	}
 	if (!balancesKey) return null
 
-	const price = BN(ev.price)
+	const price = new BN(ev.price)
 	return [balancesKey, price]
 }
 
