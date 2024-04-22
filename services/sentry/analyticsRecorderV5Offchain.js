@@ -89,7 +89,7 @@ function record(channel, session, events, payouts) {
 						adUnit: ev.adUnit,
 						adSlot: ev.adSlot,
 						adSlotType: adUnit ? adUnit.type : '',
-						advertiser: channel.owner,
+						advertiser: channel.creator,
 						/** account addr 0x... */
 						publisher,
 						/** ssp id - from adex dsp */
