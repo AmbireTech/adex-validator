@@ -193,11 +193,11 @@ module.exports = {
 				country: Joi.string(),
 				hostname: Joi.string(),
 				os: Joi.string(),
-				price: Joi.string(),
-				targetingRules: targetingRules.when('type', {
-					is: eventTypes.update_targeting,
-					then: Joi.required()
-				})
+				price: Joi.string()
+				// targetingRules: targetingRules.when('type', {
+				// 	is: eventTypes.update_targeting,
+				// 	then: Joi.required()
+				// })
 			}).required()
 		)
 	},
