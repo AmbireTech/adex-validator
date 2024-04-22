@@ -16,7 +16,7 @@ router.get('/:id/status', channelLoad, getStatus)
 // event aggregates information
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 
-router.post('/:id/events', celebrate({ body: schema.events }), channelIfActive, postEvents)
+router.post('/:id/events', celebrate({ body: schema.eventsOffchain }), channelIfActive, postEvents)
 
 // Implementations
 function getStatus(req, res) {

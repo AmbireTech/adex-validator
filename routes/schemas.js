@@ -176,6 +176,29 @@ module.exports = {
 			}).required()
 		)
 	},
+	eventsOffchain: {
+		events: Joi.array().items(
+			Joi.object({
+				type: Joi.string()
+					.valid(Object.values(eventTypes))
+					.required(),
+				publisher: Joi.string(),
+				ref: Joi.string().allow(''),
+				adUnit: Joi.string(),
+				adSlot: Joi.string(),
+				ssp: Joi.string(),
+				sspPublisher: Joi.string(),
+				placement: Joi.string().valid(['site', 'app']),
+				country: Joi.string(),
+				hostname: Joi.string(),
+				os: Joi.string(),
+				targetingRules: targetingRules.when('type', {
+					is: eventTypes.update_targeting,
+					then: Joi.required()
+				})
+			}).required()
+		)
+	},
 	sentry: {
 		message: sentryValidatorMessage,
 		lastApproved: Joi.object({
