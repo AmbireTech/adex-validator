@@ -97,7 +97,7 @@ function Adapter(opts, cfg, ethProvider) {
 
 			// console.log({ data })
 
-			assert.ok(typeof data.account === 'string', 'token: invalid token addr')
+			assert.ok(typeof data.account === 'string', 'token: invalid account addr')
 			account = this.getAddress(data.account)
 
 			// console.log({ account })

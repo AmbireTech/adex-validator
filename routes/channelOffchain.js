@@ -4,8 +4,8 @@ const UAParser = require('ua-parser-js')
 const schema = require('./schemas')
 const db = require('../db')
 const cfg = require('../cfg')
-const { channelLoad, channelIfActive } = require('../middlewares/channel')
-const eventAggrService = require('../services/sentry/eventAggregator')
+const { channelLoad, channelIfExists } = require('../middlewares/channel')
+const eventAggrService = require('../services/sentry/eventAggregatorOffchain')
 
 const router = express.Router()
 
@@ -16,7 +16,7 @@ router.get('/:id/status', channelLoad, getStatus)
 // event aggregates information
 router.get('/:id/events-aggregates', authRequired, channelLoad, getEventAggregates)
 
-router.post('/:id/events', celebrate({ body: schema.events }), channelIfActive, postEvents)
+router.post('/:id/events', celebrate({ body: schema.eventsOffchain }), channelIfExists, postEvents)
 
 // Implementations
 function getStatus(req, res) {

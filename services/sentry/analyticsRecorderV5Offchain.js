@@ -68,17 +68,19 @@ function record(channel, session, events, payouts) {
 			// This should never happen, as the conditions we are checking for in the .filter are the same as getPayout's
 			if (!payout) return Promise.resolve()
 			// @TODO is there a way to get rid of this ugly hardcode (10**18)?
-			const MUL = 10 ** 18
+			const MUL = 10 ** channel.depositAssetDecimals || 6
 			const payAmount = parseInt(payout[1].toString(), 10) / MUL
 			// NOTE: copied from getPayout
 			const adUnit =
-				Array.isArray(channel.adUnits) &&
-				channel.adUnits.find(u => u.ipfs === ev.adUnit || u.id === ev.adUnit)
+				channel.spec &&
+				Array.isArray(channel.spec.adUnits) &&
+				channel.spec.adUnits.find(u => u.ipfs === ev.adUnit || u.id === ev.adUnit)
 			const ref = ev.ref || session.referrerHeader
-			const hostname = ref ? ref.split('/')[2] : null
+			const hostname = ev.hostname || (ref ? ref.split('/')[2] : null)
 			const ssp = ev.ssp
 			const sspPublisher = ev.sspPublisher
 			const placement = ev.placement
+			const country = ev.country || session.country || 'unknown'
 
 			return analyticsCol.updateOne(
 				{
@@ -88,7 +90,7 @@ function record(channel, session, events, payouts) {
 						adUnit: ev.adUnit,
 						adSlot: ev.adSlot,
 						adSlotType: adUnit ? adUnit.type : '',
-						advertiser: channel.owner,
+						advertiser: channel.creator,
 						/** account addr 0x... */
 						publisher,
 						/** ssp id - from adex dsp */
@@ -98,7 +100,7 @@ function record(channel, session, events, payouts) {
 						/** hostname or app domain ot app bundle */
 						hostname,
 						placement,
-						country: session.country,
+						country,
 						osName
 					}
 				},

@@ -1,11 +1,9 @@
 const throttle = require('lodash.throttle')
 const db = require('../../db')
 const cfg = require('../../cfg')
-const analyticsRecorder = require('./analyticsRecorder')
-const analyticsRecorderV5 = require('./analyticsRecorderV5')
 const analyticsRecorderV5Offchain = require('./analyticsRecorderV5Offchain')
 const eventReducer = require('./lib/eventReducer')
-const getPayout = require('./lib/getPayout')
+const getPayoutOffchain = require('./lib/getPayoutOffchain')
 const checkAccess = require('./lib/access')
 const logger = require('../logger')('sentry')
 const { eventTypes } = require('../constants')
@@ -40,7 +38,7 @@ function makeRecorder(channelId) {
 		saveQueue = saveQueue.then(function() {
 			// created needs to be set to the latest date right before saving, otherwise we risk data inconsistency when running in clustered mode
 			return eventAggrCol.insertOne({ ...toSave, created: new Date() }).catch(function(err) {
-				logger.error(`eventAggregator fatal error: ${err.message || err}; will re-try`)
+				logger.error(`eventAggregatorOffchain fatal error: ${err.message || err}; will re-try`)
 				persist(toSave)
 			})
 		})
@@ -88,21 +86,12 @@ function makeRecorder(channelId) {
 
 		// Pre-compute payouts once so we don't have to compute them separately in analytics/eventReducer
 		// this is also where AIP31 is applied
-		const payouts = events.map(ev => getPayout(channel, ev, session))
+		const payouts = events.map(ev => getPayoutOffchain(channel, ev, session))
 		if (events.length === 1 && events[0].publisher && !payouts[0]) {
 			return { success: false, statusCode: 469, message: 'no event payout' }
 		}
 
-		// No need to wait for this, it's simply a stats recorder
-		if (process.env.ANALYTICS_RECORDER) {
-			analyticsRecorder.record(channel, session, events, payouts)
-		}
-		if (process.env.ANALYTICS_RECORDER_V5) {
-			analyticsRecorderV5.record(channel, session, events, payouts)
-		}
-		if (process.env.ANALYTICS_RECORDER_V5_Offchain) {
-			analyticsRecorderV5Offchain.record(channel, session, events, payouts)
-		}
+		analyticsRecorderV5Offchain.record(channel, session, events, payouts)
 
 		// Keep in mind that at one point validator messages will be able to change payment/bidding information
 		// this will be saved in the channel object, which is passed into the eventReducer

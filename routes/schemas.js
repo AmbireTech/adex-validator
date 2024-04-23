@@ -83,6 +83,7 @@ module.exports = {
 	createChannelV5_Offchain: {
 		id: Joi.string().required(),
 		depositAsset: Joi.string().required(),
+		depositAssetDecimals: Joi.number().required(),
 		depositAmount: numericString.required(),
 		// UNIX timestamp; we're not using Jai.date() cause
 		// we want it to be stored in MongoDB as a number
@@ -173,6 +174,30 @@ module.exports = {
 					is: eventTypes.update_targeting,
 					then: Joi.required()
 				})
+			}).required()
+		)
+	},
+	eventsOffchain: {
+		events: Joi.array().items(
+			Joi.object({
+				type: Joi.string()
+					.valid(Object.values(eventTypes))
+					.required(),
+				publisher: Joi.string(),
+				ref: Joi.string().allow(''),
+				adUnit: Joi.string(),
+				adSlot: Joi.string(),
+				ssp: Joi.string(),
+				sspPublisher: Joi.string(),
+				placement: Joi.string().valid(['site', 'app']),
+				country: Joi.string(),
+				hostname: Joi.string(),
+				os: Joi.string(),
+				price: Joi.string()
+				// targetingRules: targetingRules.when('type', {
+				// 	is: eventTypes.update_targeting,
+				// 	then: Joi.required()
+				// })
 			}).required()
 		)
 	},
