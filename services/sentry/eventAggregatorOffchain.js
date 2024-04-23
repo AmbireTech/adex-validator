@@ -73,7 +73,11 @@ function makeRecorder(channelId) {
 
 		const hasAccess = await checkAccess(channel, session, events)
 		if (!hasAccess.success) {
-			return hasAccess
+			return {
+				success: false,
+				statusCode: hasAccess.statusCode || 400,
+				message: hasAccess.message || 'channel not accessible'
+			}
 		}
 
 		const targetingRulesEv = events.find(x => x.type === eventTypes.update_targeting)
