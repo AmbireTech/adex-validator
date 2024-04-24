@@ -66,6 +66,9 @@ function makeRecorder(channelId) {
 	// return a recorder
 	return async function(session, events) {
 		const channel = await channelPromise
+		if (!channel) {
+			return { success: false, statusCode: 404, message: 'channel not found' }
+		}
 
 		if (channelExhausted(channel)) {
 			return { success: false, statusCode: 410, message: 'channel is exhausted' }
