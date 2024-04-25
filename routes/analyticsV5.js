@@ -85,12 +85,6 @@ router.get(
 	authRequired,
 	notCached(req => analytics(req, { authAsKey: 'advertiser' }))
 )
-router.get(
-	'/for-dsp-users',
-	validate,
-	authRequired,
-	notCached(req => analytics(req, { authAsKey: 'advertiser' }))
-)
 // just plain analytics() w/o options is unrestricted: it can query/segment by all keys, and it doesn't restrict the dataset to a publisher/advertiser
 router.get('/for-admin', validate, authRequired, isAdmin, notCached(analytics))
 
