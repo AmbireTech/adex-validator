@@ -66,6 +66,9 @@ function makeRecorder(channelId) {
 	// return a recorder
 	return async function(session, events) {
 		const channel = await channelPromise
+		if (!channel) {
+			return { success: false, statusCode: 404, message: 'channel not found' }
+		}
 
 		if (channelExhausted(channel)) {
 			return { success: false, statusCode: 410, message: 'channel is exhausted' }
@@ -73,7 +76,11 @@ function makeRecorder(channelId) {
 
 		const hasAccess = await checkAccess(channel, session, events)
 		if (!hasAccess.success) {
-			return hasAccess
+			return {
+				success: false,
+				statusCode: hasAccess.statusCode || 400,
+				message: hasAccess.message || 'channel not accessible'
+			}
 		}
 
 		const targetingRulesEv = events.find(x => x.type === eventTypes.update_targeting)
