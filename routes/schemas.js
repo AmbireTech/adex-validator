@@ -186,7 +186,7 @@ module.exports = {
 				publisher: Joi.string(),
 				ref: Joi.string().allow(''),
 				adUnit: Joi.string(),
-				adSlot: Joi.string(),
+				adSlot: Joi.string().optional(),
 				ssp: Joi.string(),
 				sspPublisher: Joi.string(),
 				placement: Joi.string().valid(['site', 'app']),
