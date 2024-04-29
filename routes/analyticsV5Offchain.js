@@ -28,8 +28,6 @@ const notCached = fn => (req, res, next) =>
 const allowedKeys = [
 	'campaignId',
 	'adUnit',
-	'adSlot',
-	'adSlotType',
 	'advertiser',
 	'publisher',
 	'ssp',
@@ -49,7 +47,7 @@ const validate = celebrate(
 				.valid(['count', 'paid'])
 				.default('count'),
 			timeframe: Joi.string()
-				.valid(['year', 'month', 'week', 'day', 'hour'])
+				.valid(['year', 'month', 'week', 'day'])
 				.default('day'),
 			start: Joi.date(),
 			end: Joi.date(),
