@@ -103,7 +103,9 @@ function Adapter(opts, cfg, ethProvider) {
 			// console.log({ account })
 
 			// NOTE: hax to return the backend resp, that should force the UI to refresh the token without additional code
-			return { uid: account }
+			const session = { uid: account }
+			tokensVerified.set(tokenId, session)
+			return session
 
 			// return account
 		} catch (err) {
