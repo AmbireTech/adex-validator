@@ -58,7 +58,7 @@ function mapOS(osName) {
 function record(channel, session, events, payouts) {
 	const analyticsCol = db.getMongo().collection('analytics')
 
-	const time = new Date(getHourEpoch() * HOUR)
+	const currentTime = new Date(getHourEpoch() * HOUR)
 
 	const batch = events
 		.filter(ev => (ev.type === 'IMPRESSION' || ev.type === 'CLICK') && ev.publisher)
@@ -78,6 +78,7 @@ function record(channel, session, events, payouts) {
 			const placement = ev.placement
 			const country = ev.country || session.country || 'unknown'
 			const osName = mapOS(ev.os || session.ua.os.name)
+			const time = ev.epoch ? new Date(ev.epoch) : currentTime
 
 			return analyticsCol.updateOne(
 				{
