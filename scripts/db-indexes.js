@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 db.channels.createIndex({ validUntil: 1, 'spec.validators.id': 1 })
+db.channels.createIndex({ id: 1 })
 db.eventAggregates.createIndex({ channelId: 1 })
 db.eventAggregates.createIndex({ created: 1 })
 db.eventAggregates.createIndex({ channelId: 1, created: 1 })
