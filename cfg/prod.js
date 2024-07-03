@@ -53,7 +53,7 @@ module.exports = {
 	CHANNEL_REFRESH_INTERVAL: 40000,
 	MAX_CHANNEL_SPEC_BYTES_SIZE: 35000,
 	admins: [
-		'0x5d6A3F1AD7b124ecDFDf4841D9bB246eD5fBF04c' // Galya (for analytics)
+		'0xdCC631f57685132A67ab61e64E7751D4351e7371' // Adex admin acc - сичките накачурчени
 	],
 	V4_VALIDATOR_URL: 'https://jerry.adex.network',
 	SWEEPER_ADDRESS: '0x872e239332d13d6b29bf58283906d92fb2a7209b',
