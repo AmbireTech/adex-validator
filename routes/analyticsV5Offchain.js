@@ -41,13 +41,13 @@ const validate = celebrate(
 	{
 		query: {
 			eventType: Joi.string()
-				.valid(['IMPRESSION', 'CLICK'])
+				.valid('IMPRESSION', 'CLICK')
 				.default('IMPRESSION'),
 			metric: Joi.string()
-				.valid(['count', 'paid'])
+				.valid('count', 'paid')
 				.default('count'),
 			timeframe: Joi.string()
-				.valid(['year', 'month', 'week', 'day'])
+				.valid('year', 'month', 'week', 'day')
 				.default('day'),
 			start: Joi.date(),
 			end: Joi.date(),

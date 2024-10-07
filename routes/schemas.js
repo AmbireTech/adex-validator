@@ -5,7 +5,7 @@ const numericString = Joi.string().regex(/^\d+$/)
 
 const validatorMessage = Joi.object({
 	type: Joi.string()
-		.valid(['NewState', 'ApproveState', 'Heartbeat', 'Accounting', 'RejectState'])
+		.valid('NewState', 'ApproveState', 'Heartbeat', 'Accounting', 'RejectState')
 		.required(),
 	stateRoot: Joi.string()
 		.length(64)
@@ -164,7 +164,7 @@ module.exports = {
 		events: Joi.array().items(
 			Joi.object({
 				type: Joi.string()
-					.valid(Object.values(eventTypes))
+					.valid(...Object.values(eventTypes))
 					.required(),
 				publisher: Joi.string(),
 				ref: Joi.string().allow(''),
@@ -181,7 +181,7 @@ module.exports = {
 		events: Joi.array().items(
 			Joi.object({
 				type: Joi.string()
-					.valid(Object.values(eventTypes))
+					.valid(...Object.values(eventTypes))
 					.required(),
 				publisher: Joi.string(),
 				ref: Joi.string().allow(''),
@@ -189,7 +189,7 @@ module.exports = {
 				adSlot: Joi.string().optional(),
 				ssp: Joi.string(),
 				sspPublisher: Joi.string(),
-				placement: Joi.string().valid(['site', 'app']),
+				placement: Joi.string().valid('site', 'app'),
 				country: Joi.string(),
 				hostname: Joi.string(),
 				os: Joi.string(),
@@ -235,13 +235,13 @@ module.exports = {
 	},
 	eventTimeAggr: {
 		eventType: Joi.string()
-			.valid(['IMPRESSION', 'CLICK'])
+			.valid('IMPRESSION', 'CLICK')
 			.default('IMPRESSION'),
 		metric: Joi.string()
-			.valid(['eventCounts', 'eventPayouts'])
+			.valid('eventCounts', 'eventPayouts')
 			.default('eventCounts'),
 		timeframe: Joi.string()
-			.valid(['year', 'month', 'week', 'day', 'hour'])
+			.valid('year', 'month', 'week', 'day', 'hour')
 			.default('hour'),
 		start: Joi.date(),
 		end: Joi.date(),
